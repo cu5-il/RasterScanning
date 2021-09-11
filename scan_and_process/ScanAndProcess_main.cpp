@@ -18,23 +18,15 @@
 #include "myTypes.h"
 #include "myGlobals.h"
 
-typedef struct {
-	double x;
-	double y;
-	double z;
-	double T;
-}Coords;
+
 
 
 // This function will print whatever the latest error was
 //void PrintError();
 using namespace cv;
 
-Mat callbackImg, callbackImg2;
-std::vector<Point> callbackPts;
 const char* window_name1 = "Edges";
-int lowEdgeThresh = 10;
-int highEdgeThresh = 30;
+
 
 void processData(cv::Mat data, double collectedData[][NUM_DATA_SAMPLES], Coords fbk, cv::Mat profile);
 
