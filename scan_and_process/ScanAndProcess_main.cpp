@@ -13,12 +13,11 @@
 
 #include "A3200.h"
 
-//#include "scanner_functions.h"
 #include "constants.h"
 #include "myTypes.h"
 #include "myGlobals.h"
-
-
+//#include "scanner_functions.h"
+#include "processing_functions.h"
 
 
 // This function will print whatever the latest error was
@@ -28,7 +27,6 @@ using namespace cv;
 const char* window_name1 = "Edges";
 
 
-void processData(cv::Mat data, double collectedData[][NUM_DATA_SAMPLES], Coords fbk, cv::Mat profile);
 
 void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
 {
@@ -39,7 +37,7 @@ void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
 
 
 int main() {
-
+	Coords fbk;
 	//A3200Handle handle = NULL;
 	//A3200DataCollectConfigHandle DCCHandle = NULL;
 	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
@@ -81,32 +79,15 @@ int main() {
 		system("pause");
 		return(0);
 	}
-	std::memcpy(Data.data, collectedData, NUM_DATA_SIGNALS * NUM_DATA_SAMPLES * sizeof(double));
 	//========================================================================================================================
 
-	int fbIdx[2];
-	int profileIdx;
+
 	double xfb, yfb, /*zfb,*/ Tfb;
-
-	// Get the position feedback when the laser was triggered
-	cv::minMaxIdx(Data.row(1), NULL, NULL, fbIdx, NULL);
-	std::cout << "Min value is at index = " << fbIdx[1] << std::endl;
-
-
-	// Finding the voltage header of the scanner signal
-	cv::Mat Z_V;
-	cv::Mat Z_V_edge;
-	cv::Mat Z_V_edgeIdx;
-
-	cv::normalize(Data(cv::Range(0, 1), cv::Range(fbIdx[1], Data.cols)), Z_V, 0, 255, cv::NORM_MINMAX, CV_8U);
-	cv::Canny(Z_V, Z_V_edge, 10, 30, 3);
-	cv::findNonZero(Z_V_edge, Z_V_edgeIdx);
-
-	profileIdx = Z_V_edgeIdx.at<int>(1, 0) + fbIdx[1];
-	std::cout << "Profile start @ " << profileIdx << std::endl;
-
-	// Isolating the scanned profile
-	cv::Mat Z = Data(cv::Rect(Z_V_edgeIdx.at<int>(1, 0) + fbIdx[1], 0, NUM_PROFILE_PTS, 1)) / OPAMP_GAIN;
+	cv::Mat Z;
+	
+	processData(collectedData, &fbk, Z);
+	std::cout << "feedback = " << fbk.x << std::endl;
+	std::cout << "Z = " << Z << std::endl;
 
 	// Interpolate Z so it is the same scale as the raster reference image
 	cv::resize(Z, Z, Size(std::round(SCAN_WIDTH / PIX2MM), Z.rows), INTER_LINEAR);
@@ -333,71 +314,3 @@ int main() {
 //	A3200GetLastErrorString(data, 1024);
 //	printf("Error : %s\n", data);
 //}
-
-
-
-/// @brief Processes the raw data signals.
-/// 
-/// 
-/// @param[in]	data	array of signals where the rows are: [0] analog scanner output, [1] triggering signal, [2] x, [3] y, [4] z, and [5] theta position
-/// @param[out]	fbk	x, y, z, and theta coordinates of gantry when scan was taken
-/// @param[out] profile	Z profile from scanner
-/// @param[out] 
-///
-void processData(cv::Mat data, double collectedData[][NUM_DATA_SAMPLES], Coords fbk, cv::Mat profile) {
-	int fbIdx[2];
-	int profileStartIdx;
-	double xfb, yfb, /*zfb,*/ Tfb;
-	cv::Mat dataMat;
-	cv::Mat profileVoltage_8U, profileEdges, profileEdgesIdx;
-
-
-	// copying the collected data into a matrix
-	std::memcpy(dataMat.data, collectedData, NUM_DATA_SIGNALS * NUM_DATA_SAMPLES * sizeof(double));
-
-	// Get the position feedback when the laser was triggered
-	cv::minMaxIdx(data.row(1), NULL, NULL, fbIdx, NULL); //find the rising edge of the trigger signal sent to the laser
-	fbk.x = data.at<double>(2, fbIdx[1]); // assigning the position feedback values
-	fbk.y = data.at<double>(3, fbIdx[1]);
-	fbk.z = data.at<double>(4, fbIdx[1]);
-	fbk.T = data.at<double>(5, fbIdx[1]);
-
-	// Finding the voltage header of the scanner signal, i.e find the start of the scanned profile
-	// Search only the data after the triggering signal was sent (after index fbIdx[1])
-	cv::normalize(data(cv::Range(0, 1), cv::Range(fbIdx[1], data.cols)), profileVoltage_8U, 0, 255, cv::NORM_MINMAX, CV_8U);
-	cv::Canny(profileVoltage_8U, profileEdges, 10, 30, 3);
-	cv::findNonZero(profileEdges, profileEdgesIdx);
-
-	profileStartIdx = profileEdgesIdx.at<int>(1, 0) + fbIdx[1]; // Starting index of the scan profile
-	profile = data(cv::Rect(profileStartIdx, 0, NUM_PROFILE_PTS, 1)) / OPAMP_GAIN; // Isolating the scanned profile and converting to height
-
-	// Interpolate Z so it is the same scale as the raster reference image
-	//cv::resize(Z, Z, Size(std::round(SCAN_WIDTH / PIX2MM), Z.rows), INTER_LINEAR);
-	//cv::Mat Z_img;
-	//cv::normalize(Z, Z_img, 0, 255, cv::NORM_MINMAX, CV_8U);
-	return;
-}
-
-/*
-void foo(cv::Mat scan, double ROIcoords[4], int &startIdx, int &endIdx) {
-
-	for (int i = 0; i < Z.cols; i++) {
-		// Local coordinate of the scanned point
-		Zx = -SCAN_WIDTH / 2 + i * SCAN_WIDTH / ((int)Z.cols - 1);
-		// Transforming local coordinate to global coordinate
-		X[i] = xfb - R * cos(Tfb * PI / 180) - Zx * sin(Tfb * PI / 180);
-		Y[i] = yfb - R * sin(Tfb * PI / 180) + Zx * cos(Tfb * PI / 180);
-		// Check if scanned point in outside the print ROI
-		if ((X[i] < printROI[0] || printROI[2] < X[i] || Y[i] < printROI[1] || printROI[3] < Y[i])) {
-			scanMask.at<uchar>(0, i) = 0;
-		}
-		else if (startIdx == -1) {
-			startIdx = i;
-		}
-		else { endIdx = i; }
-	}
-
-
-	return 0;
-}
-*/

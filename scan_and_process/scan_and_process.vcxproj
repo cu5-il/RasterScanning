@@ -146,10 +146,12 @@
     <ClInclude Include="constants.h" />
     <ClInclude Include="myGlobals.h" />
     <ClInclude Include="myTypes.h" />
+    <ClInclude Include="processing_functions.h" />
     <ClInclude Include="scanner_functions.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="myGlobals.cpp" />
+    <ClCompile Include="processing_functions.cpp" />
     <ClCompile Include="ScanAndProcess_main.cpp" />
     <ClCompile Include="scanner_functions.cpp" />
   </ItemGroup>
