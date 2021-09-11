@@ -361,3 +361,11 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/scan_and_process/rawData.txt
+/scan_and_process/RasterMap.bmp
+/scan_and_process/opencv_world453d.dll
+/scan_and_process/LicenseDecoder64.dll
+/scan_and_process/AerUtilities64.dll
+/scan_and_process/A32Sys64.dll
+/scan_and_process/A32Cmplr64.dll
+/scan_and_process/A3200C64.dll
