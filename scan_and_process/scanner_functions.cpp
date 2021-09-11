@@ -5,13 +5,12 @@
 
 bool setupDataCollection(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle) {
 	// Adding the signals to be collected
-	if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_AnalogOutput0, AXISINDEX_00, 0)) { return false; }	// AO0
-	//if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_PositionFeedback, AXISINDEX_00, 0)) { return false; } // X-axis position feedback
-	//if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_PositionFeedback, AXISINDEX_01, 0)) { return false; } // Y-axis position feedback
-	//if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_PositionFeedback, AXISINDEX_02, 0)) { return false; } // Z-axis position feedback
-	//if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_PositionFeedback, AXISINDEX_03, 0)) { return false; } // T-axis position feedback
-	if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_AnalogInput0, AXISINDEX_01, 0)) { return false; }		// AI2
 	if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_AnalogInput0, AXISINDEX_00, 0)) { return false; }		// AI0
+	if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_AnalogOutput0, AXISINDEX_00, 0)) { return false; }	// AO0
+	if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_PositionFeedback, AXISINDEX_00, 0)) { return false; } // X-axis position feedback
+	if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_PositionFeedback, AXISINDEX_01, 0)) { return false; } // Y-axis position feedback
+	if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_PositionFeedback, AXISINDEX_02, 0)) { return false; } // Z-axis position feedback
+	if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_PositionFeedback, AXISINDEX_03, 0)) { return false; } // T-axis position feedback
 
 	// Setting the parameters for the data collection
 	if (!A3200DataCollectionConfigSetPeriod(DCCHandle, SAMPLING_TIME)) { return false; }
