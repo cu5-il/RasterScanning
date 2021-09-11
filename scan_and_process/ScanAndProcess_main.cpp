@@ -293,15 +293,7 @@ int main() {
 	cv::waitKey(0);
 	return 0;
 	//-----------------------------------------------------------------------------------------------------------------
-// stuff for callback~~~~~~~~~~~~~~~~
-	cvtColor(Zroi_img, callbackImg, COLOR_GRAY2BGR); //convert global image to color
-	callbackPts = points2;
-	namedWindow(window_name1, cv::WINDOW_NORMAL);
 
-	// create a toolbar
-	createTrackbar("Low", window_name1, &lowEdgeThresh, 100, changeEdgeThresh);
-	createTrackbar("High", window_name1, &highEdgeThresh, 300, changeEdgeThresh);
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 

@@ -1,4 +1,4 @@
-#include "global_variables.h"
+#include "myGlobals.h"
 #include "constants.h"
 #include "A3200.h"
 

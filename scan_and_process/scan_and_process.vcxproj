@@ -151,6 +151,7 @@
   <ItemGroup>
     <ClCompile Include="myGlobals.cpp" />
     <ClCompile Include="ScanAndProcess_main.cpp" />
+    <ClCompile Include="scanner_functions.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

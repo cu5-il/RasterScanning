@@ -1,7 +1,6 @@
 /* Function declarations*/
 #pragma once
 
-#include "classes.h"
 #include "A3200.h"
 
 bool setupDataCollection(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle);
