@@ -108,6 +108,15 @@ int main() {
 
 	std::cout << "fcn coordinates (PIX) = " << profileStart << " to " << profileEnd << std::endl;
 
+	cv::Mat heightMask;
+	double heightThresh = 2.2;
+	cv::threshold(profile, heightMask, heightThresh, 1, THRESH_BINARY);
+	cv::normalize(heightMask, heightMask, 0, 255, cv::NORM_MINMAX, CV_8U);
+	//cvtColor(heightMask, heightMask, COLOR_GRAY2BGR);
+
+	cv::namedWindow("height mask", cv::WINDOW_NORMAL);
+	cv::setMouseCallback("height mask", mouse_callback);
+	cv::imshow("height mask", heightMask);
 	//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	cv::Mat Zroi = profile;
 	cv::Mat Zroi_img;
@@ -214,12 +223,15 @@ int main() {
 			edgeColor = Vec3b(255, 0, 188); //purple
 		}
 
-		//mark search regions on global image
-		Zroi_img.at<Vec3b>(Point(points2[i].x, 0)) = Vec3b(255, 0, 0);
-		Zroi_img.at<Vec3b>(Point(points2[i + 1].x, 0)) = Vec3b(255, 0, 0);
+		//mark search region boundaries on global image
+		//Zroi_img.at<Vec3b>(Point(points2[i].x, 0)) = Vec3b(255, 0, 0);
+		//Zroi_img.at<Vec3b>(Point(points2[i + 1].x, 0)) = Vec3b(255, 0, 0);
 
 		for (int j = 0; j < ROIedgeIdx.size(); j++) {
-			Zroi_img.at<Vec3b>(Point(ROIedgeIdx[j].x + points2[i].x, 0)) = edgeColor;
+			if (heightMask.at<uchar>(Point(ROIedgeIdx[j].x + points2[i].x, 0)) == 255) {
+				Zroi_img.at<Vec3b>(Point(ROIedgeIdx[j].x + points2[i].x, 0)) = edgeColor;
+			}
+			//Zroi_img.at<Vec3b>(Point(ROIedgeIdx[j].x + points2[i].x, 0)) = edgeColor;
 		}
 		std::cout << "Num edges = " << ROIedgeIdx.size() << std::endl;
 		std::cout << ROIedgeIdx << std::endl;
