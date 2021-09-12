@@ -81,61 +81,37 @@ int main() {
 	}
 	//========================================================================================================================
 
-
 	double xfb, yfb, /*zfb,*/ Tfb;
-	cv::Mat Z;
+	cv::Mat profile, Z;
 	
-	processData(collectedData, &fbk, Z);
-	std::cout << "feedback = " << fbk.x << std::endl;
-	std::cout << "Z = " << Z << std::endl;
+	processData(collectedData, &fbk, profile);
 
-	// Interpolate Z so it is the same scale as the raster reference image
-	cv::resize(Z, Z, Size(std::round(SCAN_WIDTH / PIX2MM), Z.rows), INTER_LINEAR);
-	cv::Mat Z_img;
-	cv::normalize(Z, Z_img, 0, 255, cv::NORM_MINMAX, CV_8U);
+	// fake feedback coordinates
+	fbk.x = 10;
+	fbk.y = 9.8;
+	fbk.T = 0;
+
 
 	// Calculating the X & Y coordinates of the scan
 	// --------------------------------------------------------------------------
-	std::cout << "Zcols = " << Z.cols << " Math = " << std::round(SCAN_WIDTH / PIX2MM) << std::endl;
-
-	std::vector<double> X(std::round(SCAN_WIDTH / PIX2MM), 0);
-	std::vector<double> Y(std::round(SCAN_WIDTH / PIX2MM), 0);
 
 	std::vector<double> printROI = { -1, -1, 13, 13 }; //IMPORT FROM FILE
 
-	double R = 5;
-	xfb = 10;
-	yfb = 9.8;
-	Tfb = 0;
-	double Zx;
-	cv::Mat scanMask(Z.size(), CV_8UC1, Scalar(255));
-	int startIdx = -1, endIdx = 0;
+	cv::Point profileStart, profileEnd;
+	std::vector<Point> profilePts(2);
+	cv::Range profileROIRange;
+	local2globalScan((int)profile.cols, fbk, printROI, profileStart, profileEnd, profileROIRange);
 
-	for (int i = 0; i < Z.cols; i++) {
-		// Local coordinate of the scanned point
-		Zx = -SCAN_WIDTH / 2 + i * SCAN_WIDTH / ((int)Z.cols - 1);
-		// Transforming local coordinate to global coordinate
-		X[i] = xfb - R * cos(Tfb * PI / 180) - Zx * sin(Tfb * PI / 180);
-		Y[i] = yfb - R * sin(Tfb * PI / 180) + Zx * cos(Tfb * PI / 180);
-		// Check if scanned point in outside the print ROI 
-		if ((X[i] < printROI[0] || printROI[2] < X[i] || Y[i] < printROI[1] || printROI[3] < Y[i])) {
-			scanMask.at<uchar>(0, i) = 0;
-		}
-		else if (startIdx == -1) {
-			startIdx = i;
-		}
-		else { endIdx = i; }
-	}
-	//convert the start and end (X,Y) coordinates of the scan to points on the image
-	cv::Point start(std::round((Y[startIdx] - printROI[1]) / PIX2MM), std::round((X[startIdx] - printROI[0]) / PIX2MM));
-	cv::Point end(std::round((Y[endIdx] - printROI[1]) / PIX2MM), std::round((X[endIdx] - printROI[0]) / PIX2MM));
+	// Interpolate scan so it is the same scale as the raster reference image
+	//cv::resize(profile.colRange(profileROIRange), profile, Size(RASTER_IMG_SIZE, profile.rows), INTER_LINEAR);
+	cv::resize(profile.colRange(profileROIRange), profile, Size(profileEnd.x-profileStart.x, profile.rows), INTER_LINEAR);
 
-	cv::Mat Zroi = Z.colRange(Range(startIdx, endIdx));
+	std::cout << "fcn coordinates (PIX) = " << profileStart << " to " << profileEnd << std::endl;
+
+	//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+	cv::Mat Zroi = profile;
 	cv::Mat Zroi_img;
 	cv::normalize(Zroi, Zroi_img, 0, 255, cv::NORM_MINMAX, CV_8U);
-
-	cv::Mat maskedProfile;
-	cv::bitwise_and(Z_img, scanMask, maskedProfile);
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Loading the raster image
@@ -145,6 +121,7 @@ int main() {
 	bitwise_not(raster, rasterMask);
 	raster.copyTo(rasterColor, rasterMask);
 
+
 	// Stretching the profile
 	cv::Mat Z_img_tall;
 	int height = 40;
@@ -152,10 +129,10 @@ int main() {
 	cvtColor(Z_img_tall, Z_img_tall, COLOR_GRAY2BGR);
 
 	// Copy the profile to the raster
-	Z_img_tall.copyTo(rasterColor(cv::Rect(start, Z_img_tall.size())), rasterMask(cv::Rect(start, Z_img_tall.size())));
+	Z_img_tall.copyTo(rasterColor(cv::Rect(profileStart, Z_img_tall.size())), rasterMask(cv::Rect(profileStart, Z_img_tall.size())));
 
 
-	cv::line(rasterColor, start, end, Scalar(0, 0, 255), 2); // draw line where scan was taken
+	cv::line(rasterColor, profileStart, profileEnd, Scalar(0, 0, 255), 2); // draw line where scan was taken
 
 	//cv::namedWindow("Overlay", cv::WINDOW_AUTOSIZE); 
 	//cv::setMouseCallback("Overlay", mouse_callback);
@@ -177,7 +154,7 @@ int main() {
 	//cv::imshow("Search Mask", dilation_dst);
 
 	// Using a line iterator to extract the points along the scan line
-	cv::LineIterator Lit(dilation_dst, start, end);
+	cv::LineIterator Lit(dilation_dst, profileStart, profileEnd);
 
 	std::vector<Point> points;
 	points.reserve(Lit.count);
@@ -188,7 +165,7 @@ int main() {
 
 	// Alternative line iteration
 	//https://docs.opencv.org/4.5.1/dc/dd2/classcv_1_1LineIterator.html
-	LineIterator it(dilation_dst, start, end, 8);
+	LineIterator it(dilation_dst, profileStart, profileEnd, 8);
 	LineIterator it2 = it;
 	std::vector<uchar> buf(it.count);
 	std::vector<Point> points2;
@@ -273,7 +250,7 @@ int main() {
 		// Making a image to store all the global information
 	Mat globalImg(raster.size(), CV_8UC3, Scalar({ 0, 0, 0, 0 }));
 
-	Z_img_tall.copyTo(globalImg(cv::Rect(start, Z_img_tall.size())), dilation_dst(cv::Rect(start, Z_img_tall.size())));
+	Z_img_tall.copyTo(globalImg(cv::Rect(profileStart, Z_img_tall.size())), dilation_dst(cv::Rect(profileStart, Z_img_tall.size())));
 
 	Mat globalEdge;
 	cv::Canny(globalImg, globalEdge, 10, 30, 3);
