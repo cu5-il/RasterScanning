@@ -18,7 +18,7 @@
 void processData(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& profile);
 
 
-/// @brief Processes the raw data signals.
+/// @brief 
 /// 
 /// 
 /// @param[in]	printROI	reference to vector
@@ -27,3 +27,22 @@ void processData(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& profile)
 /// @param[out] 
 ///
 void local2globalScan(int profileCols, const Coords fbk, const std::vector<double>& printROI, cv::Point& profileStart, cv::Point& profileEnd, cv::Range& profileROIRange);
+//scan2globalROI??
+
+/// @brief Finds the intersection of the 
+/// 
+/// 
+/// @param[in]	raster	reference to vector
+/// @param[out]	mask	mask of region in which edges will be searched for
+///
+void findEdgeSearchROI(cv::Mat raster, cv::Mat& mask);
+
+
+/// @brief 
+/// 
+/// 
+/// @param[in]	raster	reference to vector
+/// @param[out]	mask	mask of region in which edges will be searched for
+///
+void findEdges(cv::Mat edgeBoundary, cv::Point profileStart, cv::Point profileEnd, cv::Mat& scanROI, cv::Mat& gblEdges, cv::Mat& locEdges, double heightThresh);
+//get edge search regions

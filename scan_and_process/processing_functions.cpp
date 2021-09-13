@@ -73,3 +73,61 @@ void local2globalScan(int profileCols, const Coords fbk, const std::vector<doubl
 	profileROIRange = cv::Range(startIdx, endIdx);
 	return;
 }
+
+void findEdges(cv::Mat edgeBoundary, cv::Point profileStart, cv::Point profileEnd, cv::Mat& scanROI, cv::Mat& gblEdges, cv::Mat& locEdges, double heightThresh) {
+
+	cv::LineIterator it(edgeBoundary, profileStart, profileEnd, 8);
+	std::vector<cv::Point> windowPts;
+	windowPts.reserve(it.count);
+	uchar lastVal = 0;
+	uchar curVal = 0;
+
+	// find the intersection of the scan and the edge boundary using a line iterator
+	for (int i = 0; i < it.count; i++, ++it) {
+		curVal = *(const uchar*)*it;
+		if ((curVal == 255) && (lastVal == 0) && (i != 0)) { // find rising edges
+			windowPts.push_back(it.pos());
+		}
+		if ((curVal == 0) && (lastVal == 255) && (i != 0)) { // find falling edges
+			windowPts.push_back(it.pos());
+		}
+		lastVal = curVal;
+	}
+	if ((windowPts.size() % 2) != 0) {
+		std::cout << "ERROR: odd number of edges" << std::endl;
+		return ;
+	}
+
+	// create a height mask for the scan profile to remove all edges below a height threshold
+	cv::Mat heightMask;
+	cv::threshold(scanROI, heightMask, heightThresh, 1, cv::THRESH_BINARY);
+	cv::normalize(heightMask, heightMask, 0, 255, cv::NORM_MINMAX, CV_8U);
+
+
+	// Search within the edges of the dialated raster for the actual edges
+	cv::Mat searchWindow;
+	cv::Mat edges;
+	std::vector<cv::Point> edgeCoords;
+
+	for (int i = 0; i < windowPts.size(); i = i + 2) { // loop through all the search windows
+
+		searchWindow = scanROI(cv::Range::all(), cv::Range(windowPts[i].x, windowPts[(int)i + 1].x)); // isolate the area around a single raster rod
+		cv::normalize(searchWindow, searchWindow, 0, 255, cv::NORM_MINMAX, CV_8U); // Normalize the search window
+		cv::Canny(searchWindow, edges, 10, 20, 7);
+		cv::findNonZero(edges, edgeCoords);
+
+		if (edgeCoords.size() == 2) { //verify that only two edges were found
+
+		}
+
+		// mark edges on local profile and global ROI
+		for (int j = 0; j < edgeCoords.size(); j++) {
+			if (heightMask.at<uchar>(cv::Point(edgeCoords[j].x + windowPts[i].x, 0)) == 255) { // check if edges are within height mask
+				locEdges.at<uchar>(cv::Point(edgeCoords[j].x + windowPts[i].x , 0)) = 255;
+				gblEdges.at<uchar>(cv::Point(edgeCoords[j].x + windowPts[i].x + profileStart.x, profileStart.y)) = 255;
+			}
+
+		}
+
+	}
+}

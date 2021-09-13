@@ -108,6 +108,7 @@ int main() {
 
 	std::cout << "fcn coordinates (PIX) = " << profileStart << " to " << profileEnd << std::endl;
 
+	// Create a height mask
 	cv::Mat heightMask;
 	double heightThresh = 2.2;
 	cv::threshold(profile, heightMask, heightThresh, 1, THRESH_BINARY);
@@ -152,23 +153,28 @@ int main() {
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Making the region around the raster path to search for edges
 	Mat dilation_dst;
+	cv::Mat edgeSearchROI;
 	int dilation_size = 18;// 13 wa sa little too small; 20 seems ok; 23 is max
-	Mat element = getStructuringElement(MORPH_RECT,
-		Size(2 * dilation_size + 1, 2 * dilation_size + 1),
-		Point(dilation_size, dilation_size));
+	Mat element = getStructuringElement(MORPH_RECT, Size(2 * dilation_size + 1, 2 * dilation_size + 1), Point(dilation_size, dilation_size));
 	dilate(raster, dilation_dst, element);
+
 
 	//cv::namedWindow("Search Mask", cv::WINDOW_AUTOSIZE);
 	//cv::setMouseCallback("Search Mask", mouse_callback);
 	//cv::imshow("Search Mask", dilation_dst);
 
 	// Using a line iterator to extract the points along the scan line
+	std::cout << "LINE ITERATOR STUFF" << std::endl;
 	cv::LineIterator Lit(dilation_dst, profileStart, profileEnd);
-
+	cv::LineIterator nextIt = Lit;
 	std::vector<Point> points;
 	points.reserve(Lit.count);
 	for (int i = 0; i < Lit.count; ++i, ++Lit) {
-		points.push_back(Lit.pos());
+		nextIt = ++Lit;
+		//points.push_back(Lit.pos());
+		std::cout << "Current pos " << Lit.pos() << std::endl;
+		std::cout << "Next pos    " << nextIt.pos() << std::endl;
+		//std::cout << "Next pos" << (++nextIt).pos() << std::endl;
 	}
 	//std::cout <<"line coords "<< points << std::endl;
 
@@ -216,11 +222,12 @@ int main() {
 
 		cv::Vec3b edgeColor;
 		if (ROIedgeIdx.size() == 2) { //verify that only two edges were found
-			edgeColor = Vec3b(0, 0, 255);
+			edgeColor = Vec3b(0, 0, 255); //red
 		}
 		else {
 			//edgeColor = Vec3b(0, 128, 255); //orange
 			edgeColor = Vec3b(255, 0, 188); //purple
+			edgeColor = Vec3b(0, 0, 255); //red
 		}
 
 		//mark search region boundaries on global image
@@ -250,7 +257,20 @@ int main() {
 	cv::setMouseCallback("Global ROI", mouse_callback);
 	cv::imshow("Global ROI", Zroi_img);
 
+	cv::Mat locEdges(profile.size(), CV_8U, cv::Scalar({ 0 }));
+	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
+	findEdges(dilation_dst, profileStart, profileEnd, profile, gblEdges, locEdges, heightThresh);
 
+
+	cv::namedWindow("local", cv::WINDOW_NORMAL);
+	cv::setMouseCallback("local", mouse_callback);
+	cv::imshow("local", locEdges);
+
+	Mat red2(raster.size(), CV_8UC3, Scalar({ 0, 0, 255, 0 }));
+	red2.copyTo(raster, gblEdges);
+	cv::namedWindow("global", cv::WINDOW_NORMAL);
+	cv::setMouseCallback("global", mouse_callback);
+	cv::imshow("global", raster);
 
 	cv::waitKey(0);
 	return 0;
