@@ -26,7 +26,7 @@ void processData(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& profile)
 /// @param[out] 
 /// @param[out] 
 ///
-void local2globalScan(int profileCols, const Coords fbk, const std::vector<double>& printROI, cv::Point& profileStart, cv::Point& profileEnd, cv::Range& profileROIRange);
+void scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point& profileStart, cv::Point& profileEnd);
 //scan2globalROI??
 
 /// @brief Finds the intersection of the 

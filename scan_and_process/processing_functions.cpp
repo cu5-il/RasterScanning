@@ -35,20 +35,19 @@ void processData(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& profile)
 	return;
 }
 
-void local2globalScan(int profileCols, const Coords fbk, const std::vector<double>& printROI, cv::Point &profileStart, cv::Point& profileEnd , cv::Range& profileROIRange) {
-	std::cout << "print roi = ";
-	for (auto i : printROI)
-		std::cout << i << ", ";
-	std::cout << std::endl;
+//=============================================
+
+void scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point &profileStart, cv::Point& profileEnd) {
+
 	std::vector<double> XY_start(2),XY_end(2);
 	double X, Y;
 	double R = SCAN_OFFSET;
 	double local_x;
 	int startIdx = -1, endIdx = 0;
 
-	for (int i = 0; i < profileCols; i++) {
+	for (int i = 0; i < scan.cols; i++) {
 		// Local coordinate of the scanned point
-		local_x = -SCAN_WIDTH / 2 + i * SCAN_WIDTH / (profileCols - 1);
+		local_x = -SCAN_WIDTH / 2 + i * SCAN_WIDTH / ((int)scan.cols - 1);
 		// Transforming local coordinate to global coordinate
 		X = fbk.x - R * cos(fbk.T * PI / 180) - local_x * sin(fbk.T * PI / 180);
 		Y = fbk.y - R * sin(fbk.T * PI / 180) + local_x * cos(fbk.T * PI / 180);
@@ -70,9 +69,16 @@ void local2globalScan(int profileCols, const Coords fbk, const std::vector<doubl
 
 	profileStart = cv::Point (std::round((XY_start[1] - printROI[1]) / PIX2MM), std::round((XY_start[0] - printROI[0]) / PIX2MM));
 	profileEnd = cv::Point (std::round((XY_end[1] - printROI[1]) / PIX2MM), std::round((XY_end[0] - printROI[0]) / PIX2MM));
-	profileROIRange = cv::Range(startIdx, endIdx);
+	cv::Range profileROIRange = cv::Range(startIdx, endIdx);
+
+	// Interpolate scan so it is the same scale as the raster reference image
+	cv::LineIterator it(rasterSize, profileStart, profileEnd, 8); // make a line iterator between the start and end points of the scan
+	cv::resize(scan.colRange(profileROIRange), scanROI, cv::Size(it.count, scan.rows), cv::INTER_LINEAR);
+
 	return;
 }
+
+//=============================================
 
 void findEdges(cv::Mat edgeBoundary, cv::Point profileStart, cv::Point profileEnd, cv::Mat& scanROI, cv::Mat& gblEdges, cv::Mat& locEdges, double heightThresh) {
 
@@ -111,7 +117,7 @@ void findEdges(cv::Mat edgeBoundary, cv::Point profileStart, cv::Point profileEn
 
 	for (int i = 0; i < windowPts.size(); i = i + 2) { // loop through all the search windows
 
-		searchWindow = scanROI(cv::Range::all(), cv::Range(windowPts[i].x, windowPts[(int)i + 1].x)); // isolate the area around a single raster rod
+		searchWindow = scanROI(cv::Range::all(), cv::Range(windowPts[i].x, windowPts[i + 1].x)); // isolate the area around a single raster rod
 		cv::normalize(searchWindow, searchWindow, 0, 255, cv::NORM_MINMAX, CV_8U); // Normalize the search window
 		cv::Canny(searchWindow, edges, 10, 20, 7);
 		cv::findNonZero(edges, edgeCoords);
