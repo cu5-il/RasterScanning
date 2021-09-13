@@ -15,7 +15,7 @@
 /// @param[out]	fbk	structure with x, y, z, and theta coordinates of gantry when scan was taken
 /// @param[out] profile	Z profile from scanner
 ///
-void processData(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& profile);
+void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan);
 
 
 /// @brief 
@@ -26,16 +26,8 @@ void processData(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& profile)
 /// @param[out] 
 /// @param[out] 
 ///
-void scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point& profileStart, cv::Point& profileEnd);
-//scan2globalROI??
+void scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point& scanStart, cv::Point& scanEnd);
 
-/// @brief Finds the intersection of the 
-/// 
-/// 
-/// @param[in]	raster	reference to vector
-/// @param[out]	mask	mask of region in which edges will be searched for
-///
-void findEdgeSearchROI(cv::Mat raster, cv::Mat& mask);
 
 
 /// @brief 
@@ -44,5 +36,4 @@ void findEdgeSearchROI(cv::Mat raster, cv::Mat& mask);
 /// @param[in]	raster	reference to vector
 /// @param[out]	mask	mask of region in which edges will be searched for
 ///
-void findEdges(cv::Mat edgeBoundary, cv::Point profileStart, cv::Point profileEnd, cv::Mat& scanROI, cv::Mat& gblEdges, cv::Mat& locEdges, double heightThresh);
-//get edge search regions
+void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& gblEdges, cv::Mat& locEdges, double heightThresh);

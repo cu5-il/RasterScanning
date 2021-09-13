@@ -42,7 +42,6 @@ int main() {
 	//A3200DataCollectConfigHandle DCCHandle = NULL;
 	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
 	cv::Mat Data(NUM_DATA_SIGNALS, NUM_DATA_SAMPLES, CV_64F);
-	//double X_fb, Y_fb, Z_fb, T_fb;
 
 	// INITIALIZATION & Data collection
 	//========================================================================================================================
@@ -99,48 +98,31 @@ int main() {
 
 	cv::Mat scan;
 	
-	processData(collectedData, &fbk, scan);
+	getScan(collectedData, &fbk, scan);
 
 	// fake feedback coordinates
 	fbk.x = 10;
 	fbk.y = 9.8;
-	fbk.T = 30;
+	fbk.T = 0;
 	
 	// fake ROI
 	std::vector<double> printROI = { -1, -1, 13, 13 }; //IMPORT FROM FILE
 
-	// Calculating the X & Y coordinates of the scan
-	// --------------------------------------------------------------------------
-
-	
 	//Finding the part of the scan that is within the ROI
-	cv::Point profileStart, profileEnd;
+	cv::Point scanStart, scanEnd;
 	cv::Mat scanROI;
-	scan2ROI(scan, fbk, printROI, raster.size(), scanROI, profileStart, profileEnd);
-
-	LineIterator lit(profileStart, profileEnd, 8);
-	LineIterator lit2(Size(700,700),profileStart, profileEnd, 8);
-	std::cout << "Length = " << lit2.count << std::endl;
-	std::cout << "Length = " << lit.count << std::endl;
-	std::cout << "Length = " << norm(profileStart-profileEnd) << std::endl;
-	std::cout << "Length = " << sqrt(pow(profileStart.x - profileEnd.x, 2) + pow(profileStart.y - profileEnd.y, 2)) << std::endl;
-	//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
-	cv::Mat scanGray;
-	cv::normalize(scanROI, scanGray, 0, 255, cv::NORM_MINMAX, CV_8U);
-
+	scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd);
 
 	// Finding the edges
 	double heightThresh = 2.2;
 	cv::Mat locEdges(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
 	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
-	findEdges(dilation_dst, profileStart, profileEnd, scanROI, gblEdges, locEdges, heightThresh);
-
-	cv::namedWindow("local edges", cv::WINDOW_NORMAL);
-	cv::setMouseCallback("local edges", mouse_callback);
-	cv::imshow("local edges", locEdges);
+	findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
 
 	// displaying the edges
+	cv::Mat scanGray;
+	cv::normalize(scanROI, scanGray, 0, 255, cv::NORM_MINMAX, CV_8U);
+
 	Mat red2(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 255, 0 }));
 	cvtColor(scanGray, scanGray, COLOR_GRAY2BGR);
 	red2.copyTo(scanGray, locEdges);
