@@ -97,46 +97,59 @@ int main() {
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	cv::Mat scan;
-	
-	getScan(collectedData, &fbk, scan);
-
-	// fake feedback coordinates
-	fbk.x = 10;
-	fbk.y = 9.8;
-	fbk.T = 0;
-	
-	// fake ROI
-	std::vector<double> printROI = { -1, -1, 13, 13 }; //IMPORT FROM FILE
-
-	//Finding the part of the scan that is within the ROI
 	cv::Point scanStart, scanEnd;
 	cv::Mat scanROI;
-	scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd);
-
-	// Finding the edges
-	double heightThresh = 2.2;
-	cv::Mat locEdges(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
-	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
-	findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
-
-	// displaying the edges
 	cv::Mat scanGray;
-	cv::normalize(scanROI, scanGray, 0, 255, cv::NORM_MINMAX, CV_8U);
 
-	Mat red2(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 255, 0 }));
-	cvtColor(scanGray, scanGray, COLOR_GRAY2BGR);
-	red2.copyTo(scanGray, locEdges);
-	cv::namedWindow("local", cv::WINDOW_NORMAL);
-	cv::setMouseCallback("local", mouse_callback);
-	cv::imshow("local", scanGray);
+	double input;
+	std::cout << "Enter a target position or enter a negative value to end the program" << std::endl;
+	std::cin >> input;
+	
+	while (input>9)
+	{
+		getScan(collectedData, &fbk, scan);
 
-	Mat red3(raster.size(), CV_8UC3, Scalar({ 0, 0, 255, 0 }));
-	red3.copyTo(raster, gblEdges);
-	cv::namedWindow("global", cv::WINDOW_NORMAL);
-	cv::setMouseCallback("global", mouse_callback);
-	cv::imshow("global", raster);
+		// fake feedback coordinates
+		fbk.x = input;
+		fbk.y = 9.8;
+		fbk.T = 0;
 
-	cv::waitKey(0);
+		// fake ROI
+		std::vector<double> printROI = { -1, -1, 13, 13 }; //IMPORT FROM FILE
+
+		//Finding the part of the scan that is within the ROI
+
+		scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd);
+
+		// Finding the edges
+		double heightThresh = 2.2;
+		cv::Mat locEdges(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
+		cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
+		findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
+
+		// displaying the edges
+
+		cv::normalize(scanROI, scanGray, 0, 255, cv::NORM_MINMAX, CV_8U);
+
+		Mat red2(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 255, 0 }));
+		cvtColor(scanGray, scanGray, COLOR_GRAY2BGR);
+		red2.copyTo(scanGray, locEdges);
+		cv::namedWindow("local", cv::WINDOW_NORMAL);
+		cv::setMouseCallback("local", mouse_callback);
+		cv::imshow("local", scanGray);
+
+		Mat red3(raster.size(), CV_8UC3, Scalar({ 0, 0, 255, 0 }));
+		red3.copyTo(raster, gblEdges);
+		cv::namedWindow("global", cv::WINDOW_NORMAL);
+		cv::setMouseCallback("global", mouse_callback);
+		cv::imshow("global", raster);
+
+		cv::waitKey(1);
+
+		std::cout << "Enter a target position or enter a negative value to end the program" << std::endl;
+		std::cin >> input;
+	}
+	
 	return 0;
 	//-----------------------------------------------------------------------------------------------------------------
 
