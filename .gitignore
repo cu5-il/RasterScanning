@@ -369,3 +369,5 @@ FodyWeavers.xsd
 /scan_and_process/A32Sys64.dll
 /scan_and_process/A32Cmplr64.dll
 /scan_and_process/A3200C64.dll
+/scan_and_process/output.csv
+/scan_and_process/scan.csv

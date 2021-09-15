@@ -7,21 +7,23 @@
 #include "myTypes.h"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
 
 void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
 	int fbIdx[2];
 	int scanStartIdx;
 	cv::Mat scanVoltage_8U, scanEdges, scanEdgesIdx;
-
-	cv::Mat dataMat(NUM_PROFILE_PTS, NUM_DATA_SAMPLES, CV_64F, data); // copying the collected data into a matrix
+	std::cout << "did the whole array make it " << data[2][1] << std::endl;
+	cv::Mat dataMat(NUM_DATA_SIGNALS, NUM_DATA_SAMPLES, CV_64F, data); // copying the collected data into a matrix
 	
 	// Get the position feedback when the laser was triggered
+	//NOTE: feedback values are given as counts and can be converted using the CountsPerUnit Parameter in the A3200 software
 	cv::minMaxIdx(dataMat.row(1), NULL, NULL, fbIdx, NULL); //find the rising edge of the trigger signal sent to the laser
-	fbk->x = dataMat.at<double>(2, fbIdx[1]); // assigning the position feedback values
-	fbk->y = dataMat.at<double>(3, fbIdx[1]);
-	fbk->z = dataMat.at<double>(4, fbIdx[1]);
-	fbk->T = dataMat.at<double>(5, fbIdx[1]);
+	fbk->x = dataMat.at<double>(2, fbIdx[1]) / -1000; // assigning the position feedback values
+	fbk->y = dataMat.at<double>(3, fbIdx[1]) / 1000;
+	fbk->z = dataMat.at<double>(4, fbIdx[1]) / 10000;
+	fbk->T = dataMat.at<double>(5, fbIdx[1]) * 360 / 200000; 
 
 	// Finding the voltage header of the scanner signal, i.e find the start of the scanned profile
 	// Search only the data after the triggering signal was sent (after index fbIdx[1])
@@ -101,6 +103,7 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 	}
 	if ((windowPts.size() % 2) != 0) {
 		std::cout << "ERROR: odd number of edges" << std::endl;
+		system("pause");
 		return ;
 	}
 
@@ -136,4 +139,5 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 		}
 
 	}
+	return;
 }
