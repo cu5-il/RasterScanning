@@ -26,7 +26,13 @@ using namespace cv;
 
 const char* window_name1 = "Edges";
 
-
+void writeCSV(std::string filename, cv::Mat m)
+{
+	std::ofstream myfile;
+	myfile.open(filename.c_str());
+	myfile << cv::format(m, cv::Formatter::FMT_CSV) << std::endl;
+	myfile.close();
+}
 
 void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
 {
@@ -91,7 +97,7 @@ int main() {
 	// Making the region around the raster path to search for edges
 	Mat dilation_dst;
 	cv::Mat edgeSearchROI;
-	int dilation_size = 18;// 13 wa sa little too small; 20 seems ok; 23 is max
+	int dilation_size = 18;// 13 was a little too small; 20 seems ok; 23 is max
 	Mat element = getStructuringElement(MORPH_RECT, Size(2 * dilation_size + 1, 2 * dilation_size + 1), Point(dilation_size, dilation_size));
 	dilate(raster, dilation_dst, element);
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,6 +105,8 @@ int main() {
 	cv::Mat scan;
 	
 	getScan(collectedData, &fbk, scan);
+
+	writeCSV("output.csv", scan);
 
 	// fake feedback coordinates
 	fbk.x = 10;
@@ -168,3 +176,4 @@ int main() {
 //	A3200GetLastErrorString(data, 1024);
 //	printf("Error : %s\n", data);
 //}
+
