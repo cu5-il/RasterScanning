@@ -120,7 +120,7 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 
 	for (int i = 0; i < windowPts.size(); i = i + 2) { // loop through all the search windows
 
-		searchWindow = scanROI(cv::Range::all(), cv::Range(windowPts[i].x, windowPts[int(i) + 1].x)); // isolate the area around a single raster rod
+		searchWindow = scanROI(cv::Range::all(), cv::Range(windowPts[i].x, windowPts[int(i + 1)].x)); // isolate the area around a single raster rod
 		cv::normalize(searchWindow, searchWindow, 0, 255, cv::NORM_MINMAX, CV_8U); // Normalize the search window
 		cv::Canny(searchWindow, edges, 10, 20, 7);
 		cv::findNonZero(edges, edgeCoords);
