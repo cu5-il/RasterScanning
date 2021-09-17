@@ -44,7 +44,7 @@ void scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
 	double X, Y;
 	double R = SCAN_OFFSET;
 	double local_x;
-	int startIdx = -1, endIdx = 0;
+	int startIdx = -1, endIdx = -1;
 
 	for (int i = 0; i < scan.cols; i++) {
 		// Local coordinate of the scanned point
@@ -64,17 +64,23 @@ void scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
 			XY_end = { X, Y };
 		}
 	}
-	//convert the start and end (X,Y) coordinates of the scan to points on the image
-	cv::Point startPx(std::round((XY_start[1] - printROI[1]) / PIX2MM), std::round((XY_start[0] - printROI[0]) / PIX2MM));
-	cv::Point endPx(std::round((XY_end[1] - printROI[1]) / PIX2MM), std::round((XY_end[0] - printROI[0]) / PIX2MM));
 
-	scanStart = cv::Point (std::round((XY_start[1] - printROI[1]) / PIX2MM), std::round((XY_start[0] - printROI[0]) / PIX2MM));
-	scanEnd = cv::Point (std::round((XY_end[1] - printROI[1]) / PIX2MM), std::round((XY_end[0] - printROI[0]) / PIX2MM));
-	cv::Range scanROIRange = cv::Range(startIdx, endIdx);
+	// Check to see if the scan was in the ROI
+	if ((startIdx != -1) && (endIdx != -1)) {
+		//convert the start and end (X,Y) coordinates of the scan to points on the image
+		scanStart = cv::Point(std::round((XY_start[1] - printROI[1]) / PIX2MM), std::round((XY_start[0] - printROI[0]) / PIX2MM));
+		scanEnd = cv::Point(std::round((XY_end[1] - printROI[1]) / PIX2MM), std::round((XY_end[0] - printROI[0]) / PIX2MM));
+		cv::Range scanROIRange = cv::Range(startIdx, endIdx);
 
-	// Interpolate scan so it is the same scale as the raster reference image
-	cv::LineIterator it(rasterSize, scanStart, scanEnd, 8); // make a line iterator between the start and end points of the scan
-	cv::resize(scan.colRange(scanROIRange), scanROI, cv::Size(it.count, scan.rows), cv::INTER_LINEAR);
+		// Interpolate scan so it is the same scale as the raster reference image
+		cv::LineIterator it(rasterSize, scanStart, scanEnd, 8); // make a line iterator between the start and end points of the scan
+		cv::resize(scan.colRange(scanROIRange), scanROI, cv::Size(it.count, scan.rows), cv::INTER_LINEAR);
+	}
+	else {
+		scanStart = cv::Point(-1, -1);
+		scanEnd = cv::Point(-1, -1);
+	}
+
 
 	return;
 }
@@ -82,68 +88,72 @@ void scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
 //=============================================
 
 void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& gblEdges, cv::Mat& locEdges, cv::Mat& locWin, double heightThresh) {
+	
+	if ((scanStart != cv::Point(-1, -1)) && (scanEnd != cv::Point(-1, -1))) //Check if scan is within ROI
+	{
+		cv::LineIterator it(edgeBoundary, scanStart, scanEnd, 8);
+		std::vector<cv::Point> windowPts;
+		windowPts.reserve(it.count);
+		uchar lastVal = 0;
+		uchar curVal = 0;
 
-	cv::LineIterator it(edgeBoundary, scanStart, scanEnd, 8);
-	std::vector<cv::Point> windowPts;
-	windowPts.reserve(it.count);
-	uchar lastVal = 0;
-	uchar curVal = 0;
+		// Initialize local masks to zero
+		locEdges = cv::Mat::zeros(scanROI.size(), CV_8U);
+		locWin = cv::Mat::zeros(scanROI.size(), CV_8U);
 
-	// Initialize local masks to zero
-	locEdges = cv::Mat::zeros(scanROI.size(), CV_8U);
-	locWin = cv::Mat::zeros(scanROI.size(), CV_8U);
-
-	// find the intersection of the scan and the edge boundary using a line iterator
-	for (int i = 0; i < it.count; i++, ++it) {
-		curVal = *(const uchar*)*it;
-		if ((curVal == 255) && (lastVal == 0) && (i != 0)) { // find rising edges
-			windowPts.push_back(it.pos());
+		// find the intersection of the scan and the edge boundary using a line iterator
+		for (int i = 0; i < it.count; i++, ++it) {
+			curVal = *(const uchar*)*it;
+			if ((curVal == 255) && (lastVal == 0) && (i != 0)) { // find rising edges
+				windowPts.push_back(it.pos());
+			}
+			if ((curVal == 0) && (lastVal == 255) && (i != 0)) { // find falling edges
+				windowPts.push_back(it.pos());
+			}
+			lastVal = curVal;
 		}
-		if ((curVal == 0) && (lastVal == 255) && (i != 0)) { // find falling edges
-			windowPts.push_back(it.pos());
+		if ((windowPts.size() % 2) != 0) {
+			std::cout << "ERROR: odd number of edges" << std::endl;
+			system("pause");
+			return;
 		}
-		lastVal = curVal;
-	}
-	if ((windowPts.size() % 2) != 0) {
-		std::cout << "ERROR: odd number of edges" << std::endl;
-		system("pause");
-		return ;
-	}
 
-	// create a height mask for the scan profile to remove all edges below a height threshold
-	cv::Mat heightMask;
-	cv::threshold(scanROI, heightMask, heightThresh, 1, cv::THRESH_BINARY);
-	cv::normalize(heightMask, heightMask, 0, 255, cv::NORM_MINMAX, CV_8U);
+		// create a height mask for the scan profile to remove all edges below a height threshold
+		cv::Mat heightMask;
+		cv::threshold(scanROI, heightMask, heightThresh, 1, cv::THRESH_BINARY);
+		cv::normalize(heightMask, heightMask, 0, 255, cv::NORM_MINMAX, CV_8U);
 
 
-	// Search within the edges of the dialated raster for the actual edges
-	cv::Mat searchWindow;
-	cv::Mat edges;
-	std::vector<cv::Point> edgeCoords;
+		// Search within the edges of the dialated raster for the actual edges
+		cv::Mat searchWindow;
+		cv::Mat edges;
+		std::vector<cv::Point> edgeCoords;
 
-	for (int i = 0; i < windowPts.size(); i = i + 2) { // loop through all the search windows
+		for (int i = 0; i < windowPts.size(); i = i + 2) { // loop through all the search windows
 
-		searchWindow = scanROI(cv::Range::all(), cv::Range(windowPts[i].x, windowPts[int(i + 1)].x)); // isolate the area around a single raster rod
-		cv::normalize(searchWindow, searchWindow, 0, 255, cv::NORM_MINMAX, CV_8U); // Normalize the search window
-		cv::Canny(searchWindow, edges, 10, 20, 7);
-		cv::findNonZero(edges, edgeCoords);
+			searchWindow = scanROI(cv::Range::all(), cv::Range(windowPts[i].x, windowPts[int(i + 1)].x)); // isolate the area around a single raster rod
+			cv::normalize(searchWindow, searchWindow, 0, 255, cv::NORM_MINMAX, CV_8U); // Normalize the search window
+			cv::Canny(searchWindow, edges, 10, 20, 7);
+			cv::findNonZero(edges, edgeCoords);
 
-		if (edgeCoords.size() == 2) { //verify that only two edges were found
+			if (edgeCoords.size() == 2) { //verify that only two edges were found
 
-		}
-		// mark window borders
-		locWin.at<uchar>(cv::Point(windowPts[i].x, 0)) = 255;
-		locWin.at<uchar>(cv::Point(windowPts[(i+1)].x, 0)) = 255;
+			}
+			// mark window borders
+			locWin.at<uchar>(cv::Point(windowPts[i].x, 0)) = 255;
+			locWin.at<uchar>(cv::Point(windowPts[(i + 1)].x, 0)) = 255;
 
-		// mark edges on local profile and global ROI
-		for (int j = 0; j < edgeCoords.size(); j++) {
-			if (heightMask.at<uchar>(cv::Point(edgeCoords[j].x + windowPts[i].x, 0)) == 255) { // check if edges are within height mask
-				locEdges.at<uchar>(cv::Point(edgeCoords[j].x + windowPts[i].x , 0)) = 255;
-				gblEdges.at<uchar>(cv::Point(edgeCoords[j].x + windowPts[i].x + scanStart.x, scanStart.y)) = 255;
+			// mark edges on local profile and global ROI
+			for (int j = 0; j < edgeCoords.size(); j++) {
+				if (heightMask.at<uchar>(cv::Point(edgeCoords[j].x + windowPts[i].x, 0)) == 255) { // check if edges are within height mask
+					locEdges.at<uchar>(cv::Point(edgeCoords[j].x + windowPts[i].x, 0)) = 255;
+					gblEdges.at<uchar>(cv::Point(edgeCoords[j].x + windowPts[i].x + scanStart.x, scanStart.y)) = 255;
+				}
+
 			}
 
 		}
-
 	}
+
 	return;
 }

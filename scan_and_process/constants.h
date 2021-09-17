@@ -10,7 +10,7 @@
 
 #define SCAN_WIDTH 26.4
 #define PIX2MM 0.02
-#define RASTER_IMG_SIZE 700
+#define RASTER_IMG_WIDTH 11.0
 #define PI 3.14159265
 
-#define SCAN_OFFSET 5
+#define SCAN_OFFSET 0
