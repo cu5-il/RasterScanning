@@ -7,7 +7,6 @@
 #include "myTypes.h"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
 
 
 void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
@@ -90,9 +89,8 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 	uchar lastVal = 0;
 	uchar curVal = 0;
 
-	// Initialize masks to zero
+	// Initialize local masks to zero
 	locEdges = cv::Mat::zeros(scanROI.size(), CV_8U);
-	gblEdges = cv::Mat::zeros(edgeBoundary.size(), CV_8U);
 	locWin = cv::Mat::zeros(scanROI.size(), CV_8U);
 
 	// find the intersection of the scan and the edge boundary using a line iterator

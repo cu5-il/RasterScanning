@@ -18,6 +18,7 @@
 #include "myGlobals.h"
 #include "scanner_functions.h"
 #include "processing_functions.h"
+#include "display_functions.h"
 
 
 // This function will print whatever the latest error was
@@ -33,13 +34,6 @@ void writeCSV(std::string filename, cv::Mat m)
 	myfile.open(filename.c_str());
 	myfile << cv::format(m, cv::Formatter::FMT_CSV) << std::endl;
 	myfile.close();
-}
-
-void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
-{
-	if (event == EVENT_LBUTTONDOWN) {
-		std::cout << "(" << x << ", " << y << ")" << std::endl;
-	}
 }
 
 
@@ -109,27 +103,21 @@ int main() {
 	raster.copyTo(rasterColor, rasterMask);
 
 	// Making the region around the raster path to search for edges
-	Mat dilation_dst;
+	Mat edgeBoundary;
 	cv::Mat edgeSearchROI;
 	int dilation_size = 18;// 13 wa sa little too small; 20 seems ok; 23 is max
 	Mat element = getStructuringElement(MORPH_RECT, Size(2 * dilation_size + 1, 2 * dilation_size + 1), Point(dilation_size, dilation_size));
-	dilate(raster, dilation_dst, element);
+	dilate(raster, edgeBoundary, element);
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	
 	cv::Mat scan;
 	cv::Point scanStart, scanEnd;
 	cv::Mat scanROI;
-	cv::Mat scanGray;
 	double input;
 
 
 	getScan(collectedData, &fbk, scan);
 	//writeCSV("scan.csv", scan);
-
-	//cv::normalize(scan, scanGray, 0, 255, cv::NORM_MINMAX, CV_8U);
-	//cv::namedWindow("first scan", cv::WINDOW_NORMAL);
-	//cv::setMouseCallback("first scan", mouse_callback);
-	//cv::imshow("first scan", scanGray);
 
 
 	// fake ROI
@@ -138,47 +126,18 @@ int main() {
 
 	//Finding the part of the scan that is within the ROI
 	scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd);
-	cv::normalize(scanROI, scanGray, 0, 255, cv::NORM_MINMAX, CV_8U); // converting so it can be displayed as an image
-	cvtColor(scanGray, scanGray, COLOR_GRAY2BGR); // making it 3 channel
 
 	// Finding the edges
 	double heightThresh = -1;
 	cv::Mat locEdges(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
 	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
 	cv::Mat locWin(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
-	findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
+	findEdges(edgeBoundary, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
 
-	// Placing the scan on the raster to check alignment
-	cv::Mat Z_img_tall;
-	int height = 40;
-	cv::resize(scanGray, Z_img_tall, Size(scanGray.cols, height), INTER_LINEAR);// Stretching the profile
-
-	// Copy the profile to the raster
-	Z_img_tall.copyTo(rasterColor(cv::Rect(scanStart, Z_img_tall.size())), rasterMask(cv::Rect(scanStart, Z_img_tall.size())));
-	cv::line(rasterColor, scanStart, scanEnd, Scalar(0, 0, 255), 2); // draw line where scan was taken
-
-	cv::namedWindow("Overlay", cv::WINDOW_NORMAL); 
-	cv::setMouseCallback("Overlay", mouse_callback);
-	cv::imshow("Overlay", rasterColor);
-	
-
-	// displaying the edges
-
-	Mat m(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 255, 0 }));
-	Mat b(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 0, 0 }));
-	m.copyTo(scanGray, locEdges);
-	b.copyTo(scanGray, locWin);
-	cv::namedWindow("local", cv::WINDOW_NORMAL);
-	cv::setMouseCallback("local", mouse_callback);
-	cv::imshow("local", scanGray);
-
-	Mat r(raster.size(), CV_8UC3, Scalar({ 0, 0, 255, 0 }));
-	r.copyTo(raster, gblEdges);
-	cv::namedWindow("global", cv::WINDOW_NORMAL);
-	cv::setMouseCallback("global", mouse_callback);
-	cv::imshow("global", raster);
-
-	cv::waitKey(1);
+	// Displaying images
+	showOverlay(raster, scanROI, scanStart, scanEnd);
+	showScan(scanROI, locEdges, locWin);
+	showRaster(raster, gblEdges);
 
 	//-----------------------------------------------------------------------------------------------------------------
 	// Moving & Scanning
@@ -210,28 +169,17 @@ int main() {
 	else { PrintError(); /*goto cleanup;*/ }
 	getScan(collectedData, &fbk, scan);
 	scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd);
+	findEdges(edgeBoundary, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
+	// Displaying images
+	showOverlay(raster, scanROI, scanStart, scanEnd);
+	showScan(scanROI, locEdges, locWin);
+	showRaster(raster, gblEdges);
+
 
 	
-	findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
-	cv::normalize(scanROI, scanGray, 0, 255, cv::NORM_MINMAX, CV_8U); // converting so it can be displayed as an image
-	cvtColor(scanGray, scanGray, COLOR_GRAY2BGR); // making it 3 channel
-
-	m = cv::Mat(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 255, 0 }));
-	b = cv::Mat(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 0, 0 }));
-	m.copyTo(scanGray, locEdges);
-	b.copyTo(scanGray, locWin);
-	//cv::Mat(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 0, 0 })).copyTo(scanGray, locWin);
-	cv::namedWindow("local", cv::WINDOW_NORMAL);
-	cv::setMouseCallback("local", mouse_callback);
-	cv::imshow("local", scanGray);
-
-	r.copyTo(raster, gblEdges);
-	cv::namedWindow("global", cv::WINDOW_NORMAL);
-	cv::setMouseCallback("global", mouse_callback);
-	cv::imshow("global", raster);
-	cv::waitKey(0);
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	system("pause");
+	cv::waitKey(0);
+
 	return 0;
 	//-----------------------------------------------------------------------------------------------------------------
 

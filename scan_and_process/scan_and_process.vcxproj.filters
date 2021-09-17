@@ -30,6 +30,9 @@
     <ClInclude Include="processing_functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="display_functions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="myGlobals.cpp">
@@ -42,6 +45,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="processing_functions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="display_functions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
