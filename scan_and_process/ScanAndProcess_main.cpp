@@ -22,6 +22,7 @@
 
 // This function will print whatever the latest error was
 void PrintError();
+void A3200Error(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle);
 
 using namespace cv;
 const char* window_name1 = "Edges";
@@ -46,6 +47,8 @@ int main() {
 	Coords fbk;
 	A3200Handle handle = NULL;
 	A3200DataCollectConfigHandle DCCHandle = NULL;
+	AXISMASK axisMask = (AXISMASK)(AXISMASK_00 | AXISMASK_01 | AXISMASK_02);
+	double initPos[3] = { 232.795, 230.623, -54.883 };
 	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
 	cv::Mat Data(NUM_DATA_SIGNALS, NUM_DATA_SAMPLES, CV_64F);
 
@@ -59,6 +62,18 @@ int main() {
 	if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { PrintError(); /*goto cleanup;*/ }
 	// Setting up the data collection
 	if (!setupDataCollection(handle, DCCHandle)) { PrintError(); /*goto cleanup;*/ }
+
+	// Homing and moving the axes to the start position
+	std::cout << "Enabling and homing X, Y, and Z.\n";
+	if (!A3200MotionEnable(handle, TASKID_Library, axisMask)) { PrintError(); /*goto cleanup;*/ }
+	if (!A3200MotionHomeConditional(handle, TASKID_Library, axisMask)) { PrintError(); /*goto cleanup;*/ } //home asxes if not already done
+	std::cout << "Moving axes to a initial position.\n";
+	//if (!A3200MotionLinear(handle, TASKID_Library, axisMask, initPos)) { PrintError(); /*goto cleanup;*/ }
+	if (!A3200MotionMoveAbs(handle, TASKID_Library, AXISINDEX_00, initPos[0], 10)) { PrintError(); /*goto cleanup;*/ }
+	if (!A3200MotionMoveAbs(handle, TASKID_Library, AXISINDEX_01, initPos[1], 10)) { PrintError(); /*goto cleanup;*/ }
+	if (!A3200MotionMoveAbs(handle, TASKID_Library, AXISINDEX_02, initPos[2], 10)) { PrintError(); /*goto cleanup;*/ }
+	if (!A3200MotionWaitForMotionDone(handle, axisMask, WAITOPTION_InPosition, -1, NULL)) { PrintError(); /*goto cleanup;*/ }
+	if (!A3200MotionDisable(handle, TASKID_Library, axisMask)) { PrintError(); /*goto cleanup;*/ }
 
 	// Collecting the data
 	std::cout << "Starting data collection\n";
@@ -107,8 +122,9 @@ int main() {
 	cv::Mat scanGray;
 	double input;
 
+
 	getScan(collectedData, &fbk, scan);
-	writeCSV("scan.csv", scan);
+	//writeCSV("scan.csv", scan);
 
 	//cv::normalize(scan, scanGray, 0, 255, cv::NORM_MINMAX, CV_8U);
 	//cv::namedWindow("first scan", cv::WINDOW_NORMAL);
@@ -117,7 +133,7 @@ int main() {
 
 
 	// fake ROI
-	double printCenter[2] = { 235.7, 228.77 +.7};
+	double printCenter[2] = { fbk.x, 230.6+1.9};
 	std::vector<double> printROI = { printCenter[0] - 7, printCenter[1] - 7, printCenter[0] + 7, printCenter[1] + 7 }; //IMPORT FROM FILE
 
 	//Finding the part of the scan that is within the ROI
@@ -126,10 +142,11 @@ int main() {
 	cvtColor(scanGray, scanGray, COLOR_GRAY2BGR); // making it 3 channel
 
 	// Finding the edges
-	double heightThresh = -2;
+	double heightThresh = -1;
 	cv::Mat locEdges(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
 	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
-	findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
+	cv::Mat locWin(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
+	findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
 
 	// Placing the scan on the raster to check alignment
 	cv::Mat Z_img_tall;
@@ -147,32 +164,74 @@ int main() {
 
 	// displaying the edges
 
-	Mat red2(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 255, 0 }));
-	red2.copyTo(scanGray, locEdges);
+	Mat m(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 255, 0 }));
+	Mat b(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 0, 0 }));
+	m.copyTo(scanGray, locEdges);
+	b.copyTo(scanGray, locWin);
 	cv::namedWindow("local", cv::WINDOW_NORMAL);
 	cv::setMouseCallback("local", mouse_callback);
 	cv::imshow("local", scanGray);
 
-	cv::namedWindow("local edges", cv::WINDOW_NORMAL);
-	cv::setMouseCallback("local edges", mouse_callback);
-	cv::imshow("local edges", locEdges);
-
-	Mat red3(raster.size(), CV_8UC3, Scalar({ 0, 0, 255, 0 }));
-	red3.copyTo(raster, gblEdges);
+	Mat r(raster.size(), CV_8UC3, Scalar({ 0, 0, 255, 0 }));
+	r.copyTo(raster, gblEdges);
 	cv::namedWindow("global", cv::WINDOW_NORMAL);
 	cv::setMouseCallback("global", mouse_callback);
 	cv::imshow("global", raster);
 
-	cv::waitKey(0);
+	cv::waitKey(1);
 
-	//std::cout << "Enter a target position or enter a negative value to end the program" << std::endl;
-	//std::cin >> input;
-	//while (false/*input>9*/)
-	//{
-	//	std::cout << "Enter a target position or enter a negative value to end the program" << std::endl;
-	//	std::cin >> input;
-	//}
+	//-----------------------------------------------------------------------------------------------------------------
+	// Moving & Scanning
+
+	std::cout << "Start moving and scanning in X direction" << std::endl;
+
+	std::cout << "Enter zero to keep scanning" << std::endl;
+	std::cin >> input;
+	if (!A3200MotionEnable(handle, TASKID_Library, (AXISMASK)(AXISMASK_00))) { PrintError(); /*goto cleanup;*/ }
+
+	while (input==0){
+		// Move 1 pixel in the X direction
+		if (!A3200MotionMoveInc(handle, TASKID_Library, AXISINDEX_00, PIX2MM*20, 1)) { PrintError(); /*goto cleanup;*/ }
+		if (!A3200MotionWaitForMotionDone(handle, axisMask, WAITOPTION_MoveDone, -1, NULL)) { PrintError(); /*goto cleanup;*/ }
+
+		// Take a new scan
+
+
+		std::cout << "Enter a target position or enter a negative value to end the program" << std::endl;
+		std::cin >> input;
+		input = 10;
+	}
+	if (!A3200MotionDisable(handle, TASKID_Library, (AXISMASK)(AXISMASK_00))) { PrintError(); /*goto cleanup;*/ }
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// scan again and process
+	if (collectData(handle, DCCHandle, &collectedData[0][0])) {
+	}
+	else { PrintError(); /*goto cleanup;*/ }
+	getScan(collectedData, &fbk, scan);
+	scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd);
+
 	
+	findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
+	cv::normalize(scanROI, scanGray, 0, 255, cv::NORM_MINMAX, CV_8U); // converting so it can be displayed as an image
+	cvtColor(scanGray, scanGray, COLOR_GRAY2BGR); // making it 3 channel
+
+	m = cv::Mat(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 255, 0 }));
+	b = cv::Mat(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 0, 0 }));
+	m.copyTo(scanGray, locEdges);
+	b.copyTo(scanGray, locWin);
+	//cv::Mat(scanGray.size(), CV_8UC3, Scalar({ 255, 0, 0, 0 })).copyTo(scanGray, locWin);
+	cv::namedWindow("local", cv::WINDOW_NORMAL);
+	cv::setMouseCallback("local", mouse_callback);
+	cv::imshow("local", scanGray);
+
+	r.copyTo(raster, gblEdges);
+	cv::namedWindow("global", cv::WINDOW_NORMAL);
+	cv::setMouseCallback("global", mouse_callback);
+	cv::imshow("global", raster);
+	cv::waitKey(0);
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	system("pause");
 	return 0;
 	//-----------------------------------------------------------------------------------------------------------------
 
@@ -204,3 +263,21 @@ void PrintError() {
 	A3200GetLastErrorString(data, 1024);
 	printf("Error : %s\n", data);
 }
+
+void A3200Error(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle) {
+	CHAR data[1024];
+	A3200GetLastErrorString(data, 1024);
+	printf("Error : %s\n", data);
+	system("pause");
+
+	if (NULL != handle) {
+		printf("Disconnecting from the A3200.\n");
+		if (!A3200Disconnect(handle)) { PrintError(); }
+	}
+	// Freeing the resources used by the data collection configuration
+	if (NULL != DCCHandle) {
+		if (!A3200DataCollectionConfigFree(DCCHandle)) { PrintError(); }
+	}
+}
+
+//{ A3200Error(handle, DCCHandle); return 0; }

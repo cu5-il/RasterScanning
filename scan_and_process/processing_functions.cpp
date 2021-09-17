@@ -14,7 +14,7 @@ void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
 	int fbIdx[2];
 	int scanStartIdx;
 	cv::Mat scanVoltage_8U, scanEdges, scanEdgesIdx;
-	std::cout << "did the whole array make it " << data[2][1] << std::endl;
+
 	cv::Mat dataMat(NUM_DATA_SIGNALS, NUM_DATA_SAMPLES, CV_64F, data); // copying the collected data into a matrix
 	
 	// Get the position feedback when the laser was triggered
@@ -82,13 +82,18 @@ void scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
 
 //=============================================
 
-void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& gblEdges, cv::Mat& locEdges, double heightThresh) {
+void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& gblEdges, cv::Mat& locEdges, cv::Mat& locWin, double heightThresh) {
 
 	cv::LineIterator it(edgeBoundary, scanStart, scanEnd, 8);
 	std::vector<cv::Point> windowPts;
 	windowPts.reserve(it.count);
 	uchar lastVal = 0;
 	uchar curVal = 0;
+
+	// Initialize masks to zero
+	locEdges = cv::Mat::zeros(scanROI.size(), CV_8U);
+	gblEdges = cv::Mat::zeros(edgeBoundary.size(), CV_8U);
+	locWin = cv::Mat::zeros(scanROI.size(), CV_8U);
 
 	// find the intersection of the scan and the edge boundary using a line iterator
 	for (int i = 0; i < it.count; i++, ++it) {
@@ -128,6 +133,9 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 		if (edgeCoords.size() == 2) { //verify that only two edges were found
 
 		}
+		// mark window borders
+		locWin.at<uchar>(cv::Point(windowPts[i].x, 0)) = 255;
+		locWin.at<uchar>(cv::Point(windowPts[(i+1)].x, 0)) = 255;
 
 		// mark edges on local profile and global ROI
 		for (int j = 0; j < edgeCoords.size(); j++) {

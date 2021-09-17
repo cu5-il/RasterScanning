@@ -36,4 +36,4 @@ void scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
 /// @param[in]	raster	reference to vector
 /// @param[out]	mask	mask of region in which edges will be searched for
 ///
-void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& gblEdges, cv::Mat& locEdges, double heightThresh);
+void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& gblEdges, cv::Mat& locEdges, cv::Mat& locWin, double heightThresh);
