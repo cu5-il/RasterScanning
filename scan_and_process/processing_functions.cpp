@@ -7,6 +7,7 @@
 #include "myTypes.h"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
 
 void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
@@ -88,6 +89,10 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 	uchar lastVal = 0;
 	uchar curVal = 0;
 
+	int maxIdx[2];
+	cv::Mat locCent(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
+	cv::Mat searchWins(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
+
 	// find the intersection of the scan and the edge boundary using a line iterator
 	for (int i = 0; i < it.count; i++, ++it) {
 		curVal = *(const uchar*)*it;
@@ -115,15 +120,22 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 	cv::Mat edges;
 	std::vector<cv::Point> edgeCoords;
 
-	for (int i = 0; i < windowPts.size(); i = i + 2) { // loop through all the search windows
+	// loop through all the search windows
+	for (int i = 0; i < windowPts.size(); i += 2) { 
 
 		searchWindow = scanROI(cv::Range::all(), cv::Range(windowPts[i].x, windowPts[int(i) + 1].x)); // isolate the area around a single raster rod
 		cv::normalize(searchWindow, searchWindow, 0, 255, cv::NORM_MINMAX, CV_8U); // Normalize the search window
 		cv::Canny(searchWindow, edges, 10, 20, 7);
 		cv::findNonZero(edges, edgeCoords);
 
-		if (edgeCoords.size() == 2) { //verify that only two edges were found
+		cv::minMaxIdx(searchWindow, NULL, NULL, NULL, maxIdx); //find the max value ==> the centerpoint
+		//mark max points
+		//scanGray.at<cv::Vec3b>(cv::Point(maxIdx[1], 0)) = cv::Vec3b(255, 255, 0);
+		locCent.at<uchar>(cv::Point(maxIdx[1] + windowPts[i].x, 0)) = 255;
+		searchWins.at<uchar>(cv::Point( windowPts[i].x, 0)) = 255;
+		searchWins.at<uchar>(cv::Point(windowPts[(int)(i+1)].x, 0)) = 255;
 
+		if (edgeCoords.size() == 2) { //verify that only two edges were found
 		}
 
 		// mark edges on local profile and global ROI
@@ -136,4 +148,19 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 		}
 
 	}
+
+	// displaying the edges
+	cv::Mat scanGray;
+	cv::normalize(scanROI, scanGray, 0, 255, cv::NORM_MINMAX, CV_8U);
+
+	cv::Mat m(scanGray.size(), CV_8UC3, cv::Scalar({ 255, 0, 255, 0 }));
+	cv::Mat c(scanGray.size(), CV_8UC3, cv::Scalar({ 255, 255, 0, 0 }));
+	cv::Mat b(scanGray.size(), CV_8UC3, cv::Scalar({ 255, 0, 0, 0 }));
+	cv::cvtColor(scanGray, scanGray, cv::COLOR_GRAY2BGR);
+	m.copyTo(scanGray, locEdges);
+	c.copyTo(scanGray, locCent);
+	b.copyTo(scanGray, searchWins);
+	cv::namedWindow("local", cv::WINDOW_NORMAL);
+	cv::imshow("local", scanGray);
+	cv::waitKey(1);
 }

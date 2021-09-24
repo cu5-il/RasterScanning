@@ -34,6 +34,30 @@ void writeCSV(std::string filename, cv::Mat m)
 	myfile.close();
 }
 
+void readCSV(std::string filename, cv::Mat& m)
+{
+	std::ifstream inFile(filename.c_str());
+	std::string strval;
+	std::vector<double> vec;
+	double value;
+	//myfile.open();
+	if (inFile.is_open()) {
+		while (std::getline(inFile, strval,',')) {
+			value = std::stod(strval);
+			vec.push_back(value);
+		}
+	}
+	else {
+		std::cout << "Unable to open data file" << std::endl;;
+		system("pause");
+		return;
+	}
+	//std::memcpy(m.data, vec.data(), vec.size() * sizeof(double));
+	m = cv::Mat (1, vec.size(), CV_64FC1, vec.data());
+	m = m.clone();
+	return;
+}
+
 void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
 {
 	if (event == EVENT_LBUTTONDOWN) {
@@ -69,6 +93,7 @@ int main() {
 	else{ PrintError(); goto cleanup; }
 	*/
 
+
 	// Faking the data
 	std::ifstream inFile("rawData.txt");
 	if (inFile.is_open()) {
@@ -94,6 +119,12 @@ int main() {
 	bitwise_not(raster, rasterMask);
 	raster.copyTo(rasterColor, rasterMask);
 
+	std::vector<cv::Point> coords;
+	cv::cvtColor(raster, raster, COLOR_BGR2GRAY);
+	cv::flip(raster, raster, -1);
+	cv::findNonZero(raster, coords);
+	
+
 	// Making the region around the raster path to search for edges
 	Mat dilation_dst;
 	cv::Mat edgeSearchROI;
@@ -116,17 +147,36 @@ int main() {
 	// fake ROI
 	std::vector<double> printROI = { -1, -1, 13, 13 }; //IMPORT FROM FILE
 
+	////injecting in the other scan
+	//readCSV("scan2.csv", scan);
+	//fbk.y = 5.2; // CHANGED HEIGHT THRESH TO NEGATIVE
+
 	//Finding the part of the scan that is within the ROI
 	cv::Point scanStart, scanEnd;
 	cv::Mat scanROI;
 	scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd);
 
 	// Finding the edges
-	double heightThresh = 2.2;
+	double heightThresh = -2.2;
+	heightThresh = 2.2;
 	cv::Mat locEdges(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
 	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
 	findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
 
+	// template matching
+	cv::Mat templ = scanROI(cv::Range::all(), cv::Range(81, 118));
+	templ.convertTo(templ, CV_32F);
+	scanROI.convertTo(scanROI, CV_32F);
+
+	Mat result;
+	matchTemplate(scanROI, templ, result, TM_CCOEFF);
+
+	writeCSV("output.csv", scanROI);
+	cv::namedWindow("result", cv::WINDOW_NORMAL);
+	cv::imshow("result", result);
+
+	std::cout << "result = " << result << std::endl;
+	writeCSV("output.csv", result);
 	// displaying the edges
 	cv::Mat scanGray;
 	cv::normalize(scanROI, scanGray, 0, 255, cv::NORM_MINMAX, CV_8U);
