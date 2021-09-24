@@ -13,7 +13,7 @@ void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
 	}
 }
 
-cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd) {
+cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd, bool showImage) {
 	cv::Mat scanTall, scanGray, image, rasterInv;
 	int height = 2;
 	
@@ -32,17 +32,18 @@ cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Po
 		scanTall.copyTo(image(cv::Rect(scanStart, scanTall.size())), rasterInv(cv::Rect(scanStart, scanTall.size())));
 		// Draw a line where scan was taken
 		cv::line(image, scanStart, scanEnd, cv::Scalar(0, 0, 255), 2);
-
-		// Display the image
-		cv::namedWindow("Overlay", cv::WINDOW_NORMAL);
-		cv::setMouseCallback("Overlay", mouse_callback);
-		cv::imshow("Overlay", image);
-		cv::waitKey(1);
+		if (showImage) {
+			// Display the image
+			cv::namedWindow("Overlay", cv::WINDOW_NORMAL);
+			cv::setMouseCallback("Overlay", mouse_callback);
+			cv::imshow("Overlay", image);
+			cv::waitKey(1);
+		}
 	//}
 		return image;
 }
 
-cv::Mat showScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin) {
+cv::Mat showScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showImage) {
 	cv::Mat image;
 	int height = 40;
 
@@ -54,31 +55,61 @@ cv::Mat showScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin) {
 	// Copy the search windows to the image
 	cv::Mat(image.size(), CV_8UC3, cv::Scalar({ 255, 0, 0, 0 })).copyTo(image, locWin);
 	
-	// Display the image
-	cv::namedWindow("Scan", cv::WINDOW_NORMAL);
-	cv::setMouseCallback("Scan", mouse_callback);
-	cv::imshow("Scan", image);
-	cv::waitKey(1);
-
-	// Stretching the image
-	cv::resize(image, image, cv::Size(image.cols, 100), cv::INTER_LINEAR);
+	if (showImage) {
+		// Display the image
+		cv::namedWindow("Scan", cv::WINDOW_NORMAL);
+		cv::setMouseCallback("Scan", mouse_callback);
+		cv::imshow("Scan", image);
+		cv::waitKey(1);
+	}
+	
 
 	return image;
 }
 
-cv::Mat showRaster(cv::Mat& raster, cv::Mat gblEdges) {
+cv::Mat showRaster(cv::Mat raster, cv::Mat gblEdges, bool showImage) {
 	cv::Mat image;
 
 	// Copy the raster to the image
 	raster.copyTo(image);
 	// Copy the global edges to the  image
-	cv::Mat(raster.size(), CV_8UC3, cv::Scalar({ 0, 0, 255, 0 })).copyTo(image, gblEdges);
+	cv::Mat(raster.size(), CV_8UC3, cv::Scalar({ 255, 0, 255, 0 })).copyTo(image, gblEdges);
 
-	// Display the image
-	cv::namedWindow("Raster w/ Edges", cv::WINDOW_NORMAL);
-	cv::setMouseCallback("Raster w/ Edges", mouse_callback);
-	cv::imshow("Raster w/ Edges", image);
-	cv::waitKey(1);
+	if (showImage) {
+		// Display the image
+		cv::namedWindow("Raster w/ Edges", cv::WINDOW_NORMAL);
+		cv::setMouseCallback("Raster w/ Edges", mouse_callback);
+		cv::imshow("Raster w/ Edges", image);
+		cv::waitKey(1);
+	}
+
+	return image;
+}
+
+cv::Mat showAll(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd, cv::Mat locEdges, cv::Mat locWin, cv::Mat gblEdges, bool showImage) {
+	
+	// making the images
+	cv::Mat overlay_img = showOverlay(raster, scanROI, scanStart, scanEnd, false);
+	cv::Mat scan_img = showScan(scanROI, locEdges, locWin, false);
+	cv::Mat raster_img = showRaster(raster, gblEdges, false);
+
+	// Stretching the local scan image
+	cv::resize(scan_img, scan_img, cv::Size(scan_img.cols, 100), cv::INTER_LINEAR);
+
+	cv::Mat image(cv::Size(overlay_img.cols + raster_img.cols, scan_img.rows + raster_img.rows), CV_8UC3);
+
+	// Copy the individual images to the combined image
+	raster_img.copyTo(image(cv::Rect(cv::Point(0, 0), raster_img.size())));
+	scan_img.copyTo(image(cv::Rect(cv::Point(0, raster_img.rows), scan_img.size())));
+	overlay_img.copyTo(image(cv::Rect(cv::Point(raster_img.cols, 0), overlay_img.size())));
+
+	if (showImage) {
+		// Display the image
+		cv::namedWindow("Combined Image", cv::WINDOW_NORMAL);
+		cv::setMouseCallback("Combined Image", mouse_callback);
+		cv::imshow("Combined Image", image);
+		cv::waitKey(1);
+	}
 
 	return image;
 }
