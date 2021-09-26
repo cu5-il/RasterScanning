@@ -38,7 +38,7 @@ void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
 
 //=============================================
 
-void scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point &scanStart, cv::Point& scanEnd) {
+bool scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point &scanStart, cv::Point& scanEnd) {
 
 	std::vector<double> XY_start(2),XY_end(2);
 	double X, Y;
@@ -75,14 +75,16 @@ void scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
 		// Interpolate scan so it is the same scale as the raster reference image
 		cv::LineIterator it(rasterSize, scanStart, scanEnd, 8); // make a line iterator between the start and end points of the scan
 		cv::resize(scan.colRange(scanROIRange), scanROI, cv::Size(it.count, scan.rows), cv::INTER_LINEAR);
+		return true;
 	}
 	else {
 		scanStart = cv::Point(-1, -1);
 		scanEnd = cv::Point(-1, -1);
+		return false;
 	}
 
 
-	return;
+	return false;
 }
 
 //=============================================

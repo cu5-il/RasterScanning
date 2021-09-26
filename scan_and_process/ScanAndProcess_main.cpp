@@ -48,9 +48,9 @@ int main() {
 
 	//double initPos[3] = { 221 - RASTER_IMG_WIDTH / 2.0, 229.5, -54.45 };
 	//double printCenter[2] = { 221.0, 229.7};//{ 234.75, 230.25 };
-	double initPos[3] = { 220.5 - RASTER_IMG_WIDTH / 2.0, 249.0, -54.45 };
+	double initPos[3] = { 220.6 - RASTER_IMG_WIDTH / 2.0, 249.5, -54.45 };
 	// fake ROI
-	double printCenter[2] = { 220.0, 249.0};//{ 234.75, 230.25 };
+	double printCenter[2] = { 220.6, 249.6};//{ 234.75, 230.25 };
 	std::vector<double> printROI = { printCenter[0] - RASTER_IMG_WIDTH / 2.0,
 		printCenter[1] - RASTER_IMG_WIDTH / 2.0,
 		printCenter[0] + RASTER_IMG_WIDTH / 2.0,
@@ -146,20 +146,23 @@ int main() {
 	if (!A3200MotionEnable(handle, TASKID_Library, (AXISMASK)(AXISMASK_00))) { PrintError(); /*goto cleanup;*/ }
 	if (!A3200MotionMoveInc(handle, TASKID_Library, AXISINDEX_00, RASTER_IMG_WIDTH, 0.2)) { PrintError(); /*goto cleanup;*/ }
 
-	while (fbk.x < (printROI[2] - 0.25)) { // Scan until outside of ROI
+	while (fbk.x < (printROI[2] )) { // Scan until outside of ROI
 
 		if (collectData(handle, DCCHandle, &collectedData[0][0])) {
+			std::cout << "collectedData = " << collectedData[0][0] << std::endl;
 			getScan(collectedData, &fbk, scan);
-			if (!scanROI.empty()) { // Check if the scanROI is empty
-				scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd);
+			if (scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd)) {	
+			//if (!scanROI.empty()) { // Check if the scanROI is empty
 				findEdges(edgeBoundary, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
 				// Displaying images
+				
 				showOverlay(raster, scanROI, scanStart, scanEnd, true);
 				showScan(scanROI, locEdges, locWin, true);
 				showRaster(raster, gblEdges, true);
 
 				//outputVideo << showAll(raster, scanROI, scanStart, scanEnd, locEdges, locWin, gblEdges, true);
 			}
+			else { std::cout << "scan outside of the ROI" << std::endl; }
 		}
 		else { PrintError(); /*goto cleanup;*/ }
 	}
@@ -169,10 +172,10 @@ int main() {
 	
 	writeCSV("gbledges.csv", gblEdges);
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	// Displaying images
-	showOverlay(raster, scanROI, scanStart, scanEnd, true);
-	showScan(scanROI, locEdges, locWin, true);
-	showRaster(raster, gblEdges, true);
+	//// Displaying images
+	//showOverlay(raster, scanROI, scanStart, scanEnd, true);
+	//showScan(scanROI, locEdges, locWin, true);
+	//showRaster(raster, gblEdges, true);
 	std::cout << "All movement done. " << std::endl;
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
