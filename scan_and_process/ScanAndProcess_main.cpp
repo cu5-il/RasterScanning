@@ -5,12 +5,15 @@
 #include <cmath>
 #include <vector> 
 #include <string>
+#include <algorithm>
+#include <iterator> 
 
 #include <opencv2/core.hpp>
 #include "opencv2/core/utility.hpp"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/video/tracking.hpp> // for Kalman filter
 
 #include "A3200.h"
 
@@ -26,177 +29,200 @@
 void PrintError();
 void A3200Error(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle);
 
-using namespace cv;
+//using namespace cv;
 const char* window_name1 = "Edges";
 
 void writeCSV(std::string filename, cv::Mat m)
 {
 	std::ofstream myfile;
 	myfile.open(filename.c_str());
-	myfile << cv::format(m, cv::Formatter::FMT_CSV) << std::endl;
+	myfile << cv::format(m, cv::Formatter::FMT_CSV);
 	myfile.close();
 }
 
+void readCSV(std::string filename, cv::Mat& m)
+{
+	std::ifstream inFile(filename.c_str());
+	std::string single_line;
+	std::vector< std::vector<double> > matrix;
 
+	double value;
+
+	if (inFile.is_open()) {
+		while (std::getline(inFile, single_line)) {
+			std::vector<double> vec;
+			std::stringstream temp(single_line);
+			std::string single_value;
+
+			while (std::getline(temp, single_value, ',')) {
+				value = std::stod(single_value);
+				vec.push_back(value);
+			}
+			matrix.push_back(vec);
+		}
+	}
+	else {
+		std::cout << "Unable to open data file" << std::endl;;
+		system("pause");
+		return;
+	}
+	m = cv::Mat((int)matrix.size(), (int)matrix[0].size(), CV_64FC1/*, matrix.data()*/);
+	m.at<double>(0, 0) = matrix.at(0).at(0);
+	for (int i = 0; i < m.rows; ++i)
+		for (int j = 0; j < m.cols; ++j)
+			m.at<double>(i, j) = matrix.at(i).at(j);
+	m = m.clone();
+	return;
+}
+
+struct myclass {
+	bool operator() (cv::Point pt1, cv::Point pt2) { return (pt1.y < pt2.y); }
+} myobject;
+
+/*
+	define some functions to use as predicates
+*/
+
+//Returns true if x is multiple of 10
+bool multOf10(int x) {
+	return x % 10 == 0;
+}
+
+//returns true if item greater than passed in parameter
+class Greater {
+	int _than;
+
+public:
+	Greater(int th) :_than(th) {
+
+	}
+	bool operator()(cv::Point point) const
+	{
+		return point.y > _than;
+	}
+};
+
+class Less {
+	int _than;
+
+public:
+	Less(int th) :_than(th) {
+
+	}
+	bool operator()(cv::Point point) const
+	{
+		return point.x < _than;
+	}
+};
+
+
+//========================================================================================================================
 int main() {
-	Coords fbk;
-	A3200Handle handle = NULL;
-	A3200DataCollectConfigHandle DCCHandle = NULL;
-	AXISMASK axisMask = (AXISMASK)(AXISMASK_00 | AXISMASK_01 | AXISMASK_02);
-	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
-	cv::Mat Data(NUM_DATA_SIGNALS, NUM_DATA_SAMPLES, CV_64F);
 
-	//double initPos[3] = { 221 - RASTER_IMG_WIDTH / 2.0, 229.5, -54.45 };
-	//double printCenter[2] = { 221.0, 229.7};//{ 234.75, 230.25 };
-	double initPos[3] = { 220.5 - RASTER_IMG_WIDTH / 2.0, 249.0, -54.45 };
-	// fake ROI
-	double printCenter[2] = { 220.0, 249.0};//{ 234.75, 230.25 };
-	std::vector<double> printROI = { printCenter[0] - RASTER_IMG_WIDTH / 2.0,
-		printCenter[1] - RASTER_IMG_WIDTH / 2.0,
-		printCenter[0] + RASTER_IMG_WIDTH / 2.0,
-		printCenter[1] + RASTER_IMG_WIDTH / 2.0 
-	}; //IMPORT FROM FILE
-
-	// INITIALIZATION & Data collection
-	//========================================================================================================================
-	
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Loading the raster image
 	cv::Mat raster;
-	raster = cv::imread("RasterMap9.bmp", IMREAD_COLOR);
+	raster = cv::imread("RasterMap9.bmp", cv::IMREAD_COLOR);
 
 	// Making the region around the raster path to search for edges
 	cv::Mat edgeBoundary;
 	int dilation_size = 20;// was 18 when using 14x14 raster image; 20 seems ok; 23 is max
 	cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * dilation_size + 1, 2 * dilation_size + 1), cv::Point(dilation_size, dilation_size));
 	cv::dilate(raster, edgeBoundary, element);
+
+	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+	readCSV("gbledges_18.20.csv", gblEdges);
+	gblEdges.convertTo(gblEdges, CV_8UC1);
+	cv::Mat image = showRaster(raster, gblEdges, false);
 
-	//Connecting to the A3200
-	std::cout << "Connecting to A3200. Initializing if necessary.\n";
-	if (!A3200Connect(&handle)) { PrintError(); /*goto cleanup;*/ }
-	// Creating a data collection handle
-	if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { PrintError(); /*goto cleanup;*/ }
-	// Setting up the data collection
-	if (!setupDataCollection(handle, DCCHandle)) { PrintError(); /*goto cleanup;*/ }
-
-	// Homing and moving the axes to the start position
-	std::cout << "Enabling and homing X, Y, and Z.\n";
-	if (!A3200MotionEnable(handle, TASKID_Library, axisMask)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, axisMask)) { PrintError(); /*goto cleanup;*/ } //home asxes if not already done
-	std::cout << "Moving axes to initial position.\n";
-	if (!A3200MotionMoveAbs(handle, TASKID_Library, AXISINDEX_00, initPos[0], 10)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionMoveAbs(handle, TASKID_Library, AXISINDEX_01, initPos[1], 10)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionMoveAbs(handle, TASKID_Library, AXISINDEX_02, initPos[2], 10)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionWaitForMotionDone(handle, axisMask, WAITOPTION_InPosition, -1, NULL)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionDisable(handle, TASKID_Library, axisMask)) { PrintError(); /*goto cleanup;*/ }
-
-
-	//========================================================================================================================
-
-	cv::Mat scan;
-	cv::Point scanStart, scanEnd;
-	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
-	cv::Mat scanROI;
-	double heightThresh = 0.5;
-	cv::Mat locEdges(scanROI.size(), CV_8U, cv::Scalar({ 0 })); // size might be pointless
-	cv::Mat locWin(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
-
-
-	std::cout << "Starting data collection\n";
-	if (collectData(handle, DCCHandle, &collectedData[0][0])) {
-		getScan(collectedData, &fbk, scan);
-
-		//Finding the part of the scan that is within the ROI
-		scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd);
-
-		if (!scanROI.empty()) { // Check if the scanROI is empty
-			// Finding the edges
-			findEdges(edgeBoundary, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
-			// Displaying images
-			showOverlay(raster, scanROI, scanStart, scanEnd, true);
-			showScan(scanROI, locEdges, locWin, true);
-			showRaster(raster, gblEdges, true);
-		}
-		else { std::cout << "first scan outside of the ROI" << std::endl; }
-
+	std::vector<cv::Point> gblEdgePts;
+	cv::findNonZero(gblEdges, gblEdgePts);
+	for (auto it = gblEdgePts.begin(); it != gblEdgePts.end(); ++it) {
+		cv::circle(image, *it, 1, cv::Scalar(0, 255, 255), -1, cv::LINE_AA);
 	}
-	else { PrintError(); /*goto cleanup;*/ }
 
+	writeCSV("gbledges_NEW.csv", gblEdges);
 
+	std::vector<cv::Point> corners = { cv::Point(50, 50), cv::Point(50, 500), cv::Point(100, 500), cv::Point(100, 50) };
 
-	////~~~~~~~~~~~~~
-	//// setting up movie
-	//const char* movName = "myVid.avi";
-	//cv::Size S = cv::Size(2 * raster.cols, raster.rows + 100 /*scan_img.rows*/);
-	//cv::VideoWriter outputVideo;  // Open the output
-	//outputVideo.open(movName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 1, S, true);  //1 for 1 fps
-	////outputVideo.open(movName, cv::VideoWriter::fourcc('I', '4', '2', '0'), 1, S, true);  //1 for 1 fps - uncompressed video
-	//if (!outputVideo.isOpened()) {
-	//	std::cout << "Could not open the output video for write: " << std::endl;
-	//	return -1;
-	//}
-	////~~~~~~~~~~~~~
+	cv::Rect tallRect(corners[0].x-25, corners[0].y, 25, 450);
+	cv::Mat gblEdgeROI = gblEdges(tallRect);
 
-	//-----------------------------------------------------------------------------------------------------------------
-	// Moving & Scanning
+	//Look in ROI for edges
+	std::vector<cv::Point> leftEdgePts, rightEdgePts;
+	cv::findNonZero(gblEdges(tallRect), leftEdgePts);
+	cv::findNonZero(gblEdges(tallRect + cv::Point(25, 0)), rightEdgePts);
 
-	std::cout << "Start moving and scanning in X direction the width of the raster" << std::endl;
-	if (!A3200MotionEnable(handle, TASKID_Library, (AXISMASK)(AXISMASK_00))) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionMoveInc(handle, TASKID_Library, AXISINDEX_00, RASTER_IMG_WIDTH, 0.2)) { PrintError(); /*goto cleanup;*/ }
-
-	while (fbk.x < (printROI[2] - 0.25)) { // Scan until outside of ROI
-
-		if (collectData(handle, DCCHandle, &collectedData[0][0])) {
-			getScan(collectedData, &fbk, scan);
-			if (!scanROI.empty()) { // Check if the scanROI is empty
-				scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd);
-				findEdges(edgeBoundary, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
-				// Displaying images
-				showOverlay(raster, scanROI, scanStart, scanEnd, true);
-				showScan(scanROI, locEdges, locWin, true);
-				showRaster(raster, gblEdges, true);
-
-				//outputVideo << showAll(raster, scanROI, scanStart, scanEnd, locEdges, locWin, gblEdges, true);
-			}
-		}
-		else { PrintError(); /*goto cleanup;*/ }
+	for (auto it = leftEdgePts.begin(); it != leftEdgePts.end(); ++it) {
+		*it += cv::Point(25, 50);
 	}
-	// wait for all motion to complete and then disable the axes
-	if (!A3200MotionWaitForMotionDone(handle, axisMask, WAITOPTION_MoveDone, -1, NULL)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionDisable(handle, TASKID_Library, (AXISMASK)(AXISMASK_00))) { PrintError(); /*goto cleanup;*/ }
+
+	for (auto it = rightEdgePts.begin(); it != rightEdgePts.end(); ++it) {
+		*it += cv::Point(50, 50);
+	}
+
+	std::cout <<"3rd- point = "<< * next(leftEdgePts.begin(), 2) << std::endl;
+
+	cv::polylines(image, leftEdgePts, false, cv::Scalar(0, 0, 255), 1);
+	cv::polylines(image, rightEdgePts, false, cv::Scalar(0, 0, 255), 1);
+
 	
-	writeCSV("gbledges.csv", gblEdges);
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	// Displaying images
-	showOverlay(raster, scanROI, scanStart, scanEnd, true);
-	showScan(scanROI, locEdges, locWin, true);
-	showRaster(raster, gblEdges, true);
-	std::cout << "All movement done. " << std::endl;
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// Kalman filter
+	cv::KalmanFilter KF(2, 2, 2);
+	std::vector<cv::Point> filteredPts;
+
+	KF.transitionMatrix = (cv::Mat_<float>(2, 2) << 1, 0, 0, 1 );				// A
+	cv::setIdentity(KF.controlMatrix);											// B
+	cv::setIdentity(KF.measurementMatrix);										// H
+	//cv::setIdentity(KF.processNoiseCov, cv::Scalar::all(1e-4));					// Q
+	//cv::setIdentity(KF.measurementNoiseCov, cv::Scalar::all(10));				// R
+	//cv::setIdentity(KF.errorCovPost, cv::Scalar::all(.1));						// P(k)
+	KF.processNoiseCov = (cv::Mat_<float>(2, 2) << 1e-4, 0, 0, 0);				// Q 
+	KF.measurementNoiseCov = (cv::Mat_<float>(2, 2) << 10, 0, 0, 0);			// R Error in measurement?
+	KF.errorCovPost = (cv::Mat_<float>(2, 2) << .1, 0, 0, 0);					// P(k)
+
+	cv::Mat_<float> measurement(2, 1); measurement.setTo(cv::Scalar(0));
+	cv::Mat_<float> control(2, 1); control.setTo(cv::Scalar(0));
+
+	KF.statePre.at<float>(0) = leftEdgePts[0].x;
+	KF.statePre.at<float>(1) = leftEdgePts[0].y;
+
+	for (auto it = next(leftEdgePts.begin(),1); it != leftEdgePts.end(); ++it) {
+		std::cout << "dY = " << (*it).y - (*prev(it, 1)).y<< std::endl;
+		control(0) = 0; //delta x
+		control(1) = (*it).y- (*prev(it,1)).y;
+		std::cout << "control = \n" << control << std::endl;
+		// First predict, to update the internal statePre variable
+		cv::Mat prediction = KF.predict(control);
+		std::cout << "prediction = \n" << prediction << std::endl;
+		measurement(0) = (*it).x;
+		measurement(1) = (*it).y;
+		std::cout << "measurement = \n" << measurement << std::endl;
+		cv::Mat estimated = KF.correct(measurement);
+		std::cout << "estimated = \n" << estimated << std::endl << std::endl;
+		filteredPts.push_back(cv::Point((int)estimated.at<float>(0), (int)estimated.at<float>(1)));
+	}
+
+	cv::polylines(image, filteredPts, false, cv::Scalar(255, 0, 255), 1);
 
 
-	//outputVideo.release();
-	//std::cout << "Finished writing video" << std::endl;
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	cv::rectangle(image, tallRect, cv::Scalar(0, 255, 0), 1);
+	cv::namedWindow("out", cv::WINDOW_NORMAL);
+	cv::setMouseCallback("out", mouse_callback);
+	cv::imshow("out", image);
+
+	//std::sort(corners.begin(), corners.end(), myobject);
+
+
+
 	cv::waitKey(0);
-
-
-	//-----------------------------------------------------------------------------------------------------------------
-
-
 	//========================================================================================================================
-cleanup:
 
-	if (NULL != handle) {
-		printf("Disconnecting from the A3200.\n");
-		if (!A3200Disconnect(handle)) { PrintError(); }
-	}
-	// Freeing the resources used by the data collection configuration
-	if (NULL != DCCHandle) {
-		if (!A3200DataCollectionConfigFree(DCCHandle)) { PrintError(); }
-	}
 
 #ifdef _DEBUG
 	system("pause");
