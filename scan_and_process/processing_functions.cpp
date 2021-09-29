@@ -93,6 +93,8 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 	
 	if ((scanStart != cv::Point(-1, -1)) && (scanEnd != cv::Point(-1, -1))) //Check if scan is within ROI
 	{
+		cv::Mat ROIBlur;
+		cv::GaussianBlur(scanROI, ROIBlur, cv::Size(7, 7), 1);
 		cv::LineIterator it(edgeBoundary, scanStart, scanEnd, 8);
 		std::vector<cv::Point> windowPts;
 		windowPts.reserve(it.count);
@@ -133,7 +135,7 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 
 		for (int i = 0; i < windowPts.size(); i = i + 2) { // loop through all the search windows
 
-			searchWindow = scanROI(cv::Range::all(), cv::Range(windowPts[i].x, windowPts[int(i + 1)].x)); // isolate the area around a single raster rod
+			searchWindow = ROIBlur(cv::Range::all(), cv::Range(windowPts[i].x, windowPts[int(i + 1)].x)); // isolate the area around a single raster rod
 			cv::normalize(searchWindow, searchWindow, 0, 255, cv::NORM_MINMAX, CV_8U); // Normalize the search window
 			cv::Canny(searchWindow, edges, 10, 20, 7);
 			cv::findNonZero(edges, edgeCoords);
