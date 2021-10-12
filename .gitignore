@@ -372,3 +372,9 @@ FodyWeavers.xsd
 /scan_and_process/output.csv
 /scan_and_process/scan2.csv
 /scan_and_process/RasterMap10.bmp
+/scan_and_process/leftEdgePoints.csv
+/scan_and_process/gbledges_18.30.csv
+/scan_and_process/gbledges_18.20.csv
+/scan_and_process/gbledges_17.49.csv
+/scan_and_process/gbledges_17.46.csv
+/scan_and_process/RasterMap9.bmp

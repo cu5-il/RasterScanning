@@ -20,6 +20,7 @@
 #include "processing_functions.h"
 
 
+
 // This function will print whatever the latest error was
 //void PrintError();
 using namespace cv;
@@ -158,26 +159,25 @@ int main() {
 
 	// Finding the edges
 	double heightThresh = -2.2;
-	heightThresh = 2.2;
+	heightThresh = 1;
 	cv::Mat locEdges(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
 	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
-	findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
+	findEdges(raster, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
+	//findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
 
-	// template matching
-	cv::Mat templ = scanROI(cv::Range::all(), cv::Range(81, 118));
-	templ.convertTo(templ, CV_32F);
-	scanROI.convertTo(scanROI, CV_32F);
-
-	Mat result;
-	matchTemplate(scanROI, templ, result, TM_CCOEFF);
-
-	writeCSV("output.csv", scanROI);
-	cv::namedWindow("result", cv::WINDOW_NORMAL);
-	cv::imshow("result", result);
-
-	std::cout << "result = " << result << std::endl;
-	writeCSV("output.csv", result);
+	//// template matching
+	//cv::Mat templ = scanROI(cv::Range::all(), cv::Range(81, 118));
+	//templ.convertTo(templ, CV_32F);
+	//scanROI.convertTo(scanROI, CV_32F);
+	//Mat result;
+	//matchTemplate(scanROI, templ, result, TM_CCOEFF);
+	//writeCSV("output.csv", scanROI);
+	//cv::namedWindow("result", cv::WINDOW_NORMAL);
+	//cv::imshow("result", result);
+	//std::cout << "result = " << result << std::endl;
+	//writeCSV("output.csv", result);
 	// displaying the edges
+
 	cv::Mat scanGray;
 	cv::normalize(scanROI, scanGray, 0, 255, cv::NORM_MINMAX, CV_8U);
 
