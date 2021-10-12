@@ -142,10 +142,42 @@ int main() {
 	for (auto it = gblEdgePts.begin(); it != gblEdgePts.end(); ++it) {
 		cv::circle(image, *it, 1, cv::Scalar(0, 255, 255), -1, cv::LINE_AA);
 	}
-
-	writeCSV("gbledges_NEW.csv", gblEdges);
-
 	std::vector<cv::Point> corners = { cv::Point(50, 50), cv::Point(50, 500), cv::Point(100, 500), cv::Point(100, 50) };
+
+	// ------------------------------------STUFF FOR SEMINAR-----------------------------------------
+	std::vector<cv::Point> rasterPts;
+	for (int i = 0; i < 5; i++) {
+		for (auto it = corners.begin(); it != corners.end(); ++it) {
+			rasterPts.push_back(*it+i*cv::Point(100, 0));
+		}
+	}
+	
+
+	cv::Mat scanImg(raster.size(), CV_8UC3, cv::Scalar(0, 0, 0));
+	//raster.copyTo(scanImg);
+	cv::bitwise_not(scanImg, scanImg);
+	cv::polylines(scanImg, rasterPts, false, cv::Scalar(0, 0, 0),1, cv::LINE_8);
+
+	// MAking the scale
+	cv::Point scaleBar(25, scanImg.rows - 25);
+	cv::putText(scanImg, "1mm", scaleBar, cv::FONT_HERSHEY_SIMPLEX, .7, CV_RGB(0, 0, 0), 1, cv::LINE_8);
+	cv::rectangle(scanImg, cv::Rect(scaleBar.x + 6, scaleBar.y + 5, 1 / PIX2MM, 5), cv::Scalar(0, 0, 0), -1);
+
+	// Placing edge points on image
+	for (auto it = gblEdgePts.begin(); it != gblEdgePts.end(); ++it) {
+		cv::circle(scanImg, *it, 2, CV_RGB(187, 85, 102), -1, cv::LINE_8);
+	}
+
+	//cv::namedWindow("out", cv::WINDOW_NORMAL);
+	//cv::setMouseCallback("out", mouse_callback);
+	//cv::imshow("out", scanImg);
+	//cv::waitKey(0);
+	cv::imwrite("FullScan.png", scanImg);
+
+	return 0;
+	//-----------------------------------------------------------------------------------------------
+
+	
 
 	cv::Rect tallRect(corners[0].x-25, corners[0].y, 25, 450);
 	cv::Mat gblEdgeROI = gblEdges(tallRect);
@@ -165,53 +197,73 @@ int main() {
 
 	std::cout <<"3rd- point = "<< * next(leftEdgePts.begin(), 2) << std::endl;
 
-	cv::polylines(image, leftEdgePts, false, cv::Scalar(0, 0, 255), 1);
-	cv::polylines(image, rightEdgePts, false, cv::Scalar(0, 0, 255), 1);
 
-	
+
+	//cv::Mat leftEdgePoints;
+	//cv::findNonZero(gblEdges(tallRect), leftEdgePoints);
+	//writeCSV("leftEdgePoints.csv", leftEdgePoints);
+
+
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Kalman filter
-	cv::KalmanFilter KF(2, 2, 2);
+	
+	float initialEstimateError[2] = { 1e5, 1e5 };;
+	float motionNoise[2] = {25, 10};
+	float measurementNoise = 25;
+	cv::KalmanFilter KF(4, 2, 0);
 	std::vector<cv::Point> filteredPts;
 
-	KF.transitionMatrix = (cv::Mat_<float>(2, 2) << 1, 0, 0, 1 );				// A
-	cv::setIdentity(KF.controlMatrix);											// B
-	cv::setIdentity(KF.measurementMatrix);										// H
-	//cv::setIdentity(KF.processNoiseCov, cv::Scalar::all(1e-4));					// Q
-	//cv::setIdentity(KF.measurementNoiseCov, cv::Scalar::all(10));				// R
-	//cv::setIdentity(KF.errorCovPost, cv::Scalar::all(.1));						// P(k)
-	KF.processNoiseCov = (cv::Mat_<float>(2, 2) << 1e-4, 0, 0, 0);				// Q 
-	KF.measurementNoiseCov = (cv::Mat_<float>(2, 2) << 10, 0, 0, 0);			// R Error in measurement?
-	KF.errorCovPost = (cv::Mat_<float>(2, 2) << .1, 0, 0, 0);					// P(k)
+	KF.transitionMatrix = (cv::Mat_<float>(4, 4) << 
+		1, 1, 0, 0,  
+		0, 1, 0, 0,  
+		0, 0, 1, 1,  
+		0, 0, 0, 1);				// A
+	KF.measurementMatrix = (cv::Mat_<float>(2, 4) <<
+		1, 0, 0, 0,
+		0, 0, 1, 0);				// H
+	KF.errorCovPost = (cv::Mat_<float>(4, 4) <<
+		initialEstimateError[0], 0, 0, 0,
+		0, initialEstimateError[1], 0, 0,
+		0, 0, initialEstimateError[0], 0,
+		0, 0, 0, initialEstimateError[1]);			// P(k)
+	KF.processNoiseCov = (cv::Mat_<float>(4, 4) << 
+		motionNoise[0], 0, 0, 0,
+		0, motionNoise[1], 0, 0,
+		0, 0, motionNoise[0], 0,
+		0, 0, 0, motionNoise[1]);	// Q 
+	KF.measurementNoiseCov = (cv::Mat_<float>(4, 4) << 
+		measurementNoise, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, measurementNoise, 0,
+		0, 0, 0, 0);			// R Error in measurement?
+	
 
-	cv::Mat_<float> measurement(2, 1); measurement.setTo(cv::Scalar(0));
-	cv::Mat_<float> control(2, 1); control.setTo(cv::Scalar(0));
+	cv::Mat_<float> measurement(4, 1); measurement.setTo(cv::Scalar(0));
+
 
 	KF.statePre.at<float>(0) = leftEdgePts[0].x;
-	KF.statePre.at<float>(1) = leftEdgePts[0].y;
+	KF.statePre.at<float>(1) = 0;
+	KF.statePre.at<float>(2) = leftEdgePts[0].y;
+	KF.statePre.at<float>(3) = 0;
 
-	for (auto it = next(leftEdgePts.begin(),1); it != leftEdgePts.end(); ++it) {
-		std::cout << "dY = " << (*it).y - (*prev(it, 1)).y<< std::endl;
-		control(0) = 0; //delta x
-		control(1) = (*it).y- (*prev(it,1)).y;
-		std::cout << "control = \n" << control << std::endl;
-		// First predict, to update the internal statePre variable
-		cv::Mat prediction = KF.predict(control);
-		std::cout << "prediction = \n" << prediction << std::endl;
-		measurement(0) = (*it).x;
-		measurement(1) = (*it).y;
-		std::cout << "measurement = \n" << measurement << std::endl;
-		cv::Mat estimated = KF.correct(measurement);
-		std::cout << "estimated = \n" << estimated << std::endl << std::endl;
-		filteredPts.push_back(cv::Point((int)estimated.at<float>(0), (int)estimated.at<float>(1)));
-	}
-
-	cv::polylines(image, filteredPts, false, cv::Scalar(255, 0, 255), 1);
+	//for (auto it = next(leftEdgePts.begin(),1); it != leftEdgePts.end(); ++it) {
+	//	// First predict, to update the internal statePre variable
+	//	cv::Mat prediction = KF.predict();
+	//	std::cout << "prediction = \n" << prediction << std::endl;
+	//	measurement(0) = (*it).x;
+	//	measurement(1) = (*it).y;
+	//	std::cout << "measurement = \n" << measurement << std::endl;
+	//	cv::Mat estimated = KF.correct(measurement);
+	//	std::cout << "estimated = \n" << estimated << std::endl << std::endl;
+	//	filteredPts.push_back(cv::Point((int)estimated.at<float>(0), (int)estimated.at<float>(1)));
+	//}
+	//cv::polylines(image, filteredPts, false, cv::Scalar(255, 0, 255), 1);
 
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-	cv::rectangle(image, tallRect, cv::Scalar(0, 255, 0), 1);
+	//cv::polylines(image, leftEdgePts, false, cv::Scalar(0, 0, 255), 1);
+	//cv::polylines(image, rightEdgePts, false, cv::Scalar(0, 0, 255), 1);
+	//cv::rectangle(image, tallRect, cv::Scalar(0, 255, 0), 1);
 	cv::namedWindow("out", cv::WINDOW_NORMAL);
 	cv::setMouseCallback("out", mouse_callback);
 	cv::imshow("out", image);
