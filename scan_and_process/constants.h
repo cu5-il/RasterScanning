@@ -13,8 +13,9 @@
 #define RESOLUTION 0.02  // 1 pixel = RESOLUTION mm
 #define PIX2MM(pix)  pix*RESOLUTION
 #define MM2PIX(mm)  std::round( (mm) / RESOLUTION)
-#define SRCH_WND_WDTH 1.0 // search window width in mm
-#define RASTER_IMG_SIZE 700
+#define RASTER_IMG_WIDTH 11.0 //TODO: incorporate this into the makeRaster Function
 #define PI 3.14159265
 
-#define SCAN_OFFSET 5
+#define SCAN_OFFSET 0
+
+#define CVPLOT_HEADER_ONLY 
