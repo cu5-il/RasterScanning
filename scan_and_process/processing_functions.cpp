@@ -68,8 +68,8 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
 	// Check to see if the scan was in the ROI
 	if ((startIdx != -1) && (endIdx != -1)) {
 		//convert the start and end (X,Y) coordinates of the scan to points on the image
-		scanStart = cv::Point(std::round(PIX2MM(XY_start[1] - printROI[1])), std::round(PIX2MM(XY_start[0] - printROI[0])));
-		scanEnd = cv::Point(std::round(PIX2MM(XY_end[1] - printROI[1])), std::round(PIX2MM(XY_end[0] - printROI[0])));
+		scanStart = cv::Point(MM2PIX(XY_start[1] - printROI[1]), MM2PIX(XY_start[0] - printROI[0]));
+		scanEnd = cv::Point(MM2PIX(XY_end[1] - printROI[1]), MM2PIX(XY_end[0] - printROI[0]));
 		cv::Range scanROIRange = cv::Range(startIdx, endIdx);
 
 		// Interpolate scan so it is the same scale as the raster reference image

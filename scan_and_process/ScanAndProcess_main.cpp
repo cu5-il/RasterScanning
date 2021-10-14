@@ -46,31 +46,41 @@ int main() {
 	AXISMASK axisMask = (AXISMASK)(AXISMASK_00 | AXISMASK_01 | AXISMASK_02);
 	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
 	cv::Mat Data(NUM_DATA_SIGNALS, NUM_DATA_SAMPLES, CV_64F);
-
-	//double initPos[3] = { 221 - RASTER_IMG_WIDTH / 2.0, 229.5, -54.45 };
-	//double printCenter[2] = { 221.0, 229.7};//{ 234.75, 230.25 };
-	double initPos[3] = { 220.6 - RASTER_IMG_WIDTH / 2.0, 249.5, -54.45 };
-	// HACK: fake ROI
-	double printCenter[2] = { 220.6, 249.6};//{ 234.75, 230.25 };
-	std::vector<double> printROI = { printCenter[0] - RASTER_IMG_WIDTH / 2.0,
-		printCenter[1] - RASTER_IMG_WIDTH / 2.0,
-		printCenter[0] + RASTER_IMG_WIDTH / 2.0,
-		printCenter[1] + RASTER_IMG_WIDTH / 2.0 
-	}; //IMPORT FROM FILE
-
-	// INITIALIZATION & Data collection
-	//========================================================================================================================
-	
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	// Making the raster
 	cv::Mat raster, edgeBoundary;
 	std::vector<cv::Point> rasterCoords;
-	makeRaster(10, 1, 1, 1 - 0.04, raster, edgeBoundary, rasterCoords);
-	raster = cv::imread("RasterMap9.bmp", IMREAD_COLOR);
+
+	// HACK: fake ROIs
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//			WIRE
+	double initPos[3] = { 163.5 , 253.8, -54.45 };
+	std::vector<double> printROI = { initPos[0] - 2.0,
+		initPos[1] - 2.0 - PIX2MM(35),
+		188.5 + 2.0,
+		initPos[1] + 2.0 - PIX2MM(35) };
+	double length = printROI[2] - printROI[0];
+	double border = 2.5;
+	raster = cv::Mat(MM2PIX(length +2 * border), MM2PIX(2 * border), CV_8U, cv::Scalar(0)).clone();
+	edgeBoundary = raster.clone();
+	rasterCoords.push_back(cv::Point(MM2PIX(border), 0));
+	rasterCoords.push_back(cv::Point(MM2PIX(border), raster.rows));
+	cv::polylines(raster, rasterCoords, false, cv::Scalar(255), 1, 4);
+	cv::polylines(edgeBoundary, rasterCoords, false, cv::Scalar(255), MM2PIX(border), 8);
+
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
+	//			RASTER
+	//makeRaster(9, 1, 1, 1 - 0.04, raster, edgeBoundary, rasterCoords);
+	//cv::Mat raster1 = cv::imread("RasterMap9.bmp", IMREAD_COLOR);
+	//double initPos[3] = { 207.4, 249.6, -54.45 };
+	//double printCenter[2] = { initPos[0]+ RASTER_IMG_WIDTH / 2.0, initPos[1]};
+	//std::vector<double> printROI = { printCenter[0] - RASTER_IMG_WIDTH / 2.0,
+	//	printCenter[1] - RASTER_IMG_WIDTH / 2.0,
+	//	printCenter[0] + RASTER_IMG_WIDTH / 2.0,
+	//	printCenter[1] + RASTER_IMG_WIDTH / 2.0 ; //IMPORT FROM FILE
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// 
+	// INITIALIZATION & Data collection
+	//========================================================================================================================
 	//Connecting to the A3200
 	std::cout << "Connecting to A3200. Initializing if necessary.\n";
 	if (!A3200Connect(&handle)) { PrintError(); /*goto cleanup;*/ }
@@ -80,9 +90,10 @@ int main() {
 	if (!setupDataCollection(handle, DCCHandle)) { PrintError(); /*goto cleanup;*/ }
 
 	// Homing and moving the axes to the start position
-	std::cout << "Enabling and homing X, Y, and Z.\n";
+	std::cout << "Enabling and homing X, Y, and then Z.\n";
 	if (!A3200MotionEnable(handle, TASKID_Library, axisMask)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, axisMask)) { PrintError(); /*goto cleanup;*/ } //home asxes if not already done
+	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_00 | AXISMASK_01 ))) { PrintError(); /*goto cleanup;*/ } //home axes if not already done
+	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_02))) { PrintError(); /*goto cleanup;*/ } //home axes if not already done
 	std::cout << "Moving axes to initial position.\n";
 	if (!A3200MotionMoveAbs(handle, TASKID_Library, AXISINDEX_00, initPos[0], 10)) { PrintError(); /*goto cleanup;*/ }
 	if (!A3200MotionMoveAbs(handle, TASKID_Library, AXISINDEX_01, initPos[1], 10)) { PrintError(); /*goto cleanup;*/ }
@@ -114,7 +125,8 @@ int main() {
 			findEdges(edgeBoundary, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
 			// Displaying images
 			showOverlay(raster, scanROI, scanStart, scanEnd, true);
-			showScan(scanROI, locEdges, locWin, true);
+			//showScan(scanROI, locEdges, locWin, true);
+			plotScan(scanROI, locEdges, locWin, true);
 			showRaster(raster, gblEdges, true);
 		}
 		else { std::cout << "first scan outside of the ROI" << std::endl; }
@@ -122,43 +134,27 @@ int main() {
 	}
 	else { PrintError(); /*goto cleanup;*/ }
 
-
-
-	////~~~~~~~~~~~~~
-	//// setting up movie
-	//const char* movName = "myVid.avi";
-	//cv::Size S = cv::Size(2 * raster.cols, raster.rows + 100 /*scan_img.rows*/);
-	//cv::VideoWriter outputVideo;  // Open the output
-	//outputVideo.open(movName, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 1, S, true);  //1 for 1 fps
-	////outputVideo.open(movName, cv::VideoWriter::fourcc('I', '4', '2', '0'), 1, S, true);  //1 for 1 fps - uncompressed video
-	//if (!outputVideo.isOpened()) {
-	//	std::cout << "Could not open the output video for write: " << std::endl;
-	//	return -1;
-	//}
-	////~~~~~~~~~~~~~
-
 	//-----------------------------------------------------------------------------------------------------------------
 	// Moving & Scanning
 
 	std::cout << "Start moving and scanning in X direction the width of the raster" << std::endl;
 	if (!A3200MotionEnable(handle, TASKID_Library, (AXISMASK)(AXISMASK_00))) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionMoveInc(handle, TASKID_Library, AXISINDEX_00, RASTER_IMG_WIDTH, 0.2)) { PrintError(); /*goto cleanup;*/ }
+	// HACK: changed moving the lenght of the raster width to the wire length;
+	//if (!A3200MotionMoveInc(handle, TASKID_Library, AXISINDEX_00, RASTER_IMG_WIDTH, 0.2)) { PrintError(); /*goto cleanup;*/ }
+	if (!A3200MotionMoveInc(handle, TASKID_Library, AXISINDEX_00, length+1, 0.2)) { PrintError(); /*goto cleanup;*/ }
 
-	while (fbk.x < (printROI[2] )) { // Scan until outside of ROI
+	while (fbk.x < (printROI[2]-.5 /*HACK: fudge factor on when to stop scanning*/)) { // Scan until outside of ROI
 
 		if (collectData(handle, DCCHandle, &collectedData[0][0])) {
-			std::cout << "collectedData = " << collectedData[0][0] << std::endl;
 			getScan(collectedData, &fbk, scan);
 			if (scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd)) {	
 			//if (!scanROI.empty()) { // Check if the scanROI is empty
 				findEdges(edgeBoundary, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
 				// Displaying images
-				
 				showOverlay(raster, scanROI, scanStart, scanEnd, true);
-				showScan(scanROI, locEdges, locWin, true);
+				//showScan(scanROI, locEdges, locWin, true);
+				plotScan(scanROI, locEdges, locWin, true);
 				showRaster(raster, gblEdges, true);
-
-				//outputVideo << showAll(raster, scanROI, scanStart, scanEnd, locEdges, locWin, gblEdges, true);
 			}
 			else { std::cout << "scan outside of the ROI" << std::endl; }
 		}
@@ -167,25 +163,10 @@ int main() {
 	// wait for all motion to complete and then disable the axes
 	if (!A3200MotionWaitForMotionDone(handle, axisMask, WAITOPTION_MoveDone, -1, NULL)) { PrintError(); /*goto cleanup;*/ }
 	if (!A3200MotionDisable(handle, TASKID_Library, (AXISMASK)(AXISMASK_00))) { PrintError(); /*goto cleanup;*/ }
-	
+	std::cout << "All movement done. " << std::endl;
 	writeCSV("gbledges.csv", gblEdges);
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//// Displaying images
-	//showOverlay(raster, scanROI, scanStart, scanEnd, true);
-	//showScan(scanROI, locEdges, locWin, true);
-	//showRaster(raster, gblEdges, true);
-	std::cout << "All movement done. " << std::endl;
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-	//outputVideo.release();
-	//std::cout << "Finished writing video" << std::endl;
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	cv::waitKey(0);
-
-
-	//-----------------------------------------------------------------------------------------------------------------
-
 
 	//========================================================================================================================
 cleanup:
