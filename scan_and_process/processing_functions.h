@@ -1,7 +1,5 @@
 /* Function declarations*/
 #pragma once
-
-
 #include <vector> 
 
 #include "constants.h"
