@@ -1,0 +1,41 @@
+#include "myGlobals.h"
+#include "constants.h"
+#include <vector>
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+
+void makeRaster(double length, double spacing, double border, double rodWidth, cv::Mat& raster, cv::Mat& edgeBoundary, std::vector<cv::Point>& coords ) {
+
+    int i = 0;
+    int pixLen = MM2PIX(length);
+    int pixSpac = MM2PIX(spacing);
+    int pixBord = MM2PIX(border);
+
+
+    // initialize matrix to store raster with border
+    raster = cv::Mat(pixLen + 2 * pixBord, pixLen + 2 * pixBord, CV_8U, cv::Scalar(0)).clone();
+    edgeBoundary = raster.clone();
+    //
+    coords.push_back(cv::Point(pixBord, pixBord));
+
+	while (coords.back().x < (pixLen + coords.front().x) || coords.back().y < (pixLen + coords.front().y)){
+        switch (i % 4) {
+        case 0:
+            coords.push_back(coords.back() + cv::Point(0, pixLen));
+            break;
+        case 1:
+            coords.push_back(coords.back() + cv::Point(pixSpac, 0));
+            break;
+        case 2:
+            coords.push_back(coords.back() - cv::Point(0, pixLen));
+            break;
+        case 3:
+            coords.push_back(coords.back() + cv::Point(pixSpac, 0));
+            break;
+        }
+        i++;
+	}
+    cv::polylines(raster, coords, false, cv::Scalar(255), 1, 4);
+    cv::polylines(edgeBoundary, coords, false, cv::Scalar(255), MM2PIX(rodWidth), 8);
+
+}
