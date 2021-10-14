@@ -15,10 +15,10 @@ void makeRaster(double length, double spacing, double border, double rodWidth, c
     // initialize matrix to store raster with border
     raster = cv::Mat(pixLen + 2 * pixBord, pixLen + 2 * pixBord, CV_8U, cv::Scalar(0)).clone();
     edgeBoundary = raster.clone();
-    //
-    coords.push_back(cv::Point(pixBord, pixBord));
 
-	while (coords.back().x < (pixLen + coords.front().x) || coords.back().y < (pixLen + coords.front().y)){
+    // add the first point to the raster
+    coords.push_back(cv::Point(pixBord, pixBord));
+	while (coords.back().x <= (pixLen + coords.front().x) && coords.back().y <= (pixLen + coords.front().y)){
         switch (i % 4) {
         case 0:
             coords.push_back(coords.back() + cv::Point(0, pixLen));
@@ -35,6 +35,9 @@ void makeRaster(double length, double spacing, double border, double rodWidth, c
         }
         i++;
 	}
+    // Remove the last point of the raster that was outside of the pattern area
+    coords.pop_back();
+    // Draw the raster lines on an image
     cv::polylines(raster, coords, false, cv::Scalar(255), 1, 4);
     cv::polylines(edgeBoundary, coords, false, cv::Scalar(255), MM2PIX(rodWidth), 8);
 

@@ -20,6 +20,7 @@
 #include "scanner_functions.h"
 #include "processing_functions.h"
 #include "display_functions.h"
+#include "makeRaster.h"
 
 
 // This function will print whatever the latest error was
@@ -49,7 +50,7 @@ int main() {
 	//double initPos[3] = { 221 - RASTER_IMG_WIDTH / 2.0, 229.5, -54.45 };
 	//double printCenter[2] = { 221.0, 229.7};//{ 234.75, 230.25 };
 	double initPos[3] = { 220.6 - RASTER_IMG_WIDTH / 2.0, 249.5, -54.45 };
-	// fake ROI
+	// HACK: fake ROI
 	double printCenter[2] = { 220.6, 249.6};//{ 234.75, 230.25 };
 	std::vector<double> printROI = { printCenter[0] - RASTER_IMG_WIDTH / 2.0,
 		printCenter[1] - RASTER_IMG_WIDTH / 2.0,
@@ -61,15 +62,12 @@ int main() {
 	//========================================================================================================================
 	
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	// Loading the raster image
-	cv::Mat raster;
+	// Making the raster
+	cv::Mat raster, edgeBoundary;
+	std::vector<cv::Point> rasterCoords;
+	makeRaster(10, 1, 1, 1 - 0.04, raster, edgeBoundary, rasterCoords);
 	raster = cv::imread("RasterMap9.bmp", IMREAD_COLOR);
 
-	// Making the region around the raster path to search for edges
-	cv::Mat edgeBoundary;
-	int dilation_size = 20;// was 18 when using 14x14 raster image; 20 seems ok; 23 is max
-	cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * dilation_size + 1, 2 * dilation_size + 1), cv::Point(dilation_size, dilation_size));
-	cv::dilate(raster, edgeBoundary, element);
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
