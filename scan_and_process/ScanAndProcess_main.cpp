@@ -18,7 +18,7 @@
 #include "myGlobals.h"
 //#include "scanner_functions.h"
 #include "processing_functions.h"
-
+#include "makeRaster.h"
 
 
 // This function will print whatever the latest error was
@@ -68,6 +68,11 @@ void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
 
 
 int main() {
+	cv::Mat raster1, edgeBoundary1;
+	std::vector<cv::Point> rasterCoords;
+	makeRaster(10, 1, 1, 1-0.04, raster1, edgeBoundary1, rasterCoords);
+	//========================================================================================================================
+
 	Coords fbk;
 	//A3200Handle handle = NULL;
 	//A3200DataCollectConfigHandle DCCHandle = NULL;
@@ -162,8 +167,8 @@ int main() {
 	heightThresh = 1;
 	cv::Mat locEdges(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
 	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
-	findEdges(raster, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
-	//findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
+	//findEdges(raster, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
+	findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
 
 	//// template matching
 	//cv::Mat templ = scanROI(cv::Range::all(), cv::Range(81, 118));

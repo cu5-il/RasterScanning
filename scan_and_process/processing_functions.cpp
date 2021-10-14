@@ -69,11 +69,11 @@ void scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
 		}
 	}
 	//convert the start and end (X,Y) coordinates of the scan to points on the image
-	cv::Point startPx(std::round((XY_start[1] - printROI[1]) / PIX2MM), std::round((XY_start[0] - printROI[0]) / PIX2MM));
-	cv::Point endPx(std::round((XY_end[1] - printROI[1]) / PIX2MM), std::round((XY_end[0] - printROI[0]) / PIX2MM));
+	cv::Point startPx(std::round(MM2PIX(XY_start[1] - printROI[1])), std::round(PIX2MM(XY_start[0] - printROI[0])));
+	cv::Point endPx(std::round(MM2PIX(XY_end[1] - printROI[1])), std::round(PIX2MM(XY_end[0] - printROI[0])));
 
-	scanStart = cv::Point (std::round((XY_start[1] - printROI[1]) / PIX2MM), std::round((XY_start[0] - printROI[0]) / PIX2MM));
-	scanEnd = cv::Point (std::round((XY_end[1] - printROI[1]) / PIX2MM), std::round((XY_end[0] - printROI[0]) / PIX2MM));
+	scanStart = cv::Point (std::round(PIX2MM(XY_start[1] - printROI[1])), std::round(PIX2MM(XY_start[0] - printROI[0])));
+	scanEnd = cv::Point (std::round(PIX2MM(XY_end[1] - printROI[1])), std::round(PIX2MM(XY_end[0] - printROI[0])));
 	cv::Range scanROIRange = cv::Range(startIdx, endIdx);
 
 	// Interpolate scan so it is the same scale as the raster reference image
@@ -135,7 +135,7 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 	cv::Range searchRange;
 	cv::Mat searchWindow;
 	cv::Mat edges;
-	std::vector<cv::Point> edgeCoords;
+	std::vector<cv::Point> c;
 
 	cv::Mat dx, scanROIblur;
 	int aperture_size = 7;
@@ -146,44 +146,43 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 	int foundEdges[2];
 
 	// loop through all the search windows
-	for (auto it = windowCenters.begin(); it != windowCenters.end(); ++it) {
-		//std::cout << *it << std::endl;
-		searchRange = cv::Range(*it - _MM2PIX(SRCH_WND_WDTH / 2), *it + _MM2PIX(SRCH_WND_WDTH / 2));
-		std::cout << "search range = " << searchRange << std::endl;
-		cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, minIdx, maxIdx); 
-		foundEdges[0] = maxIdx[1] + searchRange.start;
-		foundEdges[1] = minIdx[1] + searchRange.start;
-		//std::cout << "Edges = " << maxIdx[1]+searchRange.start << " & " << minIdx[1] + searchRange.start << std::endl;
-		// mark edges on local profile and global ROI
-		for (int j = 0; j < 2; j++) {
-			if (heightMask.at<uchar>(cv::Point(foundEdges[j], 0)) == 255) { // check if edges are within height mask
-				locEdges.at<uchar>(cv::Point(foundEdges[j] , 0)) = 255;
-				gblEdges.at<uchar>(cv::Point(foundEdges[j] + scanStart.x, scanStart.y)) = 255;
-			}
-		}
-		searchWins.at<uchar>(cv::Point(searchRange.start, 0)) = 255;
-		searchWins.at<uchar>(cv::Point(searchRange.end, 0)) = 255;
-	}
-
-	// modified old loop
-	//for (auto it = windowPts.begin(); it != windowPts.end(); std::advance(it, 2)) {
-
-	//	searchRange = cv::Range(*it , *std::next(it) );
+	//for (auto it = windowCenters.begin(); it != windowCenters.end(); ++it) {
+	//	//std::cout << *it << std::endl;
+	//	searchRange = cv::Range(*it - _MM2PIX(SRCH_WND_WDTH / 2), *it + _MM2PIX(SRCH_WND_WDTH / 2));
 	//	std::cout << "search range = " << searchRange << std::endl;
-	//	cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, minIdx, maxIdx);
+	//	cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, minIdx, maxIdx); 
 	//	foundEdges[0] = maxIdx[1] + searchRange.start;
 	//	foundEdges[1] = minIdx[1] + searchRange.start;
 	//	//std::cout << "Edges = " << maxIdx[1]+searchRange.start << " & " << minIdx[1] + searchRange.start << std::endl;
 	//	// mark edges on local profile and global ROI
 	//	for (int j = 0; j < 2; j++) {
-	//		//if (heightMask.at<uchar>(cv::Point(foundEdges[j], 0)) == 255) { // check if edges are within height mask
-	//		locEdges.at<uchar>(cv::Point(foundEdges[j], 0)) = 255;
-	//		gblEdges.at<uchar>(cv::Point(foundEdges[j] + scanStart.x, scanStart.y)) = 255;
-	//		//}
+	//		if (heightMask.at<uchar>(cv::Point(foundEdges[j], 0)) == 255) { // check if edges are within height mask
+	//			locEdges.at<uchar>(cv::Point(foundEdges[j] , 0)) = 255;
+	//			gblEdges.at<uchar>(cv::Point(foundEdges[j] + scanStart.x, scanStart.y)) = 255;
+	//		}
 	//	}
 	//	searchWins.at<uchar>(cv::Point(searchRange.start, 0)) = 255;
 	//	searchWins.at<uchar>(cv::Point(searchRange.end, 0)) = 255;
 	//}
+
+	// modified old loop
+	for (auto it = windowPts.begin(); it != windowPts.end(); std::advance(it, 2)) {
+		searchRange = cv::Range(*it , *std::next(it) );
+		std::cout << "search range = " << searchRange << std::endl;
+		cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, minIdx, maxIdx);
+		foundEdges[0] = maxIdx[1] + searchRange.start;
+		foundEdges[1] = minIdx[1] + searchRange.start;
+		//std::cout << "Edges = " << maxIdx[1]+searchRange.start << " & " << minIdx[1] + searchRange.start << std::endl;
+		// mark edges on local profile and global ROI
+		for (int j = 0; j < 2; j++) {
+			//if (heightMask.at<uchar>(cv::Point(foundEdges[j], 0)) == 255) { // check if edges are within height mask
+			locEdges.at<uchar>(cv::Point(foundEdges[j], 0)) = 255;
+			gblEdges.at<uchar>(cv::Point(foundEdges[j] + scanStart.x, scanStart.y)) = 255;
+			//}
+		}
+		searchWins.at<uchar>(cv::Point(searchRange.start, 0)) = 255;
+		searchWins.at<uchar>(cv::Point(searchRange.end, 0)) = 255;
+	}
 
 
 	//Plotting

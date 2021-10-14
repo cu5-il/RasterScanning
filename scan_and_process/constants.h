@@ -10,10 +10,9 @@
 #define OPAMP_GAIN -0.49875
 
 #define SCAN_WIDTH 26.4
-#define PIX2MM 0.02
 #define RESOLUTION 0.02  // 1 pixel = RESOLUTION mm
-#define _PIX2MM(pix)  pix*RESOLUTION
-#define _MM2PIX(mm)  std::round( mm / RESOLUTION)
+#define PIX2MM(pix)  pix*RESOLUTION
+#define MM2PIX(mm)  std::round( mm / RESOLUTION)
 #define SRCH_WND_WDTH 1.0 // search window width in mm
 #define RASTER_IMG_SIZE 700
 #define PI 3.14159265
