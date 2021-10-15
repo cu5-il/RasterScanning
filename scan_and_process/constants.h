@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 
 #define SAMPLING_TIME 0.25
 #define NUM_DATA_SAMPLES 1800
@@ -9,8 +10,11 @@
 #define OPAMP_GAIN -0.49875
 
 #define SCAN_WIDTH 26.4
-#define PIX2MM 0.02
-#define RASTER_IMG_WIDTH 11.0
+#define RESOLUTION 0.02  // 1 pixel = RESOLUTION mm
+#define PIX2MM(pix)  pix*RESOLUTION
+#define MM2PIX(mm)  std::round( (mm) / RESOLUTION)
+#define SRCH_WND_WDTH 1.0 // search window width in mm
+#define RASTER_IMG_SIZE 700
 #define PI 3.14159265
 
-#define SCAN_OFFSET 0
+#define SCAN_OFFSET 5
