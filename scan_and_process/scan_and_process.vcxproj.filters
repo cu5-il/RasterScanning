@@ -33,6 +33,9 @@
     <ClInclude Include="display_functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="makeRaster.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="myGlobals.cpp">
@@ -48,6 +51,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="display_functions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="makeRaster.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
