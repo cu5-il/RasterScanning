@@ -70,7 +70,7 @@ void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
 int main() {
 	cv::Mat raster1, edgeBoundary1;
 	std::vector<cv::Point> rasterCoords;
-	makeRaster(10, 1, 1, 1-0.04, raster1, edgeBoundary1, rasterCoords);
+	makeRaster(12, 1, 1, 1-0.04, raster1, edgeBoundary1, rasterCoords);
 	//========================================================================================================================
 
 	Coords fbk;
@@ -168,7 +168,7 @@ int main() {
 	cv::Mat locEdges(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
 	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
 	//findEdges(raster, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
-	findEdges(dilation_dst, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
+	findEdges(edgeBoundary1, scanStart, scanEnd, scanROI, gblEdges, locEdges, heightThresh);
 
 	//// template matching
 	//cv::Mat templ = scanROI(cv::Range::all(), cv::Range(81, 118));

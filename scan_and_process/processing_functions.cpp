@@ -69,11 +69,11 @@ void scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
 		}
 	}
 	//convert the start and end (X,Y) coordinates of the scan to points on the image
-	cv::Point startPx(std::round(MM2PIX(XY_start[1] - printROI[1])), std::round(PIX2MM(XY_start[0] - printROI[0])));
-	cv::Point endPx(std::round(MM2PIX(XY_end[1] - printROI[1])), std::round(PIX2MM(XY_end[0] - printROI[0])));
+	cv::Point startPx(std::round((XY_start[1] - printROI[1]) / 0.02), std::round((XY_start[0] - printROI[0]) / 0.02));
+	cv::Point endPx(std::round((XY_end[1] - printROI[1]) / 0.02), std::round((XY_end[0] - printROI[0]) / 0.02));
 
-	scanStart = cv::Point (std::round(PIX2MM(XY_start[1] - printROI[1])), std::round(PIX2MM(XY_start[0] - printROI[0])));
-	scanEnd = cv::Point (std::round(PIX2MM(XY_end[1] - printROI[1])), std::round(PIX2MM(XY_end[0] - printROI[0])));
+	scanStart = cv::Point(MM2PIX(XY_start[1] - printROI[1]), MM2PIX(XY_start[0] - printROI[0]));
+	scanEnd = cv::Point (MM2PIX(XY_end[1] - printROI[1]), MM2PIX(XY_end[0] - printROI[0]));
 	cv::Range scanROIRange = cv::Range(startIdx, endIdx);
 
 	// Interpolate scan so it is the same scale as the raster reference image
