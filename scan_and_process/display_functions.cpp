@@ -170,3 +170,20 @@ cv::Mat plotScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showIma
 
 	return image1;
 }
+
+
+void plotEdges(const std::vector<cv::Point>& unfiltered, const std::vector<cv::Point>& filtered) {
+	std::vector<double> raw, smooth;
+	for (auto it = unfiltered.begin(); it != unfiltered.end(); ++it) {
+		raw.push_back((*it).x);
+	}
+	for (auto it = filtered.begin(); it != filtered.end(); ++it) {
+		smooth.push_back((*it).x);
+	}
+
+	cv::namedWindow("edge", cv::WINDOW_NORMAL);
+	auto axes = CvPlot::makePlotAxes();
+	axes.create<CvPlot::Series>(raw, "-k");
+	axes.create<CvPlot::Series>(smooth, "-r");
+	CvPlot::show("edge", axes);
+}
