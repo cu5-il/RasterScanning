@@ -26,6 +26,7 @@
 #include "display_functions.h"
 #include "makeRaster.h"
 #include "gaussianSmooth.h"
+#include "edge_functions.h"
 
 // This function will print whatever the latest error was
 void PrintError();
@@ -82,6 +83,12 @@ struct myclass {
 	bool operator() (cv::Point pt1, cv::Point pt2) { return (pt1.y < pt2.y); }
 } myobject;
 
+//--------------- TRANSLATION ------------------
+cv::Mat translateImg(cv::Mat& img, int offsetx, int offsety) {
+	cv::Mat trans_mat = (cv::Mat_<double>(2, 3) << 1, 0, offsetx, 0, 1, offsety);
+	cv::warpAffine(img, img, trans_mat, img.size());
+	return img;
+}
 
 
 //========================================================================================================================
@@ -92,50 +99,99 @@ int main() {
 	//			RASTER
 	cv::Mat raster, edgeBoundary;
 	std::vector<cv::Point> rasterCoords;
-	
-	makeRaster(9, 1, 1, 1 - 0.04, raster, edgeBoundary, rasterCoords);
-	
+	double border = 1;
+	makeRaster(9, 1, border, 1 - 0.04, raster, edgeBoundary, rasterCoords);
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// importing scanned edges
 	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
 	readCSV("C:/Users/cu5/Box/Research/Code/Image Processing/Edge Data/gbledges_raster.csv", gblEdges);
 	gblEdges.convertTo(gblEdges, CV_8UC1);
-	cv::Mat image = showRaster(raster, gblEdges, false);
-	std::vector<cv::Point> gblEdgePts;
-	cv::findNonZero(gblEdges, gblEdgePts);
-	for (auto it = gblEdgePts.begin(); it != gblEdgePts.end(); ++it) {
-		cv::circle(image, *it, 1, cv::Scalar(0, 255, 255), -1, cv::LINE_AA);
+//HACK: Shifting glbEdges by a few pixels to the leftso it aligns better
+translateImg(gblEdges, -2, 0);
+
+	cv::Mat i_edges = showRaster(raster, gblEdges, cv::Scalar(155, 155, 155));
+	
+	// Making the edge search regoins
+	std::vector<cv::Rect> edgeRegions;
+	makeEdgeRegions(rasterCoords, border, edgeRegions);
+	//std::vector<cv::Point> lEdgePts, rEdgePts;
+	std::vector<std::vector<cv::Point>> lEdgePts, rEdgePts;
+	// smooth all the edges
+	for (auto it = edgeRegions.begin(); it != edgeRegions.end(); ++it) {
+		smoothEdge(*it, gblEdges, lEdgePts, rEdgePts);
 	}
 	
-
-	// TODO: make all the edge regions
-	//std::vector<cv::Rect> edgeRegions;
-	cv::Rect edgeRegions(rasterCoords[12], rasterCoords[13]+cv::Point(25,0));
-	cv::rectangle(image, edgeRegions, cv::Scalar(0,255,0), 1);
-	cv::rectangle(image, edgeRegions - cv::Point(25, 0), cv::Scalar(255,0, 255), 1);
-	
-	std::vector<cv::Point> leftEdgePts, rightEdgePts;
-	cv::findNonZero(gblEdges(edgeRegions), rightEdgePts);
-	cv::findNonZero(gblEdges(edgeRegions - cv::Point(25, 0)), leftEdgePts);
-
-	for (auto it = leftEdgePts.begin(); it != leftEdgePts.end(); ++it) {
-		//*it += cv::Point(25, 50) +edgeRegions.tl();
-		*it += (edgeRegions.tl() - cv::Point(25, 0));
+	int cswitch = 2;
+	// Plotting the regions
+	cv::Mat i_overlayR = cv::Mat::zeros(raster.size(), CV_8UC3);
+	for (auto it = edgeRegions.begin(); it != edgeRegions.end(); ++it) {
+		if (cswitch % 2 == 0) {
+			cv::rectangle(i_overlayR, *it, cv::Scalar(0, 255, 255), -2);
+		}
+		else {
+			//cv::rectangle(i_edges, *it, cv::Scalar(255, 255, 0), 2);
+			cv::rectangle(i_overlayR, *it, cv::Scalar(0, 0, 255), -2);
+		}
+		cswitch++;
 	}
-	for (auto it = rightEdgePts.begin(); it != rightEdgePts.end(); ++it) {
-		*it += edgeRegions.tl();
+	cv::polylines(i_edges, rasterCoords, false, cv::Scalar(255, 255, 255), 2);
+	cv::addWeighted(i_overlayR, 0.5, i_edges, 1, 0, i_edges);
+
+	 //Plotting the smoothed edges
+	cswitch = 2;
+	for (auto it = lEdgePts.begin(); it != lEdgePts.end(); ++it) {
+		if (cswitch % 2 == 0) {
+			cv::polylines(i_edges, *it, false, cv::Scalar(0, 255, 255), 1);
+		}
+		else {
+			cv::polylines(i_edges, *it, false, cv::Scalar(255, 255, 0), 1);
+		}
+		cswitch++;
 	}
+	cswitch = 2;
+	for (auto it = rEdgePts.begin(); it != rEdgePts.end(); ++it) {
+		if (cswitch % 2 == 0) {
+			cv::polylines(i_edges, *it, false, cv::Scalar(0, 255, 255), 1);
+		}
+		else {
+			cv::polylines(i_edges, *it, false, cv::Scalar(255, 255, 0), 1);
+		}
+		cswitch++;
+	}
+
+	// show the filled regions with edges
+	std::vector<cv::Point> aEdgePts;
+	cv::Mat i_overlay = cv::Mat::zeros(raster.size(), CV_8UC3);
+	cv::Mat i_rods = showRaster(raster, gblEdges, cv::Scalar(155, 155, 155));
+	for (int i = 0; i < min(lEdgePts.size(), rEdgePts.size()); i++) {
+		// drawing the edges
+		cv::polylines(i_rods, lEdgePts[i], false, cv::Scalar(255, 255, 0), 1);
+		cv::polylines(i_rods, rEdgePts[i], false, cv::Scalar(255, 255, 0), 1);
+		// filling the area between the edges
+		//aEdgePts.reserve((*itl).size() + (*itr).size()); // preallocate memory
+		aEdgePts.insert(aEdgePts.end(), lEdgePts[i].begin(), lEdgePts[i].end());
+		aEdgePts.insert(aEdgePts.end(), rEdgePts[i].rbegin(), rEdgePts[i].rend());
+		cv::fillPoly(i_overlay, aEdgePts, cv::Scalar(255, 255, 0));
+		aEdgePts.clear(); // clear all previous points
+	}
+	cv::addWeighted(i_overlay, 0.5, i_rods, 1, 0, i_rods);
+
+	// filling the edge area
+	cv::Mat i_matl = showRaster(raster, gblEdges, cv::Scalar(155, 155, 155));
+	i_overlay = cv::Mat::zeros(raster.size(), CV_8UC3); //resetting the image to 0
+	// Combining both edges
+	std::vector<cv::Point> allEdgePts;
+	allEdgePts.reserve(lEdgePts[0].size() + rEdgePts[0].size()); // preallocate memory
+	allEdgePts.insert(allEdgePts.end(), lEdgePts[0].begin(), lEdgePts[0].end());
+	allEdgePts.insert(allEdgePts.end(), rEdgePts[0].rbegin(), rEdgePts[0].rend());
+	// draw filled region in a separate image
+	cv::fillPoly(i_overlay, allEdgePts, cv::Scalar(255, 255, 0));
+	double alpha = 0.5;
+	cv::addWeighted(i_overlay, alpha, i_matl, 1, 0, i_matl);
+	cv::addWeighted(i_overlay, alpha, i_edges, 1, 0, i_edges);
 
 	//// ------------------------------------STUFF FOR SEMINAR-----------------------------------------
-	//// Making an all white image and copying the raster to it
-	//cv::Mat scanImg(raster.size(), CV_8UC3, cv::Scalar(255,255,255));
-	//cv::polylines(scanImg, rasterCoords, false, cv::Scalar(0, 0, 0),1, cv::LINE_8);
-
-	//// Placing edge points on image
-	//for (auto it = gblEdgePts.begin(); it != gblEdgePts.end(); ++it) {
-	//	cv::circle(scanImg, *it, 2, CV_RGB(187, 85, 102), -1, cv::LINE_8);
-	//}
 	//// Making the scale
 	//cv::Point scaleBar(25, scanImg.rows - 25);
 	//cv::putText(scanImg, "1mm", scaleBar, cv::FONT_HERSHEY_SIMPLEX, .7, CV_RGB(0, 0, 0), 1, cv::LINE_8);
@@ -144,48 +200,31 @@ int main() {
 	//cv::imwrite("FullScan.png", scanImg);
 	////-----------------------------------------------------------------------------------------------
 
-	std::cout <<"3rd- point = "<< * next(leftEdgePts.begin(), 2) << std::endl;
+	// Calculate Errors
 
+	std::vector<cv::Point> newCentLine;
+	std::vector<cv::Point> newlEdge, newrEdge;
 
+	std::vector <std::vector<double>> errCL, errWD;
+	double targetWidth = 0;
+	for (int i = 0; i < min(lEdgePts.size(), rEdgePts.size()); i++) {
+		std::vector<cv::Point>centerline = { rasterCoords[2 * i], rasterCoords[2 * i + 1] };
+		getMatlErrors(centerline, targetWidth, raster.size(), lEdgePts[i], rEdgePts[i], errCL, errWD);
+		for (int j = 0; j < centerline.size(); j++) {
+			newCentLine.push_back(centerline[j] + cv::Point((int)round(errCL[i][j]), 0));
+			newlEdge.push_back(newCentLine.back() - cv::Point((int)round(errWD[i][j] / 2), 0));
+			newrEdge.push_back(newCentLine.back() + cv::Point((int)round(errWD[i][j] / 2), 0));
+		}
+		cv::polylines(i_rods, newCentLine, false, cv::Scalar(0, 0, 255), 1);
+		cv::polylines(i_rods, newlEdge, false, cv::Scalar(0, 255, 255), 1);
+		cv::polylines(i_rods, newrEdge, false, cv::Scalar(0, 255, 255), 1);
+		newCentLine.clear();
+		newlEdge.clear();
+		newrEdge.clear();
+		centerline.clear(); // clear the points in the centerline vector
+	}
 
-	//cv::Mat leftEdgePoints;
-	//cv::findNonZero(gblEdges(tallRect), leftEdgePoints);
-	//writeCSV("leftEdgePoints.csv", leftEdgePoints);
-
-
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//cv::polylines(image, leftEdgePts, false, cv::Scalar(255, 0, 255), 1);
-	//cv::polylines(image, rightEdgePts, false, cv::Scalar(0, 0, 255), 1);
-
-
-	// Sorting the edge points 
-	std::sort(rightEdgePts.begin(), rightEdgePts.end(), myobject);
-	std::sort(leftEdgePts.begin(), leftEdgePts.end(), myobject);
-
-	// Combining both edges
-	std::vector<cv::Point> allEdgePts;
-	allEdgePts.reserve(leftEdgePts.size() + rightEdgePts.size()); // preallocate memory
-	allEdgePts.insert(allEdgePts.end(), leftEdgePts.begin(), leftEdgePts.end());
-	allEdgePts.insert(allEdgePts.end(), rightEdgePts.rbegin(), rightEdgePts.rend());
-
-	// smoothing the edges
-	std::vector<cv::Point> rEdgeFilt, lEdgeFilt;
-	gaussianSmoothX(leftEdgePts, lEdgeFilt, 7, 3);
-	gaussianSmoothX(rightEdgePts, rEdgeFilt, 7, 3);
-	cv::polylines(image, rEdgeFilt, false, cv::Scalar(255, 255, 0), 1);
-	cv::polylines(image, lEdgeFilt, false, cv::Scalar(255, 255, 0), 1);
-
-	writeCSV("C:/Users/cu5/Box/Research/Code/Image Processing/Edge Data/leftEdgeFilt.csv", cv::Mat(lEdgeFilt));
-	writeCSV("C:/Users/cu5/Box/Research/Code/Image Processing/Edge Data/rightEdgeFilt.csv", cv::Mat(rEdgeFilt));
-	
-	// plotting
-	plotEdges(leftEdgePts, lEdgeFilt);
-	
-	std::cout << "end program " << std::endl;
-	//writeCSV("C:/Users/cu5/Box/Research/Code/Image Processing/Edge Data/leftEdgePoints.csv", cv::Mat(leftEdgePts));
-	//writeCSV("C:/Users/cu5/Box/Research/Code/Image Processing/Edge Data/rightEdgePoints.csv", cv::Mat(rightEdgePts));
-	//writeCSV("C:/Users/cu5/Box/Research/Code/Image Processing/Edge Data/rasterCoords.csv", cv::Mat(rasterCoords));
-
+	addScale(i_rods);
 
 #ifdef _DEBUG
 

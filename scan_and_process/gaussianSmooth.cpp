@@ -12,6 +12,7 @@
 void gaussianSmoothX(const std::vector<cv::Point>& unfiltPts, std::vector<cv::Point>& filtPts, int kSize, double sig) {
 	// apply gaussian smoothing to the x points of a polyline
 	double sumK, filteredVal;
+	filtPts.clear();
 	filtPts.reserve(unfiltPts.size());
 	// make the discrete Gaussian kernel
 	std::valarray<double> K(2 * kSize + 1);
