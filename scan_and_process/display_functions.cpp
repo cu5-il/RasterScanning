@@ -14,7 +14,7 @@ void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
 	}
 }
 
-cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd, bool showImage) {
+cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd, bool showImage = false) {
 	cv::Mat scanTall, scanGray, image, rasterInv;
 	int height = 2;
 	
@@ -44,7 +44,7 @@ cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Po
 		return image;
 }
 
-cv::Mat showScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showImage) {
+cv::Mat showScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showImage = false) {
 	cv::Mat image;
 	int height = 40;
 
@@ -68,14 +68,25 @@ cv::Mat showScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showIma
 	return image;
 }
 
-cv::Mat showRaster(cv::Mat raster, cv::Mat gblEdges, bool showImage) {
+cv::Mat showRaster(cv::Mat raster, cv::Mat gblEdges, const cv::Scalar& color, const int pointSz = 1, bool showImage = false) {
 	cv::Mat image;
 
 	// Copy the raster to the image
 	cv::cvtColor(raster, image, cv::COLOR_GRAY2BGR);
-	//raster.copyTo(image);
 	// Copy the global edges to the  image
-	cv::Mat(raster.size(), CV_8UC3, cv::Scalar({ 255, 0, 255, 0 })).copyTo(image, gblEdges);
+	if (pointSz > 0) {
+		// show the edges as filled circles
+		std::vector<cv::Point> gblEdgePts;
+		cv::findNonZero(gblEdges, gblEdgePts);
+		for (auto it = gblEdgePts.begin(); it != gblEdgePts.end(); ++it) {
+			cv::circle(image, *it, 1, color, -1, cv::LINE_AA);
+		}
+	}
+	else {
+		// show the edges as pixels
+		cv::Mat(raster.size(), CV_8UC3, color).copyTo(image, gblEdges);
+	}
+	
 
 	if (showImage) {
 		// Display the image
@@ -88,7 +99,7 @@ cv::Mat showRaster(cv::Mat raster, cv::Mat gblEdges, bool showImage) {
 	return image;
 }
 
-cv::Mat showAll(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd, cv::Mat locEdges, cv::Mat locWin, cv::Mat gblEdges, bool showImage) {
+cv::Mat showAll(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd, cv::Mat locEdges, cv::Mat locWin, cv::Mat gblEdges, bool showImage = false) {
 	
 	// making the images
 	cv::Mat overlay_img = showOverlay(raster, scanROI, scanStart, scanEnd, false);
@@ -116,9 +127,15 @@ cv::Mat showAll(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point 
 	return image;
 }
 
+void addScale(cv::Mat& image, cv::Point offset = cv::Point(25,25) ) {
+	cv::Point location(offset.x, image.rows - offset.y);
+	cv::putText(image, "1mm", location, cv::FONT_HERSHEY_SIMPLEX, .7, cv::Scalar(255, 255, 255), 1, cv::LINE_8);
+	cv::rectangle(image, cv::Rect(location.x + 6, location.y + 5, MM2PIX(1), 5), cv::Scalar(255, 255, 255), -1);
+}
+
 // Functions using CV-Plot
 
-cv::Mat plotScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showImage) {
+cv::Mat plotScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showImage = false) {
 	cv::Mat image1, image2;
 
 	// HACK: calculating the derivative separately for plotting function
