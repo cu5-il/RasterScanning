@@ -4,7 +4,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
-void makeRaster(double length, double spacing, double border, double rodWidth, cv::Mat& raster, cv::Mat& edgeBoundary, std::vector<cv::Point>& coords ) {
+void makeRaster(double length, double spacing, double border, double bdryWidth, cv::Mat& raster, cv::Mat& edgeBoundary, std::vector<cv::Point>& coords ) {
 
     int i = 0;
     int pixLen = MM2PIX(length);
@@ -39,6 +39,6 @@ void makeRaster(double length, double spacing, double border, double rodWidth, c
     coords.pop_back();
     // Draw the raster lines on an image
     cv::polylines(raster, coords, false, cv::Scalar(255), 1, 4);
-    cv::polylines(edgeBoundary, coords, false, cv::Scalar(255), MM2PIX(rodWidth), 8);
+    cv::polylines(edgeBoundary, coords, false, cv::Scalar(255), MM2PIX(bdryWidth), 8);
 
 }
