@@ -158,6 +158,7 @@
     <ClInclude Include="myTypes.h" />
     <ClInclude Include="processing_functions.h" />
     <ClInclude Include="scanner_functions.h" />
+    <ClInclude Include="threadsafeQueue.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="A3200_functions.cpp" />
