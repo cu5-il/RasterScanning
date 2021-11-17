@@ -67,18 +67,6 @@ int main() {
 	cv::polylines(edgeBoundary, rasterCoords, false, cv::Scalar(255), MM2PIX(border), 8);
 
 
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//			RASTER
-	//makeRaster(9, 1, 1, 1 - 0.04, raster, edgeBoundary, rasterCoords);
-	//cv::Mat raster1 = cv::imread("RasterMap9.bmp", IMREAD_COLOR);
-	//double initPos[3] = { 207.4, 249.6, -54.45 };
-	//double printCenter[2] = { initPos[0]+ RASTER_IMG_WIDTH / 2.0, initPos[1]};
-	//std::vector<double> printROI = { printCenter[0] - RASTER_IMG_WIDTH / 2.0,
-	//	printCenter[1] - RASTER_IMG_WIDTH / 2.0,
-	//	printCenter[0] + RASTER_IMG_WIDTH / 2.0,
-	//	printCenter[1] + RASTER_IMG_WIDTH / 2.0 ; //IMPORT FROM FILE
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	// 
 	// INITIALIZATION & Data collection
 	//========================================================================================================================
 	//Connecting to the A3200
@@ -90,14 +78,10 @@ int main() {
 	if (!setupDataCollection(handle, DCCHandle)) { PrintError(); /*goto cleanup;*/ }
 
 	// Homing and moving the axes to the start position
-	std::cout << "Enabling and homing X, Y, and then Z.\n";
+	std::cout << "Enabling and homing X, Y, and then Z"<<std::endl;
 	if (!A3200MotionEnable(handle, TASKID_Library, axisMask)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_00 | AXISMASK_01 ))) { PrintError(); /*goto cleanup;*/ } //home axes if not already done
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_02))) { PrintError(); /*goto cleanup;*/ } //home axes if not already done
-	std::cout << "Moving axes to initial position.\n";
-	if (!A3200MotionMoveAbs(handle, TASKID_Library, AXISINDEX_00, initPos[0], 10)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionMoveAbs(handle, TASKID_Library, AXISINDEX_01, initPos[1], 10)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionMoveAbs(handle, TASKID_Library, AXISINDEX_02, initPos[2], 10)) { PrintError(); /*goto cleanup;*/ }
+	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_00 | AXISMASK_01 ))) { PrintError(); /*goto cleanup;*/ } //home X & Y axes if not already done
+	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_02))) { PrintError(); /*goto cleanup;*/ } //home Z axis if not already done
 	if (!A3200MotionWaitForMotionDone(handle, axisMask, WAITOPTION_InPosition, -1, NULL)) { PrintError(); /*goto cleanup;*/ }
 	if (!A3200MotionDisable(handle, TASKID_Library, axisMask)) { PrintError(); /*goto cleanup;*/ }
 
