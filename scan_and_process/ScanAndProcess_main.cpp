@@ -27,37 +27,18 @@
 #include "gaussianSmooth.h"
 #include "edge_functions.h"
 
+int main();
+
 // This function will print whatever the latest error was
 void PrintError();
 void A3200Error(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle);
 
 
 int main() {
-	Coords fbk;
 	A3200Handle handle = NULL;
 	A3200DataCollectConfigHandle DCCHandle = NULL;
 	AXISMASK axisMask = (AXISMASK)(AXISMASK_00 | AXISMASK_01 | AXISMASK_02);
 	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
-	cv::Mat raster, edgeBoundary;
-	std::vector<cv::Point> rasterCoords;
-
-	// HACK: fake ROIs
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//			WIRE
-	double initPos[3] = { 163.5 , 253.8, -54.45 };
-	std::vector<double> printROI = { initPos[0] - 2.0,
-		initPos[1] - 2.0 - PIX2MM(35),
-		188.5 + 2.0,
-		initPos[1] + 2.0 - PIX2MM(35) };
-	double length = printROI[2] - printROI[0];
-	double border = 2.5;
-	raster = cv::Mat(MM2PIX(length +2 * border), MM2PIX(2 * border), CV_8U, cv::Scalar(0)).clone();
-	edgeBoundary = raster.clone();
-	rasterCoords.push_back(cv::Point(MM2PIX(border), 0));
-	rasterCoords.push_back(cv::Point(MM2PIX(border), raster.rows));
-	cv::polylines(raster, rasterCoords, false, cv::Scalar(255), 1, 4);
-	cv::polylines(edgeBoundary, rasterCoords, false, cv::Scalar(255), MM2PIX(border), 8);
-
 
 	// INITIALIZATION & Data collection
 	//========================================================================================================================
@@ -77,44 +58,6 @@ int main() {
 	if (!A3200MotionWaitForMotionDone(handle, axisMask, WAITOPTION_InPosition, -1, NULL)) { PrintError(); /*goto cleanup;*/ }
 	if (!A3200MotionDisable(handle, TASKID_Library, axisMask)) { PrintError(); /*goto cleanup;*/ }
 
-
-	//========================================================================================================================
-
-	cv::Mat scan;
-	cv::Point scanStart, scanEnd;
-	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
-	cv::Mat scanROI;
-	double heightThresh = 0.5;
-	cv::Mat locEdges(scanROI.size(), CV_8U, cv::Scalar({ 0 })); // size might be pointless
-	cv::Mat locWin(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
-
-
-	std::cout << "Starting data collection\n";
-	if (collectData(handle, DCCHandle, &collectedData[0][0])) {
-		getScan(collectedData, &fbk, scan);
-
-		//Finding the part of the scan that is within the ROI
-		scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd);
-
-		if (!scanROI.empty()) { // Check if the scanROI is empty
-			// Finding the edges
-			findEdges(edgeBoundary, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
-			// Displaying images
-			showOverlay(raster, scanROI, scanStart, scanEnd, true);
-			//showScan(scanROI, locEdges, locWin, true);
-			plotScan(scanROI, locEdges, locWin, true);
-			showRaster(raster, gblEdges, true);
-		}
-		else { std::cout << "first scan outside of the ROI" << std::endl; }
-
-	}
-	else { PrintError(); /*goto cleanup;*/ }
-
-
-	cv::waitKey(0);
-
-
-	//-----------------------------------------------------------------------------------------------------------------
 
 
 	//========================================================================================================================
