@@ -134,38 +134,7 @@ int main() {
 	}
 	else { PrintError(); /*goto cleanup;*/ }
 
-	//-----------------------------------------------------------------------------------------------------------------
-	// Moving & Scanning
 
-	std::cout << "Start moving and scanning in X direction the width of the raster" << std::endl;
-	if (!A3200MotionEnable(handle, TASKID_Library, (AXISMASK)(AXISMASK_00))) { PrintError(); /*goto cleanup;*/ }
-	// HACK: changed moving the lenght of the raster width to the wire length;
-	//if (!A3200MotionMoveInc(handle, TASKID_Library, AXISINDEX_00, RASTER_IMG_WIDTH, 0.2)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionMoveInc(handle, TASKID_Library, AXISINDEX_00, length+1, 0.2)) { PrintError(); /*goto cleanup;*/ }
-
-	while (fbk.x < (printROI[2]-.5 /*HACK: fudge factor on when to stop scanning*/)) { // Scan until outside of ROI
-
-		if (collectData(handle, DCCHandle, &collectedData[0][0])) {
-			getScan(collectedData, &fbk, scan);
-			if (scan2ROI(scan, fbk, printROI, raster.size(), scanROI, scanStart, scanEnd)) {	
-			//if (!scanROI.empty()) { // Check if the scanROI is empty
-				findEdges(edgeBoundary, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
-				// Displaying images
-				showOverlay(raster, scanROI, scanStart, scanEnd, true);
-				//showScan(scanROI, locEdges, locWin, true);
-				plotScan(scanROI, locEdges, locWin, true);
-				showRaster(raster, gblEdges, true);
-			}
-			else { std::cout << "scan outside of the ROI" << std::endl; }
-		}
-		else { PrintError(); /*goto cleanup;*/ }
-	}
-	// wait for all motion to complete and then disable the axes
-	if (!A3200MotionWaitForMotionDone(handle, axisMask, WAITOPTION_MoveDone, -1, NULL)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionDisable(handle, TASKID_Library, (AXISMASK)(AXISMASK_00))) { PrintError(); /*goto cleanup;*/ }
-	std::cout << "All movement done. " << std::endl;
-	writeCSV("gbledges.csv", gblEdges);
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	cv::waitKey(0);
 
 	//========================================================================================================================
