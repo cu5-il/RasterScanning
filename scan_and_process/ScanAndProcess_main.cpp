@@ -27,8 +27,6 @@
 void PrintError();
 void A3200Error(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle);
 
-using namespace cv;
-const char* window_name1 = "Edges";
 
 void writeCSV(std::string filename, cv::Mat m)
 {
@@ -45,7 +43,6 @@ int main() {
 	A3200DataCollectConfigHandle DCCHandle = NULL;
 	AXISMASK axisMask = (AXISMASK)(AXISMASK_00 | AXISMASK_01 | AXISMASK_02);
 	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
-	cv::Mat Data(NUM_DATA_SIGNALS, NUM_DATA_SAMPLES, CV_64F);
 	cv::Mat raster, edgeBoundary;
 	std::vector<cv::Point> rasterCoords;
 
@@ -164,5 +161,3 @@ void A3200Error(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle) {
 		if (!A3200DataCollectionConfigFree(DCCHandle)) { PrintError(); }
 	}
 }
-
-//{ A3200Error(handle, DCCHandle); return 0; }
