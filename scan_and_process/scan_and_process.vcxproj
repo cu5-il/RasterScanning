@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="A3200_functions.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="csvMat.h" />
     <ClInclude Include="display_functions.h" />
@@ -159,6 +160,7 @@
     <ClInclude Include="scanner_functions.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="A3200_functions.cpp" />
     <ClCompile Include="csvMat.cpp" />
     <ClCompile Include="display_functions.cpp" />
     <ClCompile Include="edge_functions.cpp" />

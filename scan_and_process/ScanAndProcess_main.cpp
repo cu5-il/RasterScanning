@@ -26,12 +26,7 @@
 #include "makeRaster.h"
 #include "gaussianSmooth.h"
 #include "edge_functions.h"
-
-int main();
-
-// This function will print whatever the latest error was
-void PrintError();
-void A3200Error(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle);
+#include "A3200_functions.h"
 
 
 int main() {
@@ -40,66 +35,43 @@ int main() {
 	AXISMASK axisMask = (AXISMASK)(AXISMASK_00 | AXISMASK_01 | AXISMASK_02);
 	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
 
-	// INITIALIZATION & Data collection
-	//========================================================================================================================
+	// A3200 Setup
+	//=======================================
 	//Connecting to the A3200
-	std::cout << "Connecting to A3200. Initializing if necessary.\n";
-	if (!A3200Connect(&handle)) { PrintError(); /*goto cleanup;*/ }
+	std::cout << "Connecting to A3200. Initializing if necessary." << std::endl;
+	if (!A3200Connect(&handle)) { A3200Error(); }
 	// Creating a data collection handle
-	if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { PrintError(); /*goto cleanup;*/ }
+	if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { A3200Error(); }
 	// Setting up the data collection
-	if (!setupDataCollection(handle, DCCHandle)) { PrintError(); /*goto cleanup;*/ }
-
+	if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
 	// Homing and moving the axes to the start position
-	std::cout << "Enabling and homing X, Y, and then Z"<<std::endl;
-	if (!A3200MotionEnable(handle, TASKID_Library, axisMask)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_00 | AXISMASK_01 ))) { PrintError(); /*goto cleanup;*/ } //home X & Y axes if not already done
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_02))) { PrintError(); /*goto cleanup;*/ } //home Z axis if not already done
-	if (!A3200MotionWaitForMotionDone(handle, axisMask, WAITOPTION_InPosition, -1, NULL)) { PrintError(); /*goto cleanup;*/ }
-	if (!A3200MotionDisable(handle, TASKID_Library, axisMask)) { PrintError(); /*goto cleanup;*/ }
+	std::cout << "Homing axes." << std::endl;
+	if (!A3200MotionEnable(handle, TASKID_Library, axisMask)) { A3200Error(); }
+	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_00 | AXISMASK_01 ))) { A3200Error(); } //home X & Y axes if not already done
+	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_02))) { A3200Error(); } //home Z axis if not already done
+	if (!A3200MotionWaitForMotionDone(handle, axisMask, WAITOPTION_InPosition, -1, NULL)) { A3200Error(); }
+	if (!A3200MotionDisable(handle, TASKID_Library, axisMask)) { A3200Error(); }
+	//=======================================
 
 
 
-	//========================================================================================================================
-cleanup:
 
-	if (NULL != handle) {
-		printf("Disconnecting from the A3200.\n");
-		if (!A3200Disconnect(handle)) { PrintError(); }
-	}
+
+	//A3200 Cleanup
+	//=======================================
 	// Freeing the resources used by the data collection configuration
 	if (NULL != DCCHandle) {
-		if (!A3200DataCollectionConfigFree(DCCHandle)) { PrintError(); }
+		if (!A3200DataCollectionConfigFree(DCCHandle)) { A3200Error(); }
+	}
+	// Disconnecting from the A3200
+	if (NULL != handle) {
+		printf("Disconnecting from the A3200.\n");
+		if (!A3200Disconnect(handle)) { A3200Error(); }
 	}
 
 #ifdef _DEBUG
-	system("pause");
+
 #endif
 	return 0;
 }
 
-//===================================================================
-//							FUNCTIONS
-//===================================================================
-
-void PrintError() {
-	CHAR data[1024];
-	A3200GetLastErrorString(data, 1024);
-	printf("Error : %s\n", data);
-}
-
-void A3200Error(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle) {
-	CHAR data[1024];
-	A3200GetLastErrorString(data, 1024);
-	printf("Error : %s\n", data);
-	system("pause");
-
-	if (NULL != handle) {
-		printf("Disconnecting from the A3200.\n");
-		if (!A3200Disconnect(handle)) { PrintError(); }
-	}
-	// Freeing the resources used by the data collection configuration
-	if (NULL != DCCHandle) {
-		if (!A3200DataCollectionConfigFree(DCCHandle)) { PrintError(); }
-	}
-}
