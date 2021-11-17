@@ -42,6 +42,9 @@
     <ClInclude Include="edge_functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="csvMat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="myGlobals.cpp">
@@ -66,6 +69,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="edge_functions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="csvMat.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

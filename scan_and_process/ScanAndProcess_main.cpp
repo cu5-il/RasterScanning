@@ -32,15 +32,6 @@ void PrintError();
 void A3200Error(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle);
 
 
-void writeCSV(std::string filename, cv::Mat m)
-{
-	std::ofstream myfile;
-	myfile.open(filename.c_str());
-	myfile << cv::format(m, cv::Formatter::FMT_CSV);
-	myfile.close();
-}
-
-
 int main() {
 	Coords fbk;
 	A3200Handle handle = NULL;
