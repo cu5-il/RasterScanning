@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 
 #define SAMPLING_TIME 0.25
 #define NUM_DATA_SAMPLES 1800

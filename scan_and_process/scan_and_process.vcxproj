@@ -149,6 +149,8 @@
   <ItemGroup>
     <ClInclude Include="constants.h" />
     <ClInclude Include="display_functions.h" />
+    <ClInclude Include="edge_functions.h" />
+    <ClInclude Include="gaussianSmooth.h" />
     <ClInclude Include="makeRaster.h" />
     <ClInclude Include="myGlobals.h" />
     <ClInclude Include="myTypes.h" />
@@ -157,6 +159,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="display_functions.cpp" />
+    <ClCompile Include="edge_functions.cpp" />
+    <ClCompile Include="gaussianSmooth.cpp" />
     <ClCompile Include="makeRaster.cpp" />
     <ClCompile Include="myGlobals.cpp" />
     <ClCompile Include="processing_functions.cpp" />

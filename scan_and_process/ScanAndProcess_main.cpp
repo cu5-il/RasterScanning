@@ -5,6 +5,9 @@
 #include <cmath>
 #include <vector> 
 #include <string>
+#include <algorithm>
+#include <iterator> 
+#include <valarray>
 
 #include <opencv2/core.hpp>
 #include "opencv2/core/utility.hpp"
@@ -21,7 +24,8 @@
 #include "processing_functions.h"
 #include "display_functions.h"
 #include "makeRaster.h"
-
+#include "gaussianSmooth.h"
+#include "edge_functions.h"
 
 // This function will print whatever the latest error was
 void PrintError();
@@ -32,7 +36,7 @@ void writeCSV(std::string filename, cv::Mat m)
 {
 	std::ofstream myfile;
 	myfile.open(filename.c_str());
-	myfile << cv::format(m, cv::Formatter::FMT_CSV) << std::endl;
+	myfile << cv::format(m, cv::Formatter::FMT_CSV);
 	myfile.close();
 }
 
@@ -117,6 +121,10 @@ int main() {
 
 
 	cv::waitKey(0);
+
+
+	//-----------------------------------------------------------------------------------------------------------------
+
 
 	//========================================================================================================================
 cleanup:
