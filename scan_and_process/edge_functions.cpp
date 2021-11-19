@@ -9,7 +9,12 @@
 #include "constants.h"
 #include "gaussianSmooth.h"
 
-
+/**
+ * @brief Returns a vector of regions around each rod of a raster pattern.
+ * @param rasterCoords[in] Vector of x,y points of the raster pattern
+ * @param width[in] width of the regions
+ * @param edgeRegions[out] Vector of regions that are around each rod
+*/
 void makeEdgeRegions(const std::vector<cv::Point>& rasterCoords, double width, std::vector<cv::Rect>& edgeRegions) {
 	
 	int pixWidth = MM2PIX(width);
@@ -21,7 +26,15 @@ void makeEdgeRegions(const std::vector<cv::Point>& rasterCoords, double width, s
 	// TODO: add corner regions
 }
 
-void smoothEdge(const cv::Rect& edgeRegions, cv::Mat& gblEdges, std::vector<std::vector<cv::Point>>& lEdgePts, std::vector<std::vector<cv::Point>>& rEdgePts, bool interp = false) {
+/**
+ * @brief Finds the left and right edges of the material and smooths them
+ * @param edgeRegions[in] Rectangle specifying the region of the image to search for the edges 
+ * @param gblEdges[in] Image of edge points found by the scanner
+ * @param lEdgePts[out] Filtered points that make up the edge in the left half of the ROI
+ * @param rEdgePts[out] Filtered points that make up the edge in the right half of the ROI
+ * @param interp[in] Flag indicating whether to interpolate the output edge points 
+*/
+void getMatlEdges(const cv::Rect& edgeRegions, cv::Mat& gblEdges, std::vector<std::vector<cv::Point>>& lEdgePts, std::vector<std::vector<cv::Point>>& rEdgePts, bool interp = false) {
 	std::vector<cv::Point> unfiltLeft, unfiltRight, filtPts;
 	cv::Mat interpPts;
 	// find the left and right edge points in the regions
@@ -55,11 +68,22 @@ void smoothEdge(const cv::Rect& edgeRegions, cv::Mat& gblEdges, std::vector<std:
 
 }
 
+/**
+ * @brief Calculates the material centerline and width errors.
+ * @param[in,out] centerline Vector of points that make up the desired centerline. Input as 2 coordinate pairs; output as interpolated coordinate pairs  
+ * @param[in] width Desired width of the material in mm
+ * @param[in] rasterSize Size of the raster image
+ * @param[in] lEdgePts Points making up the left edge of the rod
+ * @param[in] rEdgePts Points making up the right edge of the rod
+ * @param[out] errCL Material centerline error
+ * @param[out] errWD Material width error
+*/
 void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size rasterSize, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, std::vector <std::vector<double>>& errCL, std::vector<std::vector<double>>& errWD) {
+	//TODO: Remove rasterSize as an imput if raster is a global variable
 	// Calculate Errors
 	std::vector<double> ecl, ewd; // centerline and width errors
-	cv::Mat lEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255));
-	cv::Mat rEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255));
+	cv::Mat lEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255)); // Image to draw the left edge on
+	cv::Mat rEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255)); // Image to draw the right edge on
 	cv::LineIterator lnit(lEdge, centerline.front(), centerline.back(), 8);
 	centerline.clear(); // clear the points in the centerline vector
 	//TODO: all error points are stored, not just for a single rod

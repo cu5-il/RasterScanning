@@ -8,7 +8,13 @@
 #include "myGlobals.h"
 #include "constants.h"
 
-
+/**
+ * @brief Applies a discrete Gaussian filter to smooth a vector of points. Smooths only in the X dimension.
+ * @param[in] unfiltPts Vector of unfiltered points
+ * @param[out] filtPts Vector of points after applying the filter
+ * @param[in] kSize Number of points to before (or after) the target point to smooth ( kSize = 3 corresponds to a kernel size of 7 )
+ * @param[in] sig Standard deviation of the Gaussian kernel
+*/
 void gaussianSmoothX(const std::vector<cv::Point>& unfiltPts, std::vector<cv::Point>& filtPts, int kSize, double sig) {
 	// apply gaussian smoothing to the x points of a polyline
 	double sumK, filteredVal;

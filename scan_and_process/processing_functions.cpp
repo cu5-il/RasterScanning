@@ -8,7 +8,12 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
-
+/**
+ * @brief Extracts the scanned profile and position feedback from the collected data
+ * @param[in] data array of signals where the rows are: [0] analog scanner output, [1] triggering signal, [2] x, [3] y, [4] z, and [5] theta position 
+ * @param[out] fbk structure with x, y, z, and theta coordinates of gantry when scan was taken
+ * @param[out] scan	Z profile from scanner
+*/
 void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
 	int fbIdx[2];
 	int scanStartIdx;
@@ -36,10 +41,19 @@ void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
 	return;
 }
 
-//=============================================
-
+/**
+ * @brief Extracts the part of the scan that is within the print area defined by the printROI
+ * @param[in] scan Profile from scanner
+ * @param[in] fbk Position of the scanner (X,Y,Z,T) when the scan was taken
+ * @param[in] printROI Global coordinates (in mm) defining where the print is. Vector in the form {Xmin, Ymin, Xmax, Ymax}
+ * @param[in] rasterSize Size of the raster image
+ * @param[out] scanROI Profile from the scanner that is within the print ROI
+ * @param[out] scanStart Pixel coordinates of the start of the scan 
+ * @param[out] scanEnd Pixel coordinates of the end of the scan
+ * @return TRUE if part of the scan is in the ROI, FALSE if the scan is outside of the ROI
+*/
 bool scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point &scanStart, cv::Point& scanEnd) {
-
+	//TODO: Convert printROI from mm to pixels
 	std::vector<double> XY_start(2),XY_end(2);
 	double X, Y;
 	double R = SCAN_OFFSET;
@@ -47,9 +61,9 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
 	int startIdx = -1, endIdx = -1;
 
 	for (int i = 0; i < scan.cols; i++) {
-		// Local coordinate of the scanned point
+		// Local coordinate of the scanned point (with respect to the scanner)
 		local_x = -SCAN_WIDTH / 2 + i * SCAN_WIDTH / (int(scan.cols) - 1);
-		// Transforming local coordinate to global coordinate
+		// Transforming local coordinate to global coordinates
 		X = fbk.x - R * cos(fbk.T * PI / 180) - local_x * sin(fbk.T * PI / 180);
 		Y = fbk.y - R * sin(fbk.T * PI / 180) + local_x * cos(fbk.T * PI / 180);
 		// Check if scanned point in outside the print ROI 
@@ -78,6 +92,7 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
 		return true;
 	}
 	else {
+		//TODO: Remove outputting junk scan start and end points
 		scanStart = cv::Point(-1, -1);
 		scanEnd = cv::Point(-1, -1);
 		return false;
@@ -87,8 +102,17 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
 	return false;
 }
 
-//=============================================
-
+/**
+ * @brief Find the material edges in a single scan
+ * @param[in] edgeBoundary Mask indicating where to search for the edges. Typically it is a dialated raster path
+ * @param[in] scanStart Pixel coordinates of the start of the scan
+ * @param[in] scanEnd Pixel coordinates of the end of the scan
+ * @param[in] scanROI Profile from the scanner that is within the print ROI
+ * @param[out] gblEdges Image output showing the location of all the found edges in the global coordinate system
+ * @param[out] locEdges Image output the same size as scanROI showing where the edges were found on the scan
+ * @param[out] locWin Image output the same size as scanROI showing where the search windows are on the scan
+ * @param[out] heightThresh UNUSED Points below this thresholds will not be considered edges
+*/
 void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& gblEdges, cv::Mat& locEdges, cv::Mat& locWin, double heightThresh) {
 	
 	if ((scanStart != cv::Point(-1, -1)) && (scanEnd != cv::Point(-1, -1))) //Check if scan is within ROI

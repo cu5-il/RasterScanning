@@ -2,7 +2,7 @@
 #include "constants.h"
 #include "A3200.h"
 
-
+//TODO: Check that the A3200 handles still work even though the variable names inside the functions are the same as teh global variables
 bool setupDataCollection(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle) {
 	// Adding the signals to be collected
 	if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_AnalogInput0, AXISINDEX_00, 0)) { return false; }		// AI0
