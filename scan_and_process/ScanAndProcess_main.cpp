@@ -28,10 +28,8 @@
 
 
 int main() {
-	A3200Handle handle = NULL;
-	A3200DataCollectConfigHandle DCCHandle = NULL;
 	AXISMASK axisMask = (AXISMASK)(AXISMASK_00 | AXISMASK_01 | AXISMASK_02);
-	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
+
 
 	// A3200 Setup
 	//=======================================
