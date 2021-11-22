@@ -7,6 +7,9 @@
 #include <opencv2/highgui.hpp>
 #include <CvPlot/cvplot.h>
 
+/**
+ * @brief callback function for when mouse button is clicked on an image
+*/
 void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
 {
 	if (event == cv::EVENT_LBUTTONDOWN) {
@@ -14,6 +17,15 @@ void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
 	}
 }
 
+/**
+ * @brief Overlays the most recent scan on the raster pattern
+ * @param[in] Mat conting the raster pattern
+ * @param[in[ scanROI Profile from the scanner that is within the print ROI
+ * @param[in] scanStart Start coordinates of the scan
+ * @param[in] scanEnd End coordinates of the scan
+ * @param[in] showImage Flag indicating whether to show the overlay in a new window or not
+ * @return Mat containing the scan overlaid on the raster pattern 
+*/
 cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd, bool showImage = false) {
 	cv::Mat scanTall, scanGray, image, rasterInv;
 	int height = 2;
@@ -44,6 +56,14 @@ cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Po
 		return image;
 }
 
+/**
+ * @brief Overlays the detected edges and search windows on the scan profile
+ * @param[in] scanROI Profile from the scanner that is within the print ROI
+ * @param[in] locEdges Mat containing the location of all the found edges in the global coordinate system
+ * @param[in] locWin Mat containing the location of the search windows
+ * @param[in] showImage Flag indicating whether to show the overlay in a new window or not
+ * @return Mat containing the scan overlaid on the raster pattern
+*/
 cv::Mat showScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showImage = false) {
 	cv::Mat image;
 	int height = 40;
@@ -68,6 +88,15 @@ cv::Mat showScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showIma
 	return image;
 }
 
+/**
+ * @brief Overlay the detected edges on the raster
+ * @param[in] raster Mat containing the raster pattern
+ * @param[in] gblEdges Mat containing the location of all the found edges in the global coordinate system
+ * @param[in] color 
+ * @param[in] pointSz Size of the circles placed at the location of the detected edges. A negative value will show the edges as pixels
+ * @param[in] showImage Flag indicating whether to show the overlay in a new window or not
+ * @return Mat containing the detected edges overlaid on the raster pattern
+*/
 cv::Mat showRaster(cv::Mat raster, cv::Mat gblEdges, const cv::Scalar& color, const int pointSz = 1, bool showImage = false) {
 	cv::Mat image;
 
@@ -99,6 +128,18 @@ cv::Mat showRaster(cv::Mat raster, cv::Mat gblEdges, const cv::Scalar& color, co
 	return image;
 }
 
+/**
+ * @brief Creates a single image combining the outputs of the showOverlay, showScan, and showRaster functions
+ * @param[in] raster Mat containing the raster pattern
+ * @param[in] scanROI Profile from the scanner that is within the print ROI
+ * @param[in] scanStart Start coordinates of the scan
+ * @param[in] scanEnd End coordinates of the scan
+ * @param[in] locEdges Mat containing the location of all the found edges in the global coordinate system
+ * @param[in] locWin Mat containing the location of the search windows
+ * @param[in] gblEdges Mat containing the location of all the found edges in the global coordinate system
+ * @param[in] showImage Flag indicating whether to show the overlay in a new window or not
+ * @return Mat contining the image
+*/
 cv::Mat showAll(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd, cv::Mat locEdges, cv::Mat locWin, cv::Mat gblEdges, bool showImage = false) {
 	
 	// making the images
@@ -127,6 +168,11 @@ cv::Mat showAll(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point 
 	return image;
 }
 
+/**
+ * @brief Adds a scale bar to an image
+ * @param image Mat containing the image
+ * @param offset Offset from the bottom left corner of the image where the scale will be placed
+*/
 void addScale(cv::Mat& image, cv::Point offset = cv::Point(25,25) ) {
 	cv::Point location(offset.x, image.rows - offset.y);
 	cv::putText(image, "1mm", location, cv::FONT_HERSHEY_SIMPLEX, .7, cv::Scalar(255, 255, 255), 1, cv::LINE_8);

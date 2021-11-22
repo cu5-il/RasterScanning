@@ -16,7 +16,7 @@ cv::Mat raster, edgeBoundary;
 std::vector<cv::Point> rasterCoords;
 
 Coords fbk;
-std::vector<double> printROI
+std::vector<double> printROI;
 
 threadsafe_queue <cv::Mat> q_scannedEdges;
 

@@ -108,8 +108,8 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
  * @param[in] scanStart Pixel coordinates of the start of the scan
  * @param[in] scanEnd Pixel coordinates of the end of the scan
  * @param[in] scanROI Profile from the scanner that is within the print ROI
- * @param[out] gblEdges Image output showing the location of all the found edges in the global coordinate system
- * @param[out] locEdges Image output the same size as scanROI showing where the edges were found on the scan
+ * @param[out] gblEdges Mat output showing the location of all the found edges in the global coordinate system
+ * @param[out] locEdges Mat output the same size as scanROI showing where the edges were found on the scan
  * @param[out] locWin Image output the same size as scanROI showing where the search windows are on the scan
  * @param[out] heightThresh UNUSED Points below this thresholds will not be considered edges
 */
