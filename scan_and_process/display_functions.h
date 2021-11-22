@@ -16,7 +16,3 @@ cv::Mat showRaster(cv::Mat raster, cv::Mat gblEdges, const cv::Scalar& color, co
 cv::Mat showAll(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd, cv::Mat locEdges, cv::Mat locWin, cv::Mat gblEdges, bool showImage = false);
 
 void addScale(cv::Mat& image, cv::Point offset = cv::Point(25, 25));
-
-cv::Mat plotScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showImage = false);
-
-void plotEdges(const std::vector<cv::Point>& unfiltered, const std::vector<cv::Point>& filtered);
