@@ -52,9 +52,9 @@ void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
  * @param[out] scanEnd Pixel coordinates of the end of the scan
  * @return TRUE if part of the scan is in the ROI, FALSE if the scan is outside of the ROI
 */
-bool scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point &scanStart, cv::Point& scanEnd) {
+bool scan2ROI(cv::Mat& scan, const Coords fbk, const cv::Rect2d printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point &scanStart, cv::Point& scanEnd) {
 	//TODO: Convert printROI from mm to pixels
-	std::vector<double> XY_start(2),XY_end(2);
+	cv::Point2d XY_start, XY_end;
 	double X, Y;
 	double R = SCAN_OFFSET;
 	double local_x;
@@ -67,23 +67,23 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const std::vector<double>& printR
 		X = fbk.x - R * cos(fbk.T * PI / 180) - local_x * sin(fbk.T * PI / 180);
 		Y = fbk.y - R * sin(fbk.T * PI / 180) + local_x * cos(fbk.T * PI / 180);
 		// Check if scanned point in outside the print ROI 
-		if ((X < printROI[0] || printROI[2] < X || Y < printROI[1] || printROI[3] < Y)) {
+		if (!printROI.contains(cv::Point2d(X, Y))) {
 		}
 		else if (startIdx == -1) {
 			startIdx = i;
-			XY_start = { X, Y };
+			XY_start = cv::Point2d(X, Y);
 		}
 		else { 
 			endIdx = i; 
-			XY_end = { X, Y };
+			XY_end = cv::Point2d(X, Y);
 		}
 	}
 
 	// Check to see if the scan was in the ROI
 	if ((startIdx != -1) && (endIdx != -1)) {
 		//convert the start and end (X,Y) coordinates of the scan to points on the image
-		scanStart = cv::Point(MM2PIX(XY_start[1] - printROI[1]), MM2PIX(XY_start[0] - printROI[0]));
-		scanEnd = cv::Point(MM2PIX(XY_end[1] - printROI[1]), MM2PIX(XY_end[0] - printROI[0]));
+		scanStart = cv::Point(MM2PIX(XY_start.x - printROI.tl().x), MM2PIX(XY_start.y - printROI.tl().y));
+		scanEnd = cv::Point(MM2PIX(XY_end.x - printROI.tl().x), MM2PIX(XY_end.y - printROI.tl().y));
 		cv::Range scanROIRange = cv::Range(startIdx, endIdx);
 
 		// Interpolate scan so it is the same scale as the raster reference image
