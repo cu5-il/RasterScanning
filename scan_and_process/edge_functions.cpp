@@ -11,9 +11,9 @@
 
 /**
  * @brief Returns a vector of regions around each rod of a raster pattern.
- * @param rasterCoords[in] Vector of x,y points of the raster pattern
- * @param width[in] width of the regions
- * @param edgeRegions[out] Vector of regions that are around each rod
+ * @param[in] rasterCoords Vector of x,y points of the raster pattern
+ * @param[in] width width of the regions
+ * @param[out] edgeRegions Vector of regions that are around each rod
 */
 void makeEdgeRegions(const std::vector<cv::Point>& rasterCoords, double width, std::vector<cv::Rect>& edgeRegions) {
 	
@@ -28,11 +28,11 @@ void makeEdgeRegions(const std::vector<cv::Point>& rasterCoords, double width, s
 
 /**
  * @brief Finds the left and right edges of the material and smooths them
- * @param edgeRegions[in] Rectangle specifying the region of the image to search for the edges 
- * @param gblEdges[in] Image of edge points found by the scanner
- * @param lEdgePts[out] Filtered points that make up the edge in the left half of the ROI
- * @param rEdgePts[out] Filtered points that make up the edge in the right half of the ROI
- * @param interp[in] Flag indicating whether to interpolate the output edge points 
+ * @param[in] edgeRegions Rectangle specifying the region of the image to search for the edges 
+ * @param[in] gblEdges Image of edge points found by the scanner
+ * @param[out] lEdgePts Filtered points that make up the edge in the left half of the ROI
+ * @param[out] rEdgePts Filtered points that make up the edge in the right half of the ROI
+ * @param[in] interp Flag indicating whether to interpolate the output edge points 
 */
 void getMatlEdges(const cv::Rect& edgeRegions, cv::Mat& gblEdges, std::vector<std::vector<cv::Point>>& lEdgePts, std::vector<std::vector<cv::Point>>& rEdgePts, bool interp = false) {
 	std::vector<cv::Point> unfiltLeft, unfiltRight, filtPts;
