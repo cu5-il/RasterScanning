@@ -34,8 +34,8 @@ void makeEdgeRegions(const std::vector<cv::Point>& rasterCoords, double width, s
  * @param[out] rEdgePts Filtered points that make up the edge in the right half of the ROI
  * @param[in] interp Flag indicating whether to interpolate the output edge points 
 */
-void getMatlEdges(const cv::Rect& edgeRegions, cv::Mat& gblEdges, std::vector<std::vector<cv::Point>>& lEdgePts, std::vector<std::vector<cv::Point>>& rEdgePts, bool interp = false) {
-	std::vector<cv::Point> unfiltLeft, unfiltRight, filtPts;
+void getMatlEdges(const cv::Rect& edgeRegions, cv::Mat& gblEdges, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, bool interp = false) {
+	std::vector<cv::Point> unfiltLeft, unfiltRight;
 	cv::Mat interpPts;
 	// find the left and right edge points in the regions
 	cv::Rect lRegion = edgeRegions - cv::Size(edgeRegions.width / 2, 0);
@@ -51,21 +51,18 @@ void getMatlEdges(const cv::Rect& edgeRegions, cv::Mat& gblEdges, std::vector<st
 	// Smoothing the edges
 	if(interp){ interpPts = cv::Mat(gblEdges.size(), CV_8UC1, cv::Scalar(0)); }
 	// Left edge
-	gaussianSmoothX(unfiltLeft, filtPts, 7, 3);
+	gaussianSmoothX(unfiltLeft, lEdgePts, 7, 3);
 	if (interp) {
-		cv::polylines(interpPts, filtPts, false, cv::Scalar(255), 1);
-		cv::findNonZero(interpPts, filtPts);
+		cv::polylines(interpPts, lEdgePts, false, cv::Scalar(255), 1);
+		cv::findNonZero(interpPts, lEdgePts);
 	}
-	lEdgePts.push_back(filtPts);
 	// Right edge
-	gaussianSmoothX(unfiltRight, filtPts, 7, 3);
+	gaussianSmoothX(unfiltRight, rEdgePts, 7, 3);
 	if (interp) {
 		interpPts = cv::Scalar(0); // remove the left edge points
-		cv::polylines(interpPts, filtPts, false, cv::Scalar(255), 1);
-		cv::findNonZero(interpPts, filtPts);
+		cv::polylines(interpPts, rEdgePts, false, cv::Scalar(255), 1);
+		cv::findNonZero(interpPts, rEdgePts);
 	}
-	rEdgePts.push_back(filtPts);
-
 }
 
 /**
@@ -79,7 +76,7 @@ void getMatlEdges(const cv::Rect& edgeRegions, cv::Mat& gblEdges, std::vector<st
  * @param[out] errWD Material width error
 */
 void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size rasterSize, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, std::vector <std::vector<double>>& errCL, std::vector<std::vector<double>>& errWD) {
-	//TODO: Remove rasterSize as an imput if raster is a global variable
+	//TODO: Remove rasterSize as an input if raster is a global variable
 	// Calculate Errors
 	std::vector<double> ecl, ewd; // centerline and width errors
 	cv::Mat lEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255)); // Image to draw the left edge on
