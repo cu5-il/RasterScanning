@@ -1,8 +1,9 @@
-#include "myGlobals.h"
-#include "constants.h"
 #include <vector>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+
+#include "myGlobals.h"
+#include "constants.h"
 
 void makeRaster(double length, double spacing, double border, double bdryWidth, cv::Mat& raster, cv::Mat& edgeBoundary, std::vector<cv::Point>& coords ) {
 
