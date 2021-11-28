@@ -13,4 +13,7 @@ extern A3200Handle handle;
 extern A3200DataCollectConfigHandle DCCHandle;
 
 extern threadsafe_queue <cv::Mat> q_scannedEdges;
+extern bool doneScanning = false;
+extern bool positionFlag = false; 
 
+extern int segmentNum = 0;
