@@ -17,7 +17,7 @@
  * @param[out] centerlines Vector of point pairs defining the centerline of the region
  * @param[out] scanDonePts Point in the raster pattern when the region has been finished scanning. Set to midpoint of the following rod except for the last region, which is just the offset of the last point of the raster
 */
-void makeSegments(const std::vector<cv::Point>& rasterCoords, double ROIwidth, std::vector<cv::Rect>& ROIs, std::vector<std::vector<cv::Point>>& centerlines, std::vector<cv::Point>& scanDonePts) {
+void makeSegments(const std::vector<cv::Point>& rasterCoords, double ROIwidth, std::vector<cv::Rect>& ROIs, std::vector<std::vector<cv::Point>>& centerlines, std::vector<cv::Point2d>& scanDonePts) {
 	int pixWidth = MM2PIX(ROIwidth);
 	// Rods
 	for (auto it = rasterCoords.begin(); it != rasterCoords.end(); std::advance(it,2)) {
@@ -26,11 +26,11 @@ void makeSegments(const std::vector<cv::Point>& rasterCoords, double ROIwidth, s
 	}
 	// defining the point when the region has been completely scanned as the midpoint of the next centerline
 	for (auto it = std::next(centerlines.begin()); it != centerlines.end(); ++it) {
-		scanDonePts.push_back((*(*it).begin() + *(*it).end()) / 2);
+		scanDonePts.push_back(PIX2MM(cv::Point2d((*it).front() + (*it).back())) / 2);
 	}
 	// TODO: change scanning termination point to last point in raster + scanner offset
 	// Make the point to end scanning for the final region the last point in the raster
-	scanDonePts.push_back(*rasterCoords.end());
+	scanDonePts.push_back(PIX2MM(cv::Point2d(rasterCoords.back())));
 
 	// Corners
 	// TODO: add corner regions

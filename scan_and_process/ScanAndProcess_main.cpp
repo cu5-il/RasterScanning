@@ -38,14 +38,14 @@ int main() {
 	std::vector<cv::Point> rasterCoords;
 	std::vector<cv::Rect> edgeRegions;
 	std::vector<std::vector<cv::Point>> centerlines;
-	std::vector<cv::Point> scanDonePts;
+	std::vector<cv::Point2d> scanDonePts;
 	double border = 1;
 	makeRaster(9, 1, border, 1 - 0.04, raster, edgeBoundary, rasterCoords);
 
 	makeSegments(rasterCoords, border, edgeRegions, centerlines, scanDonePts);
 	cv::Point2d initPos = cv::Point2d(0, 0);
 	cv::Rect2d printROI = cv::Rect2d(-border, -border, PIX2MM(raster.cols), PIX2MM(raster.rows)) + initPos;
-	return 0;
+	
 	// A3200 Setup
 	//=======================================
 	//Connecting to the A3200

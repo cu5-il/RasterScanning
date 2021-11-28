@@ -46,15 +46,13 @@ void t_CollectScans(const cv::Mat raster, const cv::Mat edgeBoundary, cv::Rect2d
 			segmentNum++; 
 		}
 	}
-
-
 }
 
 void t_GetMatlErrors(const cv::Mat raster, std::vector<cv::Point> rasterCoords) {
 	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
 	std::vector<cv::Rect> edgeRegions;
 	std::vector<std::vector<cv::Point>> centerlines;
-	std::vector<cv::Point> scanDonePts;
+	std::vector<cv::Point2d> scanDonePts;
 	std::vector<cv::Point> lEdgePts, rEdgePts;
 	std::vector<cv::Point> newCentLine, newlEdge, newrEdge;
 	std::vector<std::vector<double>> errCL, errWD;
@@ -68,13 +66,9 @@ void t_GetMatlErrors(const cv::Mat raster, std::vector<cv::Point> rasterCoords) 
 	while (!doneScanning){
 		// wait for the edges to be push from the scanning thread
 		q_scannedEdges.wait_and_pop(gblEdges);
-
 		// find and smooth the right and left edges
 		getMatlEdges(edgeRegions[regionNum], gblEdges, lEdgePts, rEdgePts);
-
 		// Calculate Errors
 		getMatlErrors(centerlines[regionNum], targetWidth, raster.size(), lEdgePts, rEdgePts, errCL, errWD);
-
-
 	}
 }
