@@ -160,6 +160,7 @@
     <ClInclude Include="processing_functions.h" />
     <ClInclude Include="scanner_functions.h" />
     <ClInclude Include="threadsafeQueue.h" />
+    <ClInclude Include="thread_functions.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="A3200_functions.cpp" />

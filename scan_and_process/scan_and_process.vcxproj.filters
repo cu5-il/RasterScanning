@@ -54,6 +54,9 @@
     <ClInclude Include="cvPlot_functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="thread_functions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="myGlobals.cpp">

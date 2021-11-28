@@ -2,7 +2,7 @@
 #include <vector>
 #include <opencv2/core.hpp>
 
-void makeEdgeRegions(const std::vector<cv::Point>& rasterCoords, double width, std::vector<cv::Rect>& edgeRegions);
+void makeSegments(const std::vector<cv::Point>& rasterCoords, double width, std::vector<cv::Rect>& ROIs, std::vector<std::vector<cv::Point>>& centerlines, std::vector<cv::Point>& scanDonePts);
 
 void getMatlEdges(const cv::Rect& edgeRegions, cv::Mat& gblEdges, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, bool interp = false);
 

@@ -25,12 +25,27 @@
 #include "gaussianSmooth.h"
 #include "edge_functions.h"
 #include "A3200_functions.h"
+#include "thread_functions.h"
 
 
 int main() {
 	AXISMASK axisMask = (AXISMASK)(AXISMASK_00 | AXISMASK_01 | AXISMASK_02);
 
+	std::thread t1;
 
+	// Make raster
+	cv::Mat raster, edgeBoundary;
+	std::vector<cv::Point> rasterCoords;
+	std::vector<cv::Rect> edgeRegions;
+	std::vector<std::vector<cv::Point>> centerlines;
+	std::vector<cv::Point> scanDonePts;
+	double border = 1;
+	makeRaster(9, 1, border, 1 - 0.04, raster, edgeBoundary, rasterCoords);
+
+	makeSegments(rasterCoords, border, edgeRegions, centerlines, scanDonePts);
+	cv::Point2d initPos = cv::Point2d(0, 0);
+	cv::Rect2d printROI = cv::Rect2d(-border, -border, PIX2MM(raster.cols), PIX2MM(raster.rows)) + initPos;
+	return 0;
 	// A3200 Setup
 	//=======================================
 	//Connecting to the A3200
@@ -49,9 +64,10 @@ int main() {
 	if (!A3200MotionDisable(handle, TASKID_Library, axisMask)) { A3200Error(); }
 	//=======================================
 
+	t1 = std::thread{ t_CollectScans, raster, edgeBoundary, printROI };
 
 
-
+	t1.join();
 
 	//A3200 Cleanup
 	//=======================================

@@ -10,18 +10,28 @@
 #include "gaussianSmooth.h"
 
 /**
- * @brief Returns a vector of regions around each rod of a raster pattern.
- * @param[in] rasterCoords Vector of x,y points of the raster pattern
- * @param[in] width width of the regions
- * @param[out] edgeRegions Vector of regions that are around each rod
+ * @brief Breaks up the raster pattern into segments. Each vertical rod in the raster is a segment; corners are neglected.
+ * @param[in] rasterCoords Vector of (x,y) points of the raster pattern
+ * @param[in] ROIwidth of the ROI
+ * @param[out] ROIs Vector of regions that are around each rod. Used to determine which edges belong to which segment
+ * @param[out] centerlines Vector of point pairs defining the centerline of the region
+ * @param[out] scanDonePts Point in the raster pattern when the region has been finished scanning. Set to midpoint of the following rod except for the last region, which is just the offset of the last point of the raster
 */
-void makeEdgeRegions(const std::vector<cv::Point>& rasterCoords, double width, std::vector<cv::Rect>& edgeRegions) {
-	
-	int pixWidth = MM2PIX(width);
+void makeSegments(const std::vector<cv::Point>& rasterCoords, double ROIwidth, std::vector<cv::Rect>& ROIs, std::vector<std::vector<cv::Point>>& centerlines, std::vector<cv::Point>& scanDonePts) {
+	int pixWidth = MM2PIX(ROIwidth);
 	// Rods
 	for (auto it = rasterCoords.begin(); it != rasterCoords.end(); std::advance(it,2)) {
-		edgeRegions.push_back(cv::Rect(*it - cv::Point(pixWidth / 2, 0), *std::next(it, 1) + cv::Point(pixWidth / 2, 0)));
+		ROIs.push_back(cv::Rect(*it - cv::Point(pixWidth / 2, 0), *std::next(it, 1) + cv::Point(pixWidth / 2, 0)));
+		centerlines.push_back(std::vector<cv::Point> { *it, * std::next(it, 1)});
 	}
+	// defining the point when the region has been completely scanned as the midpoint of the next centerline
+	for (auto it = std::next(centerlines.begin()); it != centerlines.end(); ++it) {
+		scanDonePts.push_back((*(*it).begin() + *(*it).end()) / 2);
+	}
+	// TODO: change scanning termination point to last point in raster + scanner offset
+	// Make the point to end scanning for the final region the last point in the raster
+	scanDonePts.push_back(*rasterCoords.end());
+
 	// Corners
 	// TODO: add corner regions
 }
