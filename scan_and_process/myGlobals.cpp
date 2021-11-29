@@ -4,8 +4,10 @@ A3200Handle handle = NULL;
 A3200DataCollectConfigHandle DCCHandle = NULL;
 
 std::vector<Segment> segments;
-threadsafe_queue <cv::Mat> q_scannedEdges;
+threadsafe_queue<edgeMsg> q_edgeMsg;
 bool doneScanning = false;
 bool positionFlag = false;
 
-int segmentNum = 0;
+
+extern int segmentScan = 0; // segment being scanned
+extern int segmentError = 0; // segment that errors are being calculated for

@@ -24,8 +24,9 @@ void t_CollectScans(const cv::Mat raster, const cv::Mat edgeBoundary, cv::Rect2d
 	cv::Mat locWin(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
 	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
 	Coords scanPosFbk;
+	edgeMsg msg;
 
-	while (true){
+	while (!doneScanning){
 		if (collectData(handle, DCCHandle, &collectedData[0][0])) {
 			// Trigger the scanner and collect the scanner data
 			getScan(collectedData, &scanPosFbk, scan);
@@ -41,34 +42,41 @@ void t_CollectScans(const cv::Mat raster, const cv::Mat edgeBoundary, cv::Rect2d
 		else { A3200Error(); }
 
 		if (positionFlag) {
+			// Check if this was the last segmet to scan
+			if (segmentScan == segments.size()){
+				doneScanning = true;
+			}
+			msg.addEdges(gblEdges, segmentScan, doneScanning);
 			// push the edges to the error calculating thread
-			q_scannedEdges.push(gblEdges);
-			segmentNum++; 
+			q_edgeMsg.push(msg);
+			segmentScan++;
 		}
 	}
 }
 
-void t_GetMatlErrors(const cv::Mat raster, std::vector<cv::Point> rasterCoords) {
-	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
-	std::vector<cv::Rect> edgeRegions;
-	std::vector<std::vector<cv::Point>> centerlines;
-	std::vector<cv::Point2d> scanDonePts;
+void t_GetMatlErrors(const cv::Mat raster) {
+	edgeMsg msg;
+	std::vector<cv::Point> centerline;
 	std::vector<cv::Point> lEdgePts, rEdgePts;
-	std::vector<cv::Point> newCentLine, newlEdge, newrEdge;
-	std::vector<std::vector<double>> errCL, errWD;
+	std::vector<double> errCL, errWD;
 	double targetWidth = 0;
-	int regionNum = 0;
-	
-	// Making the edge search regoins
-	double border = 1;
-	makeSegments(rasterCoords, border, edgeRegions, centerlines, scanDonePts);
-	
+
 	while (!doneScanning){
-		// wait for the edges to be push from the scanning thread
-		q_scannedEdges.wait_and_pop(gblEdges);
+		// wait for the message to be pushed from the scanning thread
+		q_edgeMsg.wait_and_pop(msg);
+		segmentError = msg.segmentNum();
 		// find and smooth the right and left edges
-		getMatlEdges(edgeRegions[regionNum], gblEdges, lEdgePts, rEdgePts);
+		getMatlEdges(segments[msg.segmentNum()].ROI(), msg.edges(), lEdgePts, rEdgePts);
+		segments[msg.segmentNum()].addEdges(lEdgePts, rEdgePts);
 		// Calculate Errors
-		getMatlErrors(centerlines[regionNum], targetWidth, raster.size(), lEdgePts, rEdgePts, errCL, errWD);
+		centerline = segments[msg.segmentNum()].centerline();
+		getMatlErrors(centerline, targetWidth, raster.size(), segments[msg.segmentNum()].lEdgePts(), segments[msg.segmentNum()].rEdgePts(), errCL, errWD);
+		segments[msg.segmentNum()].addErrors(errCL, errWD, centerline);
+	}
+}
+
+void t_PollPositionFeedback() {
+	while (true) {
+	
 	}
 }

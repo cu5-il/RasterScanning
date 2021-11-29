@@ -54,7 +54,7 @@ void makeSegments(const std::vector<cv::Point>& rasterCoords, double ROIwidth, s
  * @param[out] rEdgePts Filtered points that make up the edge in the right half of the ROI
  * @param[in] interp Flag indicating whether to interpolate the output edge points 
 */
-void getMatlEdges(const cv::Rect& segmentROI, cv::Mat& gblEdges, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, bool interp = false) {
+void getMatlEdges(const cv::Rect& segmentROI, const cv::Mat& gblEdges, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, bool interp = false) {
 	std::vector<cv::Point> unfiltLeft, unfiltRight;
 	cv::Mat interpPts;
 	// find the left and right edge points in the regions

@@ -3,4 +3,6 @@
 
 void t_CollectScans(const cv::Mat raster, const cv::Mat edgeBoundary, cv::Rect2d printROI);
 
-void t_GetMatlErrors(const cv::Mat raster, std::vector<cv::Point> rasterCoords);
+void t_GetMatlErrors(const cv::Mat raster);
+
+void t_PollPositionFeedback();

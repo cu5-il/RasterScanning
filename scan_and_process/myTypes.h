@@ -21,7 +21,7 @@ private:
 	std::vector<double> _errWD; //width error
 public:
 	Segment(cv::Rect ROI, std::vector<cv::Point> centerline, cv::Point2d scanDonePt) {
-		this->_ROI = ROI;
+		_ROI = ROI;
 		_centerline = centerline;
 		_scanDonePt = scanDonePt;
 	}
@@ -44,10 +44,19 @@ public:
 	const std::vector<double>& errWD() const { return _errWD; }
 };
 
-typedef struct scan2errorPacket {
-	std::vector<cv::Rect> edgeROI;
-	std::vector<cv::Point> lEdgePts; //left edge points in the region
-	std::vector<cv::Point> rEdgePts; //right edge points in the region
-	std::vector<std::vector<double>> errCL; //centerline error
-	std::vector<std::vector<double>> errWD; //width error
+class edgeMsg {
+private:
+	cv::Mat _edges;
+	int _segmentNum;
+	bool _doneScanning;
+public:
+	void addEdges(cv::Mat edges, int segmentNum, bool doneScanning) {
+		_edges = edges;
+		_segmentNum = segmentNum;
+		_doneScanning = doneScanning;
+	}
+	// Get values
+	const cv::Mat& edges() const { return _edges; }
+	const int& segmentNum() const { return _segmentNum; }
+	const bool& doneScanning() const { return _doneScanning; }
 };

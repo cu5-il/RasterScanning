@@ -13,8 +13,9 @@ extern A3200Handle handle;
 extern A3200DataCollectConfigHandle DCCHandle;
 
 extern std::vector<Segment> segments;
-extern threadsafe_queue <cv::Mat> q_scannedEdges;
+extern threadsafe_queue<edgeMsg> q_edgeMsg;
 extern bool doneScanning;
 extern bool positionFlag; 
 
-extern int segmentNum;
+extern int segmentScan;
+extern int segmentError;
