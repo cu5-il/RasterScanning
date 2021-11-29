@@ -2,6 +2,7 @@
 #include<vector>
 #include<opencv2/core.hpp>
 
+// TODO: check if typedef is needed
 typedef struct Coords {
 	double x;
 	double y;
@@ -23,6 +24,15 @@ public:
 		this->_ROI = ROI;
 		_centerline = centerline;
 		_scanDonePt = scanDonePt;
+	}
+	void addEdges(std::vector<cv::Point> lEdgePts, std::vector<cv::Point> rEdgePts) {
+		_lEdgePts = lEdgePts;
+		_rEdgePts = rEdgePts;
+	}
+	void addErrors(std::vector<double> errCL, std::vector<double> errWD, std::vector<cv::Point> centerline) {
+		_errCL = errCL;
+		_errWD = errWD;
+		_centerline = centerline;
 	}
 	// Get values
 	const cv::Rect& ROI() const { return _ROI; }
