@@ -376,3 +376,4 @@ FodyWeavers.xsd
 /scan_and_process/myVid.avi
 /scan_and_process/*.csv
 /scan_and_process/*.bmp
+*.png
