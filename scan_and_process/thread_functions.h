@@ -5,4 +5,4 @@ void t_CollectScans(const cv::Mat raster, const cv::Mat edgeBoundary, cv::Rect2d
 
 void t_GetMatlErrors(const cv::Mat raster);
 
-void t_PollPositionFeedback();
+void t_PollPositionFeedback(int rate);

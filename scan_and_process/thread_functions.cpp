@@ -8,8 +8,6 @@
 #include "scanner_functions.h"
 #include "processing_functions.h"
 #include "display_functions.h"
-#include "makeRaster.h"
-#include "gaussianSmooth.h"
 #include "edge_functions.h"
 #include "A3200_functions.h"
 
@@ -25,8 +23,10 @@ void t_CollectScans(const cv::Mat raster, const cv::Mat edgeBoundary, cv::Rect2d
 	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
 	Coords scanPosFbk;
 	edgeMsg msg;
+	double posErrThr = 0.3; // position error threshold for how close the current position is to the target
+	cv::Point2d curPos;
 
-	while (!doneScanning){
+	while (segmentNumScan < segments.size()){
 		if (collectData(handle, DCCHandle, &collectedData[0][0])) {
 			// Trigger the scanner and collect the scanner data
 			getScan(collectedData, &scanPosFbk, scan);
@@ -41,15 +41,15 @@ void t_CollectScans(const cv::Mat raster, const cv::Mat edgeBoundary, cv::Rect2d
 		}
 		else { A3200Error(); }
 
-		if (positionFlag) {
+		// compare the current position to the scanDonePt of the segment
+		curPos = cv::Point2d(scanPosFbk.x, scanPosFbk.y);
+		if (cv::norm(curPos - segments[segmentNumScan].scanDonePt()) < posErrThr) {
 			// Check if this was the last segmet to scan
-			if (segmentScan == segments.size()){
-				doneScanning = true;
-			}
-			msg.addEdges(gblEdges, segmentScan, doneScanning);
+			msg.addEdges(gblEdges, segmentNumScan, (segmentNumScan == segments.size()-1) );
 			// push the edges to the error calculating thread
 			q_edgeMsg.push(msg);
-			segmentScan++;
+			// move to next segment
+			segmentNumScan++;
 		}
 	}
 }
@@ -59,12 +59,14 @@ void t_GetMatlErrors(const cv::Mat raster) {
 	std::vector<cv::Point> centerline;
 	std::vector<cv::Point> lEdgePts, rEdgePts;
 	std::vector<double> errCL, errWD;
-	double targetWidth = 0;
+	double targetWidth = .5;
+	bool doneScanning = false;
 
 	while (!doneScanning){
 		// wait for the message to be pushed from the scanning thread
 		q_edgeMsg.wait_and_pop(msg);
-		segmentError = msg.segmentNum();
+		doneScanning = msg.doneScanning();
+		segmentNumError = msg.segmentNum();
 		// find and smooth the right and left edges
 		getMatlEdges(segments[msg.segmentNum()].ROI(), msg.edges(), lEdgePts, rEdgePts);
 		segments[msg.segmentNum()].addEdges(lEdgePts, rEdgePts);
@@ -75,8 +77,26 @@ void t_GetMatlErrors(const cv::Mat raster) {
 	}
 }
 
-void t_PollPositionFeedback() {
+/**
+ * @brief 
+ * @param rate rate at which to poll the position in [ms]
+*/
+void t_PollPositionFeedback(int rate) {
+	// setup polling of X and Y position feedback
+	WORD itemIndexArray[] = { AXISINDEX_00, AXISINDEX_01 };
+	STATUSITEM itemCodeArray[] = { STATUSITEM_PositionFeedback, STATUSITEM_PositionFeedback };
+	DWORD itemExtrasArray[] = { 0, 0 };
+	double itemValuesArray[2];
+	cv::Point2d curPos;
+
 	while (true) {
-	
+		// get the position feedback simultaneously
+		if (!A3200StatusGetItems(handle, 2, itemIndexArray, itemCodeArray, itemExtrasArray, itemValuesArray)) {
+			curPos = cv::Point2d(itemValuesArray[0], itemValuesArray[1]);
+
+		} 
+		else { A3200Error(); }
+		std::this_thread::sleep_for(std::chrono::milliseconds(rate));
 	}
+
 }

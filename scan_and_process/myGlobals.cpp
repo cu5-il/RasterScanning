@@ -5,9 +5,6 @@ A3200DataCollectConfigHandle DCCHandle = NULL;
 
 std::vector<Segment> segments;
 threadsafe_queue<edgeMsg> q_edgeMsg;
-bool doneScanning = false;
-bool positionFlag = false;
 
-
-extern int segmentScan = 0; // segment being scanned
-extern int segmentError = 0; // segment that errors are being calculated for
+extern int segmentNumScan = 0; // segment being scanned
+extern int segmentNumError = 0; // segment that errors are being calculated for
