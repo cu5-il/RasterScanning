@@ -94,8 +94,8 @@ void getMatlEdges(const cv::Rect& segmentROI, const cv::Mat& gblEdges, std::vect
  * @param[in] rasterSize Size of the raster image
  * @param[in] lEdgePts Points making up the left edge of the rod
  * @param[in] rEdgePts Points making up the right edge of the rod
- * @param[out] errCL Material centerline error
- * @param[out] errWD Material width error
+ * @param[out] errCL Material centerline error in pixels
+ * @param[out] errWD Material width error in pixels
 */
 void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size rasterSize, const std::vector<cv::Point>& lEdgePts, const std::vector<cv::Point>& rEdgePts, std::vector<double>& errCL, std::vector<double>& errWD) {
 	// Calculate Errors
@@ -118,6 +118,6 @@ void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size ra
 		// maybe check if the dXform distance is greater than the boundary width
 		centerline.push_back(lnit.pos()); // add the points from the centerline
 		errCL.push_back((rEdge.at<float>(lnit.pos()) - lEdge.at<float>(lnit.pos())) / 2);
-		errWD.push_back(lEdge.at<float>(lnit.pos()) + rEdge.at<float>(lnit.pos()) - width);
+		errWD.push_back(lEdge.at<float>(lnit.pos()) + rEdge.at<float>(lnit.pos()) - MM2PIX(width));
 	}
 }
