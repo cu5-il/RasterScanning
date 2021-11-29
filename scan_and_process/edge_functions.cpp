@@ -103,6 +103,8 @@ void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size ra
 	cv::Mat rEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255)); // Image to draw the right edge on
 	cv::LineIterator lnit(lEdge, centerline.front(), centerline.back(), 8);
 	centerline.clear(); // clear the points in the centerline vector
+	errCL.clear(); // clear the errors
+	errWD.clear();
 	errCL.reserve(lnit.count);
 	errWD.reserve(lnit.count);
 	// See how far the edges are from the unmodified path
