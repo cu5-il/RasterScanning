@@ -15,15 +15,17 @@ private:
 	cv::Rect _ROI; //bounding box around the segment which should contain the edges
 	std::vector<cv::Point> _centerline; //centerline of the path in the segment
 	cv::Point2d _scanDonePt; //point when the segment should be done scanning in [mm]
+	int _dir;
 	std::vector<cv::Point> _lEdgePts; //left edge points in the region
 	std::vector<cv::Point> _rEdgePts; //right edge points in the region
 	std::vector<double> _errCL; //centerline error
 	std::vector<double> _errWD; //width error
 public:
-	Segment(cv::Rect ROI, std::vector<cv::Point> centerline, cv::Point2d scanDonePt) {
+	Segment(cv::Rect ROI, std::vector<cv::Point> centerline, cv::Point2d scanDonePt, int direction) {
 		_ROI = ROI;
 		_centerline = centerline;
 		_scanDonePt = scanDonePt;
+		_dir = direction;
 	}
 	void addEdges(std::vector<cv::Point> lEdgePts, std::vector<cv::Point> rEdgePts) {
 		_lEdgePts = lEdgePts;
@@ -38,6 +40,7 @@ public:
 	const cv::Rect& ROI() const { return _ROI; }
 	const std::vector<cv::Point>& centerline() const { return _centerline; }
 	const cv::Point2d& scanDonePt() const { return _scanDonePt; }
+	const int& dir() const { return _dir; }
 	const std::vector<cv::Point>& lEdgePts() const { return _lEdgePts; }
 	const std::vector<cv::Point>& rEdgePts() const { return _rEdgePts; }
 	const std::vector<double>& errCL() const { return _errCL; }

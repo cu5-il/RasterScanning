@@ -22,6 +22,7 @@ void makeSegments(const std::vector<cv::Point>& rasterCoords, double ROIwidth, s
 	std::vector<std::vector<cv::Point>> centerlines;
 	std::vector<cv::Point2d> scanDonePts;
 	int pixWidth = MM2PIX(ROIwidth);
+	int direction = 1;
 	// Rods
 	for (auto it = rasterCoords.begin(); it != rasterCoords.end(); std::advance(it,2)) {
 		ROIs.push_back(cv::Rect(*it - cv::Point(pixWidth / 2, 0), *std::next(it, 1) + cv::Point(pixWidth / 2, 0)));
@@ -38,7 +39,8 @@ void makeSegments(const std::vector<cv::Point>& rasterCoords, double ROIwidth, s
 	// Placing all of the values in the Segment class
 	if ((ROIs.size() == centerlines.size()) && (ROIs.size() == scanDonePts.size())) {
 		for (int i = 0; i < ROIs.size(); i++){
-			seg.push_back(Segment(ROIs[i], centerlines[i], scanDonePts[i]));
+			seg.push_back(Segment(ROIs[i], centerlines[i], scanDonePts[i],direction));
+			direction *= -1; // flip direction
 		}
 	}
 
