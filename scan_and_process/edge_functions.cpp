@@ -48,18 +48,18 @@ void makeSegments(const std::vector<cv::Point>& rasterCoords, double ROIwidth, s
 
 /**
  * @brief Finds the left and right edges of the material and smooths them
- * @param[in] edgeRegions Rectangle specifying the region of the image to search for the edges 
+ * @param[in] segmentROI Rectangle specifying the region of the image to search for the edges 
  * @param[in] gblEdges Image of edge points found by the scanner
  * @param[out] lEdgePts Filtered points that make up the edge in the left half of the ROI
  * @param[out] rEdgePts Filtered points that make up the edge in the right half of the ROI
  * @param[in] interp Flag indicating whether to interpolate the output edge points 
 */
-void getMatlEdges(const cv::Rect& edgeRegions, cv::Mat& gblEdges, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, bool interp = false) {
+void getMatlEdges(const cv::Rect& segmentROI, cv::Mat& gblEdges, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, bool interp = false) {
 	std::vector<cv::Point> unfiltLeft, unfiltRight;
 	cv::Mat interpPts;
 	// find the left and right edge points in the regions
-	cv::Rect lRegion = edgeRegions - cv::Size(edgeRegions.width / 2, 0);
-	cv::Rect rRegion = lRegion + cv::Point(edgeRegions.width / 2, 0);
+	cv::Rect lRegion = segmentROI - cv::Size(segmentROI.width / 2, 0);
+	cv::Rect rRegion = lRegion + cv::Point(segmentROI.width / 2, 0);
 	// find the edges in the search regions
 	cv::findNonZero(gblEdges(lRegion), unfiltLeft);
 	cv::findNonZero(gblEdges(rRegion), unfiltRight);
@@ -95,7 +95,7 @@ void getMatlEdges(const cv::Rect& edgeRegions, cv::Mat& gblEdges, std::vector<cv
  * @param[out] errCL Material centerline error
  * @param[out] errWD Material width error
 */
-void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size rasterSize, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, std::vector<double>& errCL, std::vector<double>& errWD) {
+void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size rasterSize, const std::vector<cv::Point>& lEdgePts, const std::vector<cv::Point>& rEdgePts, std::vector<double>& errCL, std::vector<double>& errWD) {
 	// Calculate Errors
 	cv::Mat lEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255)); // Image to draw the left edge on
 	cv::Mat rEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255)); // Image to draw the right edge on
