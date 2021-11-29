@@ -95,17 +95,14 @@ void getMatlEdges(const cv::Rect& edgeRegions, cv::Mat& gblEdges, std::vector<cv
  * @param[out] errCL Material centerline error
  * @param[out] errWD Material width error
 */
-void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size rasterSize, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, std::vector <std::vector<double>>& errCL, std::vector<std::vector<double>>& errWD) {
-	//TODO: Remove rasterSize as an input if raster is a global variable
+void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size rasterSize, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, std::vector<double>& errCL, std::vector<double>& errWD) {
 	// Calculate Errors
-	std::vector<double> ecl, ewd; // centerline and width errors
 	cv::Mat lEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255)); // Image to draw the left edge on
 	cv::Mat rEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255)); // Image to draw the right edge on
 	cv::LineIterator lnit(lEdge, centerline.front(), centerline.back(), 8);
 	centerline.clear(); // clear the points in the centerline vector
-	//TODO: all error points are stored, not just for a single rod
-	ecl.reserve(lnit.count);
-	ewd.reserve(lnit.count);
+	errCL.reserve(lnit.count);
+	errWD.reserve(lnit.count);
 	// See how far the edges are from the unmodified path
 	// Draw the smoothed edges on an image
 	cv::polylines(lEdge, lEdgePts, false, cv::Scalar(0), 1);
@@ -118,9 +115,7 @@ void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size ra
 		//TODO: check if there is a measured edge to the left / right of the path
 		// maybe check if the dXform distance is greater than the boundary width
 		centerline.push_back(lnit.pos()); // add the points from the centerline
-		ecl.push_back((rEdge.at<float>(lnit.pos()) - lEdge.at<float>(lnit.pos())) / 2);
-		ewd.push_back(lEdge.at<float>(lnit.pos()) + rEdge.at<float>(lnit.pos()) - width);
+		errCL.push_back((rEdge.at<float>(lnit.pos()) - lEdge.at<float>(lnit.pos())) / 2);
+		errWD.push_back(lEdge.at<float>(lnit.pos()) + rEdge.at<float>(lnit.pos()) - width);
 	}
-	errCL.push_back(ecl);
-	errWD.push_back(ewd);
 }
