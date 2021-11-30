@@ -1,6 +1,9 @@
 #pragma once
 #include <cmath>
 
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
+
 #define SAMPLING_TIME 0.25
 #define NUM_DATA_SAMPLES 1800
 #define NUM_DATA_SIGNALS 6
@@ -18,4 +21,6 @@
 
 #define SCAN_OFFSET 0
 
-#define CVPLOT_HEADER_ONLY 
+#define CVPLOT_HEADER_ONLY
+
+#endif // CONSTANTS_H

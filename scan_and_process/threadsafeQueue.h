@@ -1,12 +1,14 @@
 #pragma once
-
-// Listing 6.3 for a threadsafe queue from the second edition of "C++ Concurrency in Action" by Anthony Williams
-// https://github.com/anthonywilliams/ccia_code_samples/blob/main/listings/listing_6.3.cpp
-
 #include <queue>
 #include <mutex>
 #include <condition_variable>
 #include <memory>
+
+// Listing 6.3 for a threadsafe queue from the second edition of "C++ Concurrency in Action" by Anthony Williams
+// https://github.com/anthonywilliams/ccia_code_samples/blob/main/listings/listing_6.3.cpp
+
+#ifndef THREADSAFE_QUEUE_H
+#define THREADSAFE_QUEUE_H
 
 template<typename T>
 class threadsafe_queue
@@ -71,3 +73,5 @@ public:
     }
 
 };
+
+#endif // THREADSAFE_QUEUE_H

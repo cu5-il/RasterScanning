@@ -1,9 +1,11 @@
 /* Function declarations*/
 #pragma once
-
 #include "constants.h"
 #include "myTypes.h"
 #include <opencv2/core.hpp>
+
+#ifndef DISPLAY_FNS_H
+#define DISPLAY_FNS_H
 
 void mouse_callback(int  event, int  x, int  y, int  flag, void* param);
 
@@ -18,3 +20,5 @@ cv::Mat showAll(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point 
 void addScale(cv::Mat& image, cv::Point offset = cv::Point(25, 25));
 
 void showErrors(cv::InputArray src, cv::OutputArray dst, std::vector<Segment>& seg);
+
+#endif // DISPLAY_FNS_H

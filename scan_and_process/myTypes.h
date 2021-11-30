@@ -4,6 +4,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
+#ifndef MY_TYPES_H
+#define MY_TYPES_H
 // TODO: change Coords to structure
 typedef struct Coords {
 	double x;
@@ -65,3 +67,5 @@ public:
 	const int& segmentNum() const { return _segmentNum; }
 	const bool& doneScanning() const { return _doneScanning; }
 };
+
+#endif // MY_TYPES_H

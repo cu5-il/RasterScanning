@@ -8,6 +8,8 @@
 #include <opencv2/core.hpp>
 #include "threadsafeQueue.h"
 
+#ifndef MY_GLOBALS_H
+#define MY_GLOBALS_H
 
 extern A3200Handle handle;
 extern A3200DataCollectConfigHandle DCCHandle;
@@ -17,3 +19,5 @@ extern threadsafe_queue<edgeMsg> q_edgeMsg;
 
 extern int segmentNumScan;
 extern int segmentNumError;
+
+#endif // MY_GLOBALS_H
