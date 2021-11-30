@@ -193,7 +193,7 @@ void showErrors(cv::InputArray src, cv::OutputArray dst, std::vector<Segment>& s
 	// getting the values from each segment
 	for (auto it = seg.begin(); it != seg.end(); ++it) {
 		// check if there are edge points
-		if ((*it).lEdgePts().size() > 0 && (*it).rEdgePts().size() > 0) {
+		if (!(*it).lEdgePts().empty() && !(*it).rEdgePts().empty() ) {
 			// Draw material edges
 			cv::polylines(tempLines, (*it).lEdgePts(), false, cv::Scalar(255, 255, 0), 1);
 			cv::polylines(tempLines, (*it).rEdgePts(), false, cv::Scalar(255, 255, 0), 1);
@@ -205,7 +205,7 @@ void showErrors(cv::InputArray src, cv::OutputArray dst, std::vector<Segment>& s
 			allEdgePts.clear();
 		}
 		// check if the errors have been calculated
-		if ((*it).errCL().size() > 0 && (*it).errWD().size() > 0) {
+		if (!(*it).errCL().empty() && !(*it).errWD().empty() ) {
 			for (int i = 0; i < (*it).errCL().size(); i++) {
 				actCenterline.push_back((*it).centerline()[i] + cv::Point((int)round((*it).errCL()[i]), 0));
 				lEdgeErr.push_back(actCenterline.back() - cv::Point((int)round((*it).errWD()[i] / 2), 0));
