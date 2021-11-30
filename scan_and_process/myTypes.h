@@ -1,8 +1,10 @@
 #pragma once
 #include<vector>
 #include<opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
-// TODO: check if typedef is needed
+// TODO: change Coords to structure
 typedef struct Coords {
 	double x;
 	double y;

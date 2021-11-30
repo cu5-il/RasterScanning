@@ -177,3 +177,55 @@ void addScale(cv::Mat& image, cv::Point offset = cv::Point(25,25) ) {
 	cv::putText(image, "1mm", location, cv::FONT_HERSHEY_SIMPLEX, .7, cv::Scalar(255, 255, 255), 1, cv::LINE_8);
 	cv::rectangle(image, cv::Rect(location.x + 6, location.y + 5, MM2PIX(1), 5), cv::Scalar(255, 255, 255), -1);
 }
+
+/**
+ * @brief 
+ * @param src 
+ * @param dst 
+ * @param seg 
+*/
+void showErrors(cv::InputArray src, cv::OutputArray dst, std::vector<Segment>& seg) {
+	std::vector<cv::Point> allEdgePts, actCenterline, lEdgeErr, rEdgeErr;
+	cv::Mat tempLines= cv::Mat::zeros(src.size(), src.type());
+	cv::Mat tempFill = cv::Mat::zeros(src.size(), src.type());
+	cv::Mat mask = cv::Mat(src.size(), src.type());
+
+	// getting the values from each segment
+	for (auto it = seg.begin(); it != seg.end(); ++it) {
+		// check if there are edge points
+		if ((*it).lEdgePts().size() > 0 && (*it).rEdgePts().size() > 0) {
+			// Draw material edges
+			cv::polylines(tempLines, (*it).lEdgePts(), false, cv::Scalar(255, 255, 0), 1);
+			cv::polylines(tempLines, (*it).rEdgePts(), false, cv::Scalar(255, 255, 0), 1);
+			// Fill the region between the edges
+			allEdgePts.reserve((*it).lEdgePts().size() + (*it).rEdgePts().size()); // preallocate memory
+			allEdgePts.insert(allEdgePts.end(), (*it).lEdgePts().begin(), (*it).lEdgePts().end());
+			allEdgePts.insert(allEdgePts.end(), (*it).rEdgePts().rbegin(), (*it).rEdgePts().rend());
+			cv::fillPoly(tempFill, allEdgePts, cv::Scalar(255, 255, 0));
+			allEdgePts.clear();
+		}
+		// check if the errors have been calculated
+		if ((*it).errCL().size() > 0 && (*it).errWD().size() > 0) {
+			for (int i = 0; i < (*it).errCL().size(); i++) {
+				actCenterline.push_back((*it).centerline()[i] + cv::Point((int)round((*it).errCL()[i]), 0));
+				lEdgeErr.push_back(actCenterline.back() - cv::Point((int)round((*it).errWD()[i] / 2), 0));
+				rEdgeErr.push_back(actCenterline.back() + cv::Point((int)round((*it).errWD()[i] / 2), 0));
+			}
+			// Draw the errors
+			cv::polylines(tempLines, lEdgeErr, false, cv::Scalar(0, 255, 255), 1);
+			cv::polylines(tempLines, rEdgeErr, false, cv::Scalar(0, 255, 255), 1);
+			cv::polylines(tempLines, actCenterline, false, cv::Scalar(0, 0, 255), 1);
+			lEdgeErr.clear();
+			rEdgeErr.clear();
+			actCenterline.clear();
+		}
+	}
+	// copy the source to the destination
+	src.copyTo(dst);
+	// overlay the fill on the destination
+	cv::addWeighted(tempFill, 0.5, dst, 1, 0, dst);
+	// add the lines to the destination
+	cv::cvtColor(tempLines, mask, cv::COLOR_BGR2GRAY);
+	cv::threshold(mask, mask, 1, 255, cv::THRESH_BINARY);
+	tempLines.copyTo(dst, mask);
+}
