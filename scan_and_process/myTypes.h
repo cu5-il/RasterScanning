@@ -19,7 +19,7 @@ private:
 	cv::Rect _ROI; //bounding box around the segment which should contain the edges
 	std::vector<cv::Point> _centerline; //centerline of the path in the segment
 	cv::Point2d _scanDonePt; //point when the segment should be done scanning in [mm]
-	int _dir;
+	int _dir; // direction of the segment. 1 if moving in the positive direction, -1 if moving in the negative directon
 	std::vector<cv::Point> _lEdgePts; //left edge points in the region
 	std::vector<cv::Point> _rEdgePts; //right edge points in the region
 	std::vector<double> _errCL; //centerline error
@@ -57,6 +57,10 @@ private:
 	int _segmentNum;
 	bool _doneScanning;
 public:
+	edgeMsg() {
+		_segmentNum = 0;
+		_doneScanning = false;
+	}
 	void addEdges(cv::Mat edges, int segmentNum, bool doneScanning) {
 		_edges = edges;
 		_segmentNum = segmentNum;
