@@ -58,7 +58,7 @@ void Extruder::set(double AO) {
 	if (!A3200IOAnalogOutput(handle, TASK_EXTRUDE, 1, AXISINDEX_00, AO)) { A3200Error(); } //equivalent to $AO[1].X = AO
 	
 	if (AO < 0) {
-		if (!_augerEnabled)
+		if (_airEnabled)
 		air(false); } // disable air if retracting auger
 	else if(!_enabled()) { enable(); }
 }
