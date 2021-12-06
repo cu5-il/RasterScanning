@@ -9,8 +9,10 @@
 #define NUM_DATA_SIGNALS 6
 #define NUM_PROFILE_PTS 1600 // = 800 * Profile_out_update / SAMPLING_TIME  (Profile_out_update from LJ navigator "Common > Analog output > prof out update")
 #define OUT_VOLTAGE -6
-#define TASK_TRIG TASKID_04
 #define OPAMP_GAIN -0.49875
+#define TASK_SCAN TASKID_04
+#define TASK_MOVE TASKID_01
+#define TASK_EXTRUDE TASKID_02
 
 #define SCAN_WIDTH 26.4
 #define RESOLUTION 0.02  // 1 pixel = RESOLUTION mm
@@ -22,5 +24,9 @@
 #define SCAN_OFFSET 0
 
 #define CVPLOT_HEADER_ONLY
+
+#define AXES_ALL (AXISMASK)(AXISMASK_00 | AXISMASK_01 | AXISMASK_02 | AXISMASK_03)
+#define DISPOSAL_X 124
+#define DISPOSAL_Y -82
 
 #endif // CONSTANTS_H
