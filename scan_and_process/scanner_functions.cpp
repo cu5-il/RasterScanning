@@ -21,7 +21,7 @@ bool setupDataCollection(A3200Handle handle, A3200DataCollectConfigHandle DCCHan
 	if (!A3200DataCollectionConfigApply(handle, DCCHandle)) { return false; }
 
 	// Initializing AnalogOutput0 to 0V 
-	if (!A3200IOAnalogOutput(handle, TASK_TRIG, 0, AXISINDEX_00, 0)) { return false; }
+	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, 0)) { return false; }
 
 	return true;
 }
@@ -40,8 +40,8 @@ bool collectData(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle, DOU
 	if (!A3200DataCollectionStart(handle, DCCHandle)) { return false; }
 
 	// Triggering the laser scanner by sending a pulse from AnalogOutput0 
-	if (!A3200IOAnalogOutput(handle, TASK_TRIG, 0, AXISINDEX_00, OUT_VOLTAGE)) { return false; }
-	if (!A3200IOAnalogOutput(handle, TASK_TRIG, 0, AXISINDEX_00, 0)) { return false; }
+	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, OUT_VOLTAGE)) { return false; }
+	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, 0)) { return false; }
 
 	// Retrieving the collected data
 	if (!A3200DataCollectionDataRetrieve(handle, NUM_DATA_SIGNALS, NUM_DATA_SAMPLES, (DOUBLE*)data)) { return false; }
