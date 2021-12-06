@@ -153,8 +153,10 @@
     <ClInclude Include="cvPlot_functions.h" />
     <ClInclude Include="display_functions.h" />
     <ClInclude Include="edge_functions.h" />
+    <ClInclude Include="extrusion.h" />
     <ClInclude Include="gaussianSmooth.h" />
     <ClInclude Include="makeRaster.h" />
+    <ClInclude Include="motion.h" />
     <ClInclude Include="myGlobals.h" />
     <ClInclude Include="myTypes.h" />
     <ClInclude Include="processing_functions.h" />
@@ -170,6 +172,7 @@
     <ClCompile Include="edge_functions.cpp" />
     <ClCompile Include="gaussianSmooth.cpp" />
     <ClCompile Include="makeRaster.cpp" />
+    <ClCompile Include="motion.cpp" />
     <ClCompile Include="myGlobals.cpp" />
     <ClCompile Include="processing_functions.cpp" />
     <ClCompile Include="ScanAndProcess_main.cpp" />
