@@ -26,26 +26,26 @@
 #include "edge_functions.h"
 #include "A3200_functions.h"
 #include "thread_functions.h"
+#include "csvMat.h"
+#include "motion.h"
 
+cv::Mat translateImg(cv::Mat& img, int offsetx, int offsety);
 
 int main() {
 	AXISMASK axisMask = (AXISMASK)(AXISMASK_00 | AXISMASK_01 | AXISMASK_02);
 
-	std::thread t1;
+	std::thread t_scan, t_process;
+	cv::Point2d initPos;
+	cv::Rect2d printROI;
 
 	// Make raster
 	cv::Mat raster, edgeBoundary;
 	std::vector<cv::Point> rasterCoords;
-	std::vector<cv::Rect> edgeRegions;
-	std::vector<std::vector<cv::Point>> centerlines;
-	std::vector<cv::Point2d> scanDonePts;
 	double border = 1;
 	makeRaster(9, 1, border, 1 - 0.04, raster, edgeBoundary, rasterCoords);
 
-	makeSegments(rasterCoords, border, edgeRegions, centerlines, scanDonePts);
-	cv::Point2d initPos = cv::Point2d(0, 0);
-	cv::Rect2d printROI = cv::Rect2d(-border, -border, PIX2MM(raster.cols), PIX2MM(raster.rows)) + initPos;
-	
+	goto skipsetup;
+
 	// A3200 Setup
 	//=======================================
 	//Connecting to the A3200
@@ -64,10 +64,36 @@ int main() {
 	if (!A3200MotionDisable(handle, TASKID_Library, axisMask)) { A3200Error(); }
 	//=======================================
 
-	t1 = std::thread{ t_CollectScans, raster, edgeBoundary, printROI };
+	initPos = cv::Point2d(0, 0);
+	 printROI = cv::Rect2d(-border, -border, PIX2MM(raster.cols), PIX2MM(raster.rows)) + initPos;
+
+	// Creating the segmets
+	makeSegments(rasterCoords, border, segments);
+
+	printPath(rasterCoords, initPos, 1);
 
 
-	t1.join();
+skipsetup:
+
+	goto skipThreading;
+	//// LOAD DATA TO TEST MULTITHREADING
+	//cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
+	//readCSV("C:/Users/cu5/Box/Research/Code/Image Processing/Edge Data/gbledges_raster.csv", gblEdges);
+	//gblEdges.convertTo(gblEdges, CV_8UC1);
+	////HACK: Shifting glbEdges by a few pixels to the leftso it aligns better
+	//translateImg(gblEdges, -2, 0);
+	//cv::Mat img = showRaster(raster, gblEdges, cv::Scalar(155, 155, 155));
+
+	t_scan = std::thread{ t_CollectScans, raster, edgeBoundary, printROI };
+	//t_scan = std::thread{ t_CollectScans, gblEdges, edgeBoundary, printROI }; // HACK: passed edges in through raster input
+	t_process = std::thread{ t_GetMatlErrors, raster };
+
+	t_scan.join();
+	t_process.join();
+	std::cout << "All segments have been processed" << std::endl;
+
+	//showErrors(img, img, segments);
+skipThreading:
 
 	//A3200 Cleanup
 	//=======================================
@@ -87,3 +113,8 @@ int main() {
 	return 0;
 }
 
+cv::Mat translateImg(cv::Mat& img, int offsetx, int offsety) {
+	cv::Mat trans_mat = (cv::Mat_<double>(2, 3) << 1, 0, offsetx, 0, 1, offsety);
+	cv::warpAffine(img, img, trans_mat, img.size());
+	return img;
+}
