@@ -27,7 +27,7 @@ public:
 
 };
 
-Extruder::Extruder() {
+inline Extruder::Extruder() {
 	//enable auger and air
 	if (!A3200IODigitalOutput(handle, TASK_EXTRUDE, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $WO[0].X = 0
 	_augerEnabled = false;
@@ -36,7 +36,7 @@ Extruder::Extruder() {
 /**
  * @brief Enables extrusion by enabling the auger and air
 */
-void Extruder::enable() { 
+inline void Extruder::enable() {
 	if (!A3200IODigitalOutput(handle, TASK_EXTRUDE, 0, AXISINDEX_00, 3)) { A3200Error(); } //equivalent to $WO[0].X = 3
 	_augerEnabled = true;
 	_airEnabled = true;
@@ -44,7 +44,7 @@ void Extruder::enable() {
 /**
  * @brief Disables extrusion by disabling the auger and air
 */
-void Extruder::disable() {
+inline void Extruder::disable() {
 	if (!A3200IODigitalOutput(handle, TASK_EXTRUDE, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $WO[0].X = 0
 	_augerEnabled = false;
 	_airEnabled = false;
@@ -53,7 +53,7 @@ void Extruder::disable() {
  * @brief Sets the speed of the auger
  * @param AO Voltage output sent to the auger motor controller. Saturates at +/-10V
 */
-void Extruder::set(double AO) {
+inline void Extruder::set(double AO) {
 	if (fabs(AO) > 10) { AO = copysign(10.0, AO); } // Saturate output at +/-10.0
 	if (!A3200IOAnalogOutput(handle, TASK_EXTRUDE, 1, AXISINDEX_00, AO)) { A3200Error(); } //equivalent to $AO[1].X = AO
 	
@@ -66,7 +66,7 @@ void Extruder::set(double AO) {
  * @brief Enables or disables the auger
  * @param enable Set to TRUE to enable the auger, FALSE to disable
 */
-void Extruder::auger(bool enable) {
+inline void Extruder::auger(bool enable) {
 	if (enable) { // turn on the auger
 		if (!A3200IODigitalOutputBit(handle, TASK_EXTRUDE, 1, AXISINDEX_00, 1)) { A3200Error(); } //equivalent to $DO[1].X = 1
 		_augerEnabled = true;
@@ -80,7 +80,7 @@ void Extruder::auger(bool enable) {
  * @brief Enables or disables the air
  * @param enable Set to TRUE to enable the air, FALSE to disable
 */
-void Extruder::air(bool enable) {
+inline void Extruder::air(bool enable) {
 	if (enable) { // turn on the air
 		if (!A3200IODigitalOutputBit(handle, TASK_EXTRUDE, 0, AXISINDEX_00, 1)) { A3200Error(); } //equivalent to $DO[0].X = 1
 		_airEnabled = true;
