@@ -9,16 +9,9 @@
 #include "A3200.h"
 #include "A3200_functions.h"
 #include <opencv2/core.hpp>
-#include "extrusion.h"
 
-void printPath(const std::vector<cv::Point> pathCoords, cv::Point2d initPos, double speed, double augerSpeed) {
-	Extruder extruder;
-	std::deque<cv::Point2d> path;
-	double nextPos[2];
-	//convert vector of path coordinates in [pix] into a deque of coordinates in [mm]
-	for (auto it = pathCoords.begin(); it != pathCoords.end(); ++it) {
-		path.push_back(PIX2MM(cv::Point2d(*it)) + initPos);
-	}
+void printPath(std::deque<std::vector<double>>& path, cv::Point2d initPos, double speed, double augerSpeed) {
+	double nextPos[3];
 
 	//Set motion commands to be in absolute mode
 	if (!A3200MotionSetupAbsolute(handle, TASK_MOVE)) { A3200Error(); }
@@ -28,10 +21,11 @@ void printPath(const std::vector<cv::Point> pathCoords, cv::Point2d initPos, dou
 	// loop through all points in the path
 	while (!path.empty()){
 		// get the next coordinates
-		nextPos[0] = path.front().x;
-		nextPos[1] = path.front().y;
+		nextPos[0] = path.front()[0] + initPos.x;
+		nextPos[1] = path.front()[1] + initPos.y;
+		nextPos[2] = path.front()[2];
 		// move to the next coordinates
-		if (!A3200MotionLinearVelocity(handle, TASK_MOVE, (AXISMASK)(AXISMASK_00 | AXISMASK_01), nextPos, speed )) { A3200Error(); }
+		if (!A3200MotionLinearVelocity(handle, TASK_MOVE, (AXISMASK)(AXISMASK_00 | AXISMASK_01 | AXISMASK_02), nextPos, speed )) { A3200Error(); }
 		// set the auger speed
 		extruder.set(augerSpeed);
 		// pop the coordinates from the deque

@@ -21,7 +21,8 @@
 #define RASTER_IMG_WIDTH 11.0 //TODO: incorporate this into the makeRaster Function
 #define PI 3.14159265
 
-#define SCAN_OFFSET 0
+#define SCAN_OFFSET 18
+#define VELOCITY 1
 
 #define CVPLOT_HEADER_ONLY
 
