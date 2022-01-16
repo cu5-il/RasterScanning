@@ -41,16 +41,17 @@ int main() {
 	cv::Point2d initPos;
 	cv::Rect2d printROI;
 
+	//Load the raster path generated in Matlab
+	double rodLength, rodSpacing;
+	std::deque<std::vector<double>> path;
+	readPath("pathCoords.txt", rodLength, rodSpacing, path);
+
 	// Make raster
 	cv::Mat raster, edgeBoundary;
 	std::vector<cv::Point> rasterCoords;
 	double border = 1;
-	makeRaster(9, 1, border, 1 - 0.04, raster, edgeBoundary, rasterCoords);
-	Raster ras(12, 4, border, 1 - 0.04);
-	
-	//export2matlab("raster.m", ras);
-	std::deque<std::vector<double>> path;
-	readPath("pathCoords.txt", path);
+	makeRaster(rodLength, rodSpacing, border, 1 - 0.04, raster, edgeBoundary, rasterCoords);
+	//Raster ras(rodLength, rodSpacing, border, 1 - 0.04);
 
 	goto skipsetup;
 
@@ -63,6 +64,8 @@ int main() {
 	if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { A3200Error(); }
 	// Setting up the data collection
 	if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
+	// Initializing the extruder
+	extruder.initialize(handle);
 	// Homing and moving the axes to the start position
 	std::cout << "Homing axes." << std::endl;
 	if (!A3200MotionEnable(handle, TASKID_Library, axisMask)) { A3200Error(); }
@@ -78,7 +81,7 @@ skipsetup:
 	// Creating the segmets
 	makeSegments(rasterCoords, border, segments);
 
-	//printPath(rasterCoords, initPos, 1);
+	printPath(path, initPos, 1, 0.5);
 
 
 
