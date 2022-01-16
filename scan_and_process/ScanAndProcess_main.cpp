@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iterator> 
 #include <valarray>
+#include <deque>
 
 #include <opencv2/core.hpp>
 #include "opencv2/core/utility.hpp"
@@ -28,6 +29,8 @@
 #include "thread_functions.h"
 #include "csvMat.h"
 #include "motion.h"
+#include "raster.h"
+#include "matlab.h"
 
 cv::Mat translateImg(cv::Mat& img, int offsetx, int offsety);
 
@@ -43,6 +46,11 @@ int main() {
 	std::vector<cv::Point> rasterCoords;
 	double border = 1;
 	makeRaster(9, 1, border, 1 - 0.04, raster, edgeBoundary, rasterCoords);
+	Raster ras(12, 4, border, 1 - 0.04);
+	
+	//export2matlab("raster.m", ras);
+	std::deque<std::vector<double>> path;
+	readPath("pathCoords.txt", path);
 
 	goto skipsetup;
 
@@ -63,17 +71,17 @@ int main() {
 	if (!A3200MotionWaitForMotionDone(handle, axisMask, WAITOPTION_InPosition, -1, NULL)) { A3200Error(); }
 	if (!A3200MotionDisable(handle, TASKID_Library, axisMask)) { A3200Error(); }
 	//=======================================
-
+skipsetup:
 	initPos = cv::Point2d(0, 0);
-	 printROI = cv::Rect2d(-border, -border, PIX2MM(raster.cols), PIX2MM(raster.rows)) + initPos;
+	printROI = cv::Rect2d(-border, -border, PIX2MM(raster.cols), PIX2MM(raster.rows)) + initPos;
 
 	// Creating the segmets
 	makeSegments(rasterCoords, border, segments);
 
-	printPath(rasterCoords, initPos, 1);
+	//printPath(rasterCoords, initPos, 1);
 
 
-skipsetup:
+
 
 	goto skipThreading;
 	//// LOAD DATA TO TEST MULTITHREADING

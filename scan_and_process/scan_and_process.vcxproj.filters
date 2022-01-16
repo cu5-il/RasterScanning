@@ -63,6 +63,12 @@
     <ClInclude Include="extrusion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="raster.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="matlab.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="myGlobals.cpp">
@@ -102,6 +108,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="motion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="matlab.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
