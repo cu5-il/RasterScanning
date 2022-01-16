@@ -35,11 +35,12 @@ void export2matlab(std::string filename, Raster& raster) {
     else std::cout << "Unable to open file";
 }
 
-void readPath(std::string filename, std::deque<std::vector<double>>& path)
+void readPath(std::string filename, double& rodLength, double& rodSpacing, std::deque<std::vector<double>>& path)
 {
 	std::ifstream inFile(filename.c_str());
 	std::string single_line;
 	double value;
+    int headerCnt = 0;
 
 	if (inFile.is_open()) {
 		while (std::getline(inFile, single_line)) {
@@ -47,11 +48,26 @@ void readPath(std::string filename, std::deque<std::vector<double>>& path)
 			std::stringstream temp(single_line);
 			std::string single_value;
 
-			while (std::getline(temp, single_value, ',')) {
-				value = std::stod(single_value);
-				vec.push_back(value);
+			switch (headerCnt)
+			{
+			default: // Read the path data
+				while (std::getline(temp, single_value, ',')) {
+					value = std::stod(single_value);
+					vec.push_back(value);
+				}
+				path.push_back(vec);
+				break;
+			// Read the header data
+			case 0:
+				rodLength = std::stod(single_line);
+				headerCnt++;
+				break;
+			case 1:
+				rodSpacing = std::stod(single_line);
+				headerCnt++;
+				break;
 			}
-			path.push_back(vec);
+
 		}
 	}
 	else {

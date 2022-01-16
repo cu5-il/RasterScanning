@@ -10,6 +10,6 @@
 
 void export2matlab(std::string filename, Raster& raster);
 
-void readPath(std::string filename, std::deque<std::vector<double>>& path);
+void readPath(std::string filename, double& rodLength, double& rodSpacing, std::deque<std::vector<double>>& path);
 
 #endif // MATLAB_H
