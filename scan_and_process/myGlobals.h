@@ -7,12 +7,15 @@
 #include "A3200.h"
 #include <opencv2/core.hpp>
 #include "threadsafeQueue.h"
+#include "extrusion.h"
 
 #ifndef MY_GLOBALS_H
 #define MY_GLOBALS_H
 
 extern A3200Handle handle;
 extern A3200DataCollectConfigHandle DCCHandle;
+
+extern Extruder extruder;
 
 extern std::vector<Segment> segments;
 extern threadsafe_queue<edgeMsg> q_edgeMsg;

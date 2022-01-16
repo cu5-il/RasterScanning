@@ -9,10 +9,8 @@
 #include "A3200.h"
 #include "A3200_functions.h"
 #include <opencv2/core.hpp>
-#include "extrusion.h"
 
 void printPath(std::deque<std::vector<double>>& path, cv::Point2d initPos, double speed, double augerSpeed) {
-	Extruder extruder;
 	double nextPos[3];
 
 	//Set motion commands to be in absolute mode
