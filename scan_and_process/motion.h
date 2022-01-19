@@ -8,6 +8,8 @@
 
 void printPath(std::deque<std::vector<double>>& path, cv::Point2d initPos, double speed, double augerSpeed);
 
+void postPrint(double speed, double augerSpeed);
+
 #endif // MOTION_H
 
 
