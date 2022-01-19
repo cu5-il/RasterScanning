@@ -2,11 +2,14 @@
 #include <fstream>
 #include <cmath>
 #include <vector> 
+#include <deque>
 
 #include "constants.h"
 #include "myTypes.h"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+
+#include "display_functions.h"
 
 /**
  * @brief Extracts the scanned profile and position feedback from the collected data
@@ -36,7 +39,15 @@ void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
 	cv::findNonZero(scanEdges, scanEdgesIdx);
 
 	scanStartIdx = scanEdgesIdx.at<int>(1, 0) + fbIdx[1]; // Starting index of the scan profile
-	scan = dataMat(cv::Rect(scanStartIdx, 0, NUM_PROFILE_PTS, 1)).clone() / OPAMP_GAIN; // Isolating the scanned profile and converting to height
+	// Check if entire scan captured
+	if ((scanStartIdx + NUM_PROFILE_PTS) <= NUM_DATA_SAMPLES) {
+		scan = dataMat(cv::Rect(scanStartIdx, 0, NUM_PROFILE_PTS, 1)).clone() / OPAMP_GAIN; // Isolating the scanned profile and converting to height
+	}
+	else {
+		//HACK: if entire scan isn't captured, send junk data
+		scan = cv::Mat(1, NUM_PROFILE_PTS, CV_64F, -11).clone(); 
+	}
+	
 
 	return;
 }
@@ -98,7 +109,6 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const cv::Rect2d printROI, cv::Si
 		return false;
 	}
 
-
 	return false;
 }
 
@@ -118,10 +128,11 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 	if ((scanStart != cv::Point(-1, -1)) && (scanEnd != cv::Point(-1, -1))) //Check if scan is within ROI
 	{
 		cv::LineIterator lineit(edgeBoundary, scanStart, scanEnd, 8);
-		std::vector<int> windowPts;
-		windowPts.reserve(lineit.count);
+		std::deque<int> windowPts;
 		uchar lastVal = 0;
 		uchar curVal = 0;
+		int numRising = 0, numFalling = 0;
+		cv::Point2d edgeCoord, slope;
 
 		// Initialize local masks to zero
 		locEdges = cv::Mat::zeros(scanROI.size(), CV_8U);
@@ -131,17 +142,20 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 		for (int i = 0; i < lineit.count; i++, ++lineit) {
 			curVal = *(const uchar*)*lineit;
 			if ((curVal == 255) && (lastVal == 0) && (i != 0)) { // find rising edges
-				windowPts.push_back(lineit.pos().x);
+				windowPts.push_back(i);
+				numRising++;
 			}
 			if ((curVal == 0) && (lastVal == 255) && (i != 0)) { // find falling edges
-				windowPts.push_back(lineit.pos().x);
+				windowPts.push_back(i);
+				numFalling++;
 			}
 			lastVal = curVal;
 		}
+		// Check if equal number of rising and falling edges (i.e. an odd number of window points)
 		if ((windowPts.size() % 2) != 0) {
-			std::cout << "ERROR: odd number of edges" << std::endl;
-			system("pause");
-			return;
+			// if scan ends in the middle of a rod, remove the last point; Otherwise, scan start in the middle of a rod so remove the first point
+			if (numRising > numFalling) { windowPts.pop_back(); }
+			else { windowPts.pop_front(); }
 		}
 
 		// create a height mask for the scan profile to remove all edges below a height threshold
@@ -167,18 +181,20 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 		for (auto it = windowPts.begin(); it != windowPts.end(); std::advance(it, 2)) {
 			// set the window search range
 			searchRange = cv::Range(*it, *std::next(it));
-			//find the edges be finging the local extrema of the profile derivative 
+			//find the edges by finding the local extrema of the profile derivative 
 			cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, minIdx, maxIdx);
 			foundEdges[0] = maxIdx[1] + searchRange.start;
 			foundEdges[1] = minIdx[1] + searchRange.start;
 
 			// mark edges on local profile and global ROI
+			slope = cv::Point2d(scanEnd - scanStart) / lineit.count;
 			for (int j = 0; j < 2; j++) {
-				// TODO: fix height mask when finding edges
-				//if (heightMask.at<uchar>(cv::Point(foundEdges[j], 0)) == 255) { // check if edges are within height mask
-				locEdges.at<uchar>(cv::Point(foundEdges[j], 0)) = 255;
-				gblEdges.at<uchar>(cv::Point(foundEdges[j] + scanStart.x, scanStart.y)) = 255;
-				//}
+				edgeCoord = cv::Point2d(scanStart) + foundEdges[j] * slope;
+				// check if edges are within height mask
+				if (heightMask.at<uchar>(cv::Point(foundEdges[j], 0)) == 255) { 
+					locEdges.at<uchar>(cv::Point(foundEdges[j], 0)) = 255;
+					gblEdges.at<uchar>(cv::Point2i(edgeCoord)) = 255;
+				}
 			}
 			// mark window borders
 			locWin.at<uchar>(cv::Point(searchRange.start, 0)) = 255;
