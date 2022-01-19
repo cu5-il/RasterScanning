@@ -23,16 +23,16 @@ void makeRaster(double length, double spacing, double border, double bdryWidth, 
 	while (coords.back().x <= (pixLen + coords.front().x) && coords.back().y <= (pixLen + coords.front().y)){
         switch (i % 4) {
         case 0:
-            coords.push_back(coords.back() + cv::Point(0, pixLen));
+            coords.push_back(coords.back() + cv::Point(pixLen, 0));
             break;
         case 1:
-            coords.push_back(coords.back() + cv::Point(pixSpac, 0));
+            coords.push_back(coords.back() + cv::Point(0, pixSpac));
             break;
         case 2:
-            coords.push_back(coords.back() - cv::Point(0, pixLen));
+            coords.push_back(coords.back() - cv::Point(pixLen, 0));
             break;
         case 3:
-            coords.push_back(coords.back() + cv::Point(pixSpac, 0));
+            coords.push_back(coords.back() + cv::Point(0, pixSpac));
             break;
         }
         i++;

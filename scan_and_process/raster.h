@@ -61,16 +61,16 @@ inline Raster::Raster(double length, double spacing, double border, double bdryW
 
         switch (i % 4) {
         case 0:
-            _cornersPix.push_back(_cornersPix.back() + cv::Point(0, pixLen));
+            _cornersPix.push_back(_cornersPix.back() + cv::Point(pixLen, 0));
             break;
         case 1:
-            _cornersPix.push_back(_cornersPix.back() + cv::Point(pixSpac, 0));
+            _cornersPix.push_back(_cornersPix.back() + cv::Point(0, pixSpac));
             break;
         case 2:
-            _cornersPix.push_back(_cornersPix.back() - cv::Point(0, pixLen));
+            _cornersPix.push_back(_cornersPix.back() - cv::Point(pixLen, 0));
             break;
         case 3:
-            _cornersPix.push_back(_cornersPix.back() + cv::Point(pixSpac, 0));
+            _cornersPix.push_back(_cornersPix.back() + cv::Point(0, pixSpac));
             break;
         }
         i++;
