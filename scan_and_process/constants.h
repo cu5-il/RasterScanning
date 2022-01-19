@@ -21,13 +21,13 @@
 #define RASTER_IMG_WIDTH 11.0 //TODO: incorporate this into the makeRaster Function
 #define PI 3.14159265
 
-#define SCAN_OFFSET 18
+#define SCAN_OFFSET 13.5
 #define VELOCITY 1
 
 #define CVPLOT_HEADER_ONLY
 
 #define AXES_ALL (AXISMASK)(AXISMASK_00 | AXISMASK_01 | AXISMASK_02 | AXISMASK_03)
-#define DISPOSAL_X 124
-#define DISPOSAL_Y -82
+#define DISPOSAL_X 30
+#define DISPOSAL_Y 160
 
 #endif // CONSTANTS_H
