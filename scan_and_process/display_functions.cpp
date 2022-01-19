@@ -25,7 +25,7 @@ void mouse_callback(int  event, int  x, int  y, int  flag, void* param)
  * @param[in] showImage Flag indicating whether to show the overlay in a new window or not
  * @return Mat containing the scan overlaid on the raster pattern 
 */
-cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd, bool showImage = false) {
+cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, const Coords fbk, cv::Point scanStart, cv::Point scanEnd, bool showImage = false) {
 	cv::Mat scanTall, scanGray, image, rasterInv;
 	int height = 2;
 	
@@ -41,9 +41,14 @@ cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Po
 		cv::Mat(raster.size(), CV_8UC3, cv::Scalar({ 0, 255, 0, 0 })).copyTo(image, raster);
 		// Copy the scan to the raster
 		bitwise_not(raster, rasterInv);
-		scanTall.copyTo(image(cv::Rect(scanStart, scanTall.size())), rasterInv(cv::Rect(scanStart, scanTall.size())));
+		//scanTall.copyTo(image(cv::Rect(scanStart, scanTall.size())), rasterInv(cv::Rect(scanStart, scanTall.size())));
 		// Draw a line where scan was taken
 		cv::line(image, scanStart, scanEnd, cv::Scalar(0, 0, 255), 2);
+
+		// Draw the position of the nozzle
+		cv::Point nozzle =cv::Point(MM2PIX(fbk.x-45), MM2PIX(fbk.y-15));
+		cv::circle(image, nozzle, 10, cv::Scalar(255, 0, 0), -1, cv::LINE_AA);
+
 		if (showImage) {
 			// Display the image
 			cv::namedWindow("Overlay", cv::WINDOW_NORMAL);
@@ -107,7 +112,7 @@ cv::Mat showRaster(cv::Mat raster, cv::Mat gblEdges, const cv::Scalar& color, co
 		std::vector<cv::Point> gblEdgePts;
 		cv::findNonZero(gblEdges, gblEdgePts);
 		for (auto it = gblEdgePts.begin(); it != gblEdgePts.end(); ++it) {
-			cv::circle(image, *it, 1, color, -1, cv::LINE_AA);
+			cv::circle(image, *it, pointSz, color, -1, cv::LINE_AA);
 		}
 	}
 	else {
@@ -140,21 +145,22 @@ cv::Mat showRaster(cv::Mat raster, cv::Mat gblEdges, const cv::Scalar& color, co
  * @return Mat contining the image
 */
 cv::Mat showAll(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd, cv::Mat locEdges, cv::Mat locWin, cv::Mat gblEdges, bool showImage = false) {
-	
+	cv::Mat image;
+
 	// making the images
-	cv::Mat overlay_img = showOverlay(raster, scanROI, scanStart, scanEnd, false);
+	//cv::Mat overlay_img = showOverlay(raster, scanROI, scanStart, scanEnd, false);
 	cv::Mat scan_img = showScan(scanROI, locEdges, locWin, false);
 	cv::Mat raster_img = showRaster(raster, gblEdges, false);
 
 	// Stretching the local scan image
 	cv::resize(scan_img, scan_img, cv::Size(scan_img.cols, 100), cv::INTER_LINEAR);
 
-	cv::Mat image(cv::Size(overlay_img.cols + raster_img.cols, scan_img.rows + raster_img.rows), CV_8UC3);
+	//cv::Mat image(cv::Size(overlay_img.cols + raster_img.cols, scan_img.rows + raster_img.rows), CV_8UC3);
 
 	// Copy the individual images to the combined image
 	raster_img.copyTo(image(cv::Rect(cv::Point(0, 0), raster_img.size())));
 	scan_img.copyTo(image(cv::Rect(cv::Point(0, raster_img.rows), scan_img.size())));
-	overlay_img.copyTo(image(cv::Rect(cv::Point(raster_img.cols, 0), overlay_img.size())));
+	//overlay_img.copyTo(image(cv::Rect(cv::Point(raster_img.cols, 0), overlay_img.size())));
 
 	if (showImage) {
 		// Display the image
@@ -186,9 +192,9 @@ void addScale(cv::Mat& image, cv::Point offset = cv::Point(25,25) ) {
 */
 void showErrors(cv::InputArray src, cv::OutputArray dst, std::vector<Segment>& seg) {
 	std::vector<cv::Point> allEdgePts, actCenterline, lEdgeErr, rEdgeErr;
-	cv::Mat tempLines= cv::Mat::zeros(src.size(), src.type());
-	cv::Mat tempFill = cv::Mat::zeros(src.size(), src.type());
-	cv::Mat mask = cv::Mat(src.size(), src.type());
+	cv::Mat tempLines= cv::Mat::zeros(src.size(), CV_8UC3);
+	cv::Mat tempFill = cv::Mat::zeros(src.size(), CV_8UC3);
+	cv::Mat mask = cv::Mat(src.size(), CV_8UC3);
 
 	// getting the values from each segment
 	for (auto it = seg.begin(); it != seg.end(); ++it) {

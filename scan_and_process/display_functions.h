@@ -9,7 +9,7 @@
 
 void mouse_callback(int  event, int  x, int  y, int  flag, void* param);
 
-cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd, bool showImage = false);
+cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, const Coords fbk, cv::Point scanStart, cv::Point scanEnd, bool showImage = false);
 
 cv::Mat showScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showImage = false);
 
