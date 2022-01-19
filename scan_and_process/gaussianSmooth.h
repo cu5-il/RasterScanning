@@ -7,4 +7,6 @@
 
 void gaussianSmoothX(const std::vector<cv::Point>& unfiltPts, std::vector<cv::Point>& filtPts, int kSize, double sig);
 
+void gaussianSmoothY(const std::vector<cv::Point>& unfiltPts, std::vector<cv::Point>& filtPts, int kSize, double sig);
+
 #endif // GAUSSIAN_SMOOTH_H
