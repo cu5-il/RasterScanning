@@ -9,6 +9,16 @@
 #include "constants.h"
 #include "gaussianSmooth.h"
 
+struct sortX {
+	bool operator() (cv::Point pt1, cv::Point pt2) { return (pt1.x < pt2.x); }
+}; 
+
+struct sortDist {
+	sortDist(cv::Point pt0) { this->pt0 = pt0; }
+	bool operator() (cv::Point pt1, cv::Point pt2) { return (cv::norm(pt0-pt1) < cv::norm(pt0 - pt2)); }
+	cv::Point pt0;
+};
+
 /**
  * @brief Breaks up the raster pattern into segments. Each vertical rod in the raster is a segment; corners are neglected.
  * @param[in] rasterCoords Vector of (x,y) points of the raster pattern
@@ -17,7 +27,7 @@
  * @param[out] centerlines Vector of point pairs defining the centerline of the region
  * @param[out] scanDonePts Point in the raster pattern when the region has been finished scanning. Set to midpoint of the following rod except for the last region, which is just the offset of the last point of the raster
 */
-void makeSegments(const std::vector<cv::Point>& rasterCoords, double ROIwidth, std::vector<Segment>& seg ) {
+void makeSegments(const std::vector<cv::Point>& rasterCoords, double ROIwidth, std::vector<Segment>& seg, cv::Point2d initPos) {
 	std::vector<cv::Rect> ROIs;
 	std::vector<std::vector<cv::Point>> centerlines;
 	std::vector<cv::Point2d> scanDonePts;
@@ -25,16 +35,16 @@ void makeSegments(const std::vector<cv::Point>& rasterCoords, double ROIwidth, s
 	int direction = 1;
 	// Rods
 	for (auto it = rasterCoords.begin(); it != rasterCoords.end(); std::advance(it,2)) {
-		ROIs.push_back(cv::Rect(*it - cv::Point(pixWidth / 2, 0), *std::next(it, 1) + cv::Point(pixWidth / 2, 0)));
+		ROIs.push_back(cv::Rect(*it - cv::Point(0, pixWidth / 2), *std::next(it, 1) + cv::Point(0, pixWidth / 2)));
 		centerlines.push_back(std::vector<cv::Point> { *it, * std::next(it, 1)});
 	}
 	// defining the point when the region has been completely scanned as the midpoint of the next centerline
 	for (auto it = std::next(centerlines.begin()); it != centerlines.end(); ++it) {
-		scanDonePts.push_back(PIX2MM(cv::Point2d((*it).front() + (*it).back())) / 2);
+		scanDonePts.push_back(PIX2MM((cv::Point2d( (*it).front() + (*it).back()) / 2  - cv::Point2d(rasterCoords.front()) )) + initPos);
 	}
 	// TODO: change scanning termination point to last point in raster + scanner offset
 	// Make the point to end scanning for the final region the last point in the raster
-	scanDonePts.push_back(PIX2MM(cv::Point2d(rasterCoords.back())));
+	scanDonePts.push_back(PIX2MM((cv::Point2d(rasterCoords.back()) - cv::Point2d(rasterCoords.front()) )) + initPos);
 
 	// Placing all of the values in the Segment class
 	if ((ROIs.size() == centerlines.size()) && (ROIs.size() == scanDonePts.size())) {
@@ -60,16 +70,25 @@ void getMatlEdges(const cv::Rect& segmentROI, const cv::Mat& gblEdges, std::vect
 	std::vector<cv::Point> unfiltLeft, unfiltRight;
 	cv::Mat interpPts;
 	// find the left and right edge points in the regions
-	cv::Rect lRegion = segmentROI - cv::Size(segmentROI.width / 2, 0);
-	cv::Rect rRegion = lRegion + cv::Point(segmentROI.width / 2, 0);
+	//cv::Rect lRegion = segmentROI - cv::Size(segmentROI.width / 2, 0);
+	//cv::Rect rRegion = lRegion + cv::Point(segmentROI.width / 2, 0);
+	cv::Rect lRegion = segmentROI - cv::Size(0, segmentROI.height / 2);
+	cv::Rect rRegion = lRegion + cv::Point(0, segmentROI.height / 2);
+
+	cv::Mat temp = cv::Mat::zeros(gblEdges.size(), CV_8UC3);
+	cv::rectangle(temp, segmentROI, cv::Scalar(255, 0, 0), 8);
+	cv::rectangle(temp, lRegion, cv::Scalar(0,255, 0), 4);
+	cv::rectangle(temp, rRegion, cv::Scalar(0, 0, 255), 4);
 	// find the edges in the search regions
 	cv::findNonZero(gblEdges(lRegion), unfiltLeft);
 	cv::findNonZero(gblEdges(rRegion), unfiltRight);
 	// converting points back to global coordinates
 	for (auto it = unfiltLeft.begin(); it != unfiltLeft.end(); ++it) {*it += lRegion.tl();}
 	for (auto it = unfiltRight.begin(); it != unfiltRight.end(); ++it) {*it += rRegion.tl();}
-	//TODO: Sort the edges
-
+	// Sort the edges
+	std::sort(unfiltLeft.begin(), unfiltLeft.end(), sortX());
+	std::sort(unfiltRight.begin(), unfiltRight.end(), sortX());
+	//std::sort(unfiltLeft.begin(), unfiltLeft.end(), sortDist(cv::Point(0,0))); // TODO: change (0,0) to segment.centerline()[0]?
 	// Smoothing the edges
 	if(interp){ interpPts = cv::Mat(gblEdges.size(), CV_8UC1, cv::Scalar(0)); }
 	// Left edge
