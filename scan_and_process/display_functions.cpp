@@ -228,6 +228,9 @@ void showErrors(cv::InputArray src, cv::OutputArray dst, std::vector<Segment>& s
 	}
 	// copy the source to the destination
 	src.copyTo(dst);
+	if (dst.channels() < 3) {
+		cv::cvtColor(dst, dst, cv::COLOR_GRAY2BGR);
+	}
 	// overlay the fill on the destination
 	cv::addWeighted(tempFill, 0.5, dst, 1, 0, dst);
 	// add the lines to the destination
