@@ -9,3 +9,5 @@ threadsafe_queue<edgeMsg> q_edgeMsg;
 
 extern int segmentNumScan = 0; // segment being scanned
 extern int segmentNumError = 0; // segment that errors are being calculated for
+
+extern std::string outDir = "Output/";
