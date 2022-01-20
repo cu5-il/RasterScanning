@@ -15,13 +15,14 @@
 #define TASK_EXTRUDE TASKID_02
 
 #define SCAN_WIDTH 26.4
-#define RESOLUTION 0.02  // 1 pixel = RESOLUTION mm
+#define RESOLUTION 0.1/*0.02*/  // 1 pixel = RESOLUTION mm
 #define PIX2MM(pix)  pix*RESOLUTION
 #define MM2PIX(mm)  std::round( (mm) / RESOLUTION)
 #define RASTER_IMG_WIDTH 11.0 //TODO: incorporate this into the makeRaster Function
 #define PI 3.14159265
 
-#define SCAN_OFFSET 13.5
+#define SCAN_OFFSET_X -13.5
+#define SCAN_OFFSET_Y 0
 #define VELOCITY 1
 
 #define CVPLOT_HEADER_ONLY

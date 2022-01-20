@@ -16,7 +16,7 @@ void export2matlab(std::string filename, Raster& raster) {
         myfile << "V = " << VELOCITY << ";" << std::endl;
         myfile << "resolution = " << RESOLUTION << ";" << std::endl;
         myfile << "dt = " << RESOLUTION / VELOCITY << ";" << std::endl;
-        myfile << "R = " << SCAN_OFFSET << ";" << std::endl;
+        myfile << "R = " << -SCAN_OFFSET_X << ";" << std::endl;
         myfile << "w = " << SCAN_WIDTH << ";" << std::endl;
         myfile << "ras = [";
         for (auto it = raster.coordsMM().begin(); it != raster.coordsMM().end(); ++it) {
