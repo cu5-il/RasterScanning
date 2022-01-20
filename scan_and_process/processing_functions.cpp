@@ -144,7 +144,7 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 				windowPts.push_back(i);
 				numRising++;
 			}
-			if ((curVal == 0) && (lastVal == 255) && (i != 0)) { // find falling edges
+			if ((curVal == 0) && (lastVal == 255) && (i != 0) && (numRising > 0)) { // find falling edges
 				windowPts.push_back(i);
 				numFalling++;
 			}
