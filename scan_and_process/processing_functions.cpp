@@ -67,7 +67,6 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const cv::Rect2d printROI, cv::Si
 	//TODO: Convert printROI from mm to pixels
 	cv::Point2d XY_start, XY_end;
 	double X, Y;
-	double R = SCAN_OFFSET;
 	double local_x;
 	int startIdx = -1, endIdx = -1;
 
@@ -75,8 +74,8 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const cv::Rect2d printROI, cv::Si
 		// Local coordinate of the scanned point (with respect to the scanner)
 		local_x = -SCAN_WIDTH / 2 + i * SCAN_WIDTH / (int(scan.cols) - 1);
 		// Transforming local coordinate to global coordinates
-		X = fbk.x - R * cos(fbk.T * PI / 180) - local_x * sin(fbk.T * PI / 180);
-		Y = fbk.y - R * sin(fbk.T * PI / 180) + local_x * cos(fbk.T * PI / 180);
+		X = fbk.x + SCAN_OFFSET_X * cos(fbk.T * PI / -180) - (local_x + SCAN_OFFSET_Y) * sin(fbk.T * PI / -180);
+		Y = fbk.y + SCAN_OFFSET_X * sin(fbk.T * PI / -180) + (local_x + SCAN_OFFSET_Y) * cos(fbk.T * PI / -180);
 		// Check if scanned point in outside the print ROI 
 		if (!printROI.contains(cv::Point2d(X, Y))) {
 		}
