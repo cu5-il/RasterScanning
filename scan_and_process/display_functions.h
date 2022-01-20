@@ -13,7 +13,7 @@ cv::Mat showOverlay(cv::Mat raster, cv::Mat scanROI, const Coords fbk, cv::Point
 
 cv::Mat showScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showImage = false);
 
-cv::Mat showRaster(cv::Mat raster, cv::Mat gblEdges, const cv::Scalar& color, const int pointSz = 1, bool showImage = false);
+cv::Mat showRaster(cv::Mat raster, cv::Mat edgeBoundary, cv::Mat gblEdges, const cv::Scalar& color, const int pointSz = 1, bool showImage = false);
 
 cv::Mat showAll(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point scanEnd, cv::Mat locEdges, cv::Mat locWin, cv::Mat gblEdges, bool showImage = false);
 

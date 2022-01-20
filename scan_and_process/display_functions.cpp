@@ -101,8 +101,8 @@ cv::Mat showScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showIma
  * @param[in] showImage Flag indicating whether to show the overlay in a new window or not
  * @return Mat containing the detected edges overlaid on the raster pattern
 */
-cv::Mat showRaster(cv::Mat raster, cv::Mat gblEdges, const cv::Scalar& color, const int pointSz = 1, bool showImage = false) {
-	cv::Mat image;
+cv::Mat showRaster(cv::Mat raster, cv::Mat edgeBoundary, cv::Mat gblEdges, const cv::Scalar& color, const int pointSz = 1, bool showImage = false) {
+	cv::Mat image = cv::Mat::zeros(raster.size(), CV_8UC3);
 
 	// Copy the raster to the image
 	cv::cvtColor(raster, image, cv::COLOR_GRAY2BGR);
@@ -119,7 +119,10 @@ cv::Mat showRaster(cv::Mat raster, cv::Mat gblEdges, const cv::Scalar& color, co
 		// show the edges as pixels
 		cv::Mat(raster.size(), CV_8UC3, color).copyTo(image, gblEdges);
 	}
-	
+	// draw the boundary on the image
+	std::vector<std::vector<cv::Point> > contour;
+	cv::findContours(edgeBoundary, contour, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+	cv::drawContours(image, contour, -1, cv::Scalar(255, 0, 0));
 
 	if (showImage) {
 		// Display the image
@@ -150,7 +153,7 @@ cv::Mat showAll(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point 
 	// making the images
 	//cv::Mat overlay_img = showOverlay(raster, scanROI, scanStart, scanEnd, false);
 	cv::Mat scan_img = showScan(scanROI, locEdges, locWin, false);
-	cv::Mat raster_img = showRaster(raster, gblEdges, false);
+	//cv::Mat raster_img = showRaster(raster, gblEdges, false);
 
 	// Stretching the local scan image
 	cv::resize(scan_img, scan_img, cv::Size(scan_img.cols, 100), cv::INTER_LINEAR);
@@ -158,8 +161,8 @@ cv::Mat showAll(cv::Mat raster, cv::Mat scanROI, cv::Point scanStart, cv::Point 
 	//cv::Mat image(cv::Size(overlay_img.cols + raster_img.cols, scan_img.rows + raster_img.rows), CV_8UC3);
 
 	// Copy the individual images to the combined image
-	raster_img.copyTo(image(cv::Rect(cv::Point(0, 0), raster_img.size())));
-	scan_img.copyTo(image(cv::Rect(cv::Point(0, raster_img.rows), scan_img.size())));
+	//raster_img.copyTo(image(cv::Rect(cv::Point(0, 0), raster_img.size())));
+	//scan_img.copyTo(image(cv::Rect(cv::Point(0, raster_img.rows), scan_img.size())));
 	//overlay_img.copyTo(image(cv::Rect(cv::Point(raster_img.cols, 0), overlay_img.size())));
 
 	if (showImage) {
