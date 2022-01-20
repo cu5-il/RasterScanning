@@ -21,7 +21,7 @@
 #define RASTER_IMG_WIDTH 11.0 //TODO: incorporate this into the makeRaster Function
 #define PI 3.14159265
 
-#define SCAN_OFFSET_X -13.5
+#define SCAN_OFFSET_X -13.89
 #define SCAN_OFFSET_Y 0
 #define VELOCITY 1
 
