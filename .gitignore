@@ -378,3 +378,4 @@ FodyWeavers.xsd
 /scan_and_process/*.bmp
 *.png
 /scan_and_process/Output
+/scan_and_process/Input
