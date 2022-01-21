@@ -45,7 +45,7 @@ void printPath(std::deque<std::vector<double>>& path, cv::Point2d initPos, doubl
 
 	// Set VEOLCITY mode ON and put task in absolute mode 
 	command[0] = "VELOCITY ON\nG90\n";
-	//if (!A3200CommandExecute(handle, TASK_MOVE, command[0], NULL))
+	if (!A3200CommandExecute(handle, TASK_MOVE, command[0], NULL)) { A3200Error(); }
 
 	if (!A3200MotionSetupAbsolute(handle, TASK_MOVE)) { A3200Error(); }
 
