@@ -30,7 +30,6 @@
 #include "csvMat.h"
 #include "motion.h"
 #include "raster.h"
-#include "matlab.h"
 #include <ctime>
 #include "path.h"
 
@@ -62,16 +61,13 @@ int main() {
 	double rodLength, rodSpacing, rodWidth;
 	std::deque<std::vector<double>> path;
 	readPath("Input/pathCoords.txt", rodLength, rodSpacing, path);
-	rodWidth = 3;
+	
 	// Make raster
-
-	double border = 2.5;
-
+	rodWidth = 3;
 	Raster raster = Raster(rodLength, rodSpacing, rodWidth);
 
 	initPos = cv::Point2d(45, 15);
 	//initPos = cv::Point2d(95, 15);
-
 	raster.offset(initPos);
 
 	std::vector<std::vector<cv::Point2d>> path_mm;
