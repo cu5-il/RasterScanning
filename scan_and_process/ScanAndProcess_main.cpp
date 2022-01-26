@@ -33,18 +33,7 @@
 #include <ctime>
 #include "path.h"
 
-
-cv::Mat translateImg(cv::Mat& img, int offsetx, int offsety);
-
 std::string datetime();
-
-struct ptInside {
-	//ptInside(cv::Rect& roi) { this->roi = roi; }
-	bool operator() (cv::Point pt) { return (roi.contains(pt)); }
-	//bool operator() (cv::Point pt) { return (pt.inside(cv::Rect2i(roi))); }
-	//cv::Rect roi;
-	cv::Rect roi = cv::Rect(cv::Point(0, 0), cv::Point(560, 560));
-};
 
 int main() {
 	cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_SILENT);
@@ -101,7 +90,7 @@ int main() {
 	if (!A3200MotionDisable(handle, TASKID_Library, axisMask)) { A3200Error(); }
 	//=======================================
 
-	goto cleanup;
+	//goto cleanup;
 
 	t_scan = std::thread{ t_CollectScans, raster };
 	t_process = std::thread{ t_GetMatlErrors, raster };
