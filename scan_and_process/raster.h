@@ -5,6 +5,7 @@
 #include <cmath>
 #include <vector>
 #include <iterator>
+#include <algorithm>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
@@ -12,52 +13,61 @@
 #include "myTypes.h"
 #include "myGlobals.h"
 
-
 #ifndef RASTER_H
 #define RASTER_H
 
 class Raster {
 private:
+    cv::Size _sz;
     cv::Mat _mat;
-    cv::Mat _boundary;
+    cv::Rect2d _roi;
+    cv::Mat _boundaryMask;
+    std::vector<cv::Point> _boundaryPoints;
     std::vector<cv::Point> _cornersPix;
-    std::vector<cv::Point> _coordsPix;
     std::vector<cv::Point2d> _cornersMM;
-    std::vector<cv::Point2d> _coordsMM;
+    int _rodWidth;
 
 public:
-	Raster(double length, double spacing, double border, double bdryWidth);
+    // default constructor
+    Raster() {}
 
-    const cv::Mat& mat() { return _mat; }
-    const cv::Mat& boundary() { return _boundary; };
-    const std::vector<cv::Point>& cornersPix() { return _cornersPix; };
-    const std::vector<cv::Point>& coordsPix() { return _coordsPix; };
-    const std::vector<cv::Point2d>& cornersMM() { return _cornersMM; };
-    const std::vector<cv::Point2d>& coordsMM() { return _coordsMM; };
+    Raster(double rodLength, double rodSpacing, double rodWidthMax);
+
+    const cv::Mat& draw() { return _mat; }
+    const cv::Rect2d& roi() { return _roi; }
+    const cv::Mat& boundaryMask() { return _boundaryMask; };
+    //const std::vector<cv::Point>& boundaryPoints() { return _boundaryPoints; };
+    const std::vector<cv::Point>& px() { return _cornersPix; };
+    const std::vector<cv::Point2d>& mm() { return _cornersMM; };
+    const cv::Size& size() { return _sz; }
+    const int& rodWidth() { return _rodWidth; };
+    const cv::Point2d& origin() { return _roi.tl(); };
+
+    void offset(cv::Point2d);
 
 };
 
-inline Raster::Raster(double length, double spacing, double border, double bdryWidth) {
+inline Raster::Raster(double rodLength, double rodSpacing, double rodWidthMax) {
 
     int i = 0;
-    int pixLen = MM2PIX(length);
-    int pixSpac = MM2PIX(spacing);
+    double border = rodWidthMax / 2 + 1;
+    _rodWidth = MM2PIX(rodWidthMax);
+    int pixLen = MM2PIX(rodLength);
+    int pixSpac = MM2PIX(rodSpacing);
     int pixBord = MM2PIX(border);
-    cv::Point diff; 
-    double dx, dy, L;
-    std::vector<cv::Point2d> temp;
 
-
+  
     // initialize matrix to store raster with border
-    _mat = cv::Mat(pixLen + 2 * pixBord, pixLen + 2 * pixBord, CV_8U, cv::Scalar(0)).clone();
-    _boundary = _mat.clone();
+    _sz = cv::Size(pixLen + 2 * pixBord, pixLen + 2 * pixBord);
+    _mat = cv::Mat(_sz, CV_8U, cv::Scalar(0)).clone();
+    _boundaryMask = _mat.clone();
 
     // add the first point to the raster
     _cornersPix.push_back(cv::Point(pixBord, pixBord));
 
     while (_cornersPix.back().x <= (pixLen + _cornersPix.front().x) && _cornersPix.back().y <= (pixLen + _cornersPix.front().y)) {
         // Convert the points to mm
-        _cornersMM.push_back(PIX2MM(cv::Point2d(_cornersPix.back())));
+        _cornersMM.push_back(PIX2MM(cv::Point2d(_cornersPix.back() /*- _cornersPix.front()*/)));
 
         switch (i % 4) {
         case 0:
@@ -81,25 +91,24 @@ inline Raster::Raster(double length, double spacing, double border, double bdryW
 
     // Draw the raster lines on an image
     cv::polylines(_mat, _cornersPix, false, cv::Scalar(255), 1, 4);
-    cv::polylines(_boundary, _cornersPix, false, cv::Scalar(255), MM2PIX(bdryWidth), 8);
+    cv::polylines(_boundaryMask, _cornersPix, false, cv::Scalar(255), _rodWidth, 8);
+    
+    // Get the boundary points
+    std::vector<std::vector<cv::Point> > contour;
+    cv::findContours(_boundaryMask, contour, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    _boundaryPoints = contour[0];
 
-    // Interpolate the points between corners
-    for (auto it = _cornersPix.begin(); it != std::prev(_cornersPix.end(),1); ++it) {
 
-        diff = *std::next(it, 1) - *it;
-        L = cv::norm(diff);
-        dx = diff.x / L;
-        dy = diff.y / L;
-        for (int i = 0; i < L; i++) {
-            temp.push_back(cv::Point2d(*it) + i * cv::Point2d(dx,dy));
-            _coordsPix.push_back(cv::Point(temp.back()));
-            _coordsMM.push_back(PIX2MM(temp.back()));
-        }
-    }
-    temp.push_back(cv::Point2d(_cornersPix.back()));
-    _coordsPix.push_back(cv::Point(temp.back()));
-    _coordsMM.push_back(PIX2MM(temp.back()));
+    // define the roi of the raster
+    _roi = cv::Rect2d(0, 0, 2 * border + rodLength, 2 * border + rodLength);
 
+    // offset the coordinates
+    offset(-_cornersMM.front());
+}
+
+inline void Raster::offset(cv::Point2d offset) {
+    for (auto it = _cornersMM.begin(); it != _cornersMM.end(); ++it) { *it += offset; }
+    _roi += offset;
 }
 
 #endif // RASTER_H

@@ -156,8 +156,8 @@
     <ClInclude Include="extrusion.h" />
     <ClInclude Include="gaussianSmooth.h" />
     <ClInclude Include="matlab.h" />
+    <ClInclude Include="path.h" />
     <ClInclude Include="raster.h" />
-    <ClInclude Include="makeRaster.h" />
     <ClInclude Include="motion.h" />
     <ClInclude Include="myGlobals.h" />
     <ClInclude Include="myTypes.h" />
@@ -173,10 +173,10 @@
     <ClCompile Include="display_functions.cpp" />
     <ClCompile Include="edge_functions.cpp" />
     <ClCompile Include="gaussianSmooth.cpp" />
-    <ClCompile Include="makeRaster.cpp" />
     <ClCompile Include="matlab.cpp" />
     <ClCompile Include="motion.cpp" />
     <ClCompile Include="myGlobals.cpp" />
+    <ClCompile Include="path.cpp" />
     <ClCompile Include="processing_functions.cpp" />
     <ClCompile Include="ScanAndProcess_main.cpp" />
     <ClCompile Include="scanner_functions.cpp" />

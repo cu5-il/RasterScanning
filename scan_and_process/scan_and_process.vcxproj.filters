@@ -33,9 +33,6 @@
     <ClInclude Include="display_functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="makeRaster.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="gaussianSmooth.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -69,6 +66,9 @@
     <ClInclude Include="matlab.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="path.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="myGlobals.cpp">
@@ -84,9 +84,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="display_functions.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="makeRaster.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="gaussianSmooth.cpp">
@@ -111,6 +108,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="matlab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="path.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

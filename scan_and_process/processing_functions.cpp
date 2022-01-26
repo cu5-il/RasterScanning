@@ -48,7 +48,6 @@ void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
 		scan = cv::Mat(1, NUM_PROFILE_PTS, CV_64F, -11).clone(); 
 	}
 	
-
 	return;
 }
 
@@ -122,7 +121,7 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const cv::Rect2d printROI, cv::Si
  * @param[out] locWin Image output the same size as scanROI showing where the search windows are on the scan
  * @param[out] heightThresh UNUSED Points below this thresholds will not be considered edges
 */
-void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& gblEdges, cv::Mat& locEdges, cv::Mat& locWin, double heightThresh) {
+void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& edges,  double heightThresh) {
 	
 	if ((scanStart != cv::Point(-1, -1)) && (scanEnd != cv::Point(-1, -1))) //Check if scan is within ROI
 	{
@@ -134,8 +133,8 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 		cv::Point2d edgeCoord, slope;
 
 		// Initialize local masks to zero
-		locEdges = cv::Mat::zeros(scanROI.size(), CV_8U);
-		locWin = cv::Mat::zeros(scanROI.size(), CV_8U);
+		//cv::Mat locEdges = cv::Mat::zeros(scanROI.size(), CV_8U);
+		//cv::Mat locWin = cv::Mat::zeros(scanROI.size(), CV_8U);
 
 		// find the intersection of the scan and the edge boundary using a line iterator
 		for (int i = 0; i < lineit.count; i++, ++lineit) {
@@ -163,7 +162,6 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 		cv::normalize(heightMask, heightMask, 0, 255, cv::NORM_MINMAX, CV_8U);
 
 		// Search within the edges of the dialated raster for the actual edges
-		cv::Mat searchWindow;
 		cv::Range searchRange;
 		// Take derivative and blur
 		cv::Mat dx, ROIblur;
@@ -191,13 +189,13 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 				edgeCoord = cv::Point2d(scanStart) + foundEdges[j] * slope;
 				// check if edges are within height mask
 				if (heightMask.at<uchar>(cv::Point(foundEdges[j], 0)) == 255) { 
-					locEdges.at<uchar>(cv::Point(foundEdges[j], 0)) = 255;
-					gblEdges.at<uchar>(cv::Point2i(edgeCoord)) = 255;
+					//locEdges.at<uchar>(cv::Point(foundEdges[j], 0)) = 255;
+					edges.at<uchar>(cv::Point2i(edgeCoord)) = 255;
 				}
 			}
 			// mark window borders
-			locWin.at<uchar>(cv::Point(searchRange.start, 0)) = 255;
-			locWin.at<uchar>(cv::Point(searchRange.end, 0)) = 255;
+			//locWin.at<uchar>(cv::Point(searchRange.start, 0)) = 255;
+			//locWin.at<uchar>(cv::Point(searchRange.end, 0)) = 255;
 		}
 	}
 

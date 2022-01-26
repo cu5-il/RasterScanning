@@ -11,74 +11,55 @@
 #include "edge_functions.h"
 #include "A3200_functions.h"
 #include "csvMat.h"
+#include "raster.h"
 
 
-void t_CollectScans(const cv::Mat raster, const cv::Mat edgeBoundary, cv::Rect2d printROI) {
-	cv::Mat scan;
+void t_CollectScans(Raster raster) {
+	cv::Mat scan(1, NUM_DATA_SAMPLES, CV_64F);
 	cv::Point scanStart, scanEnd;
-	cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
+	cv::Mat edges(raster.size(), CV_8U, cv::Scalar({ 0 }));
 	cv::Mat scanROI;
 	double heightThresh = -5;
-	cv::Mat locEdges(scanROI.size(), CV_8U, cv::Scalar({ 0 })); // size might be pointless
-	cv::Mat locWin(scanROI.size(), CV_8U, cv::Scalar({ 0 }));
 	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
 	Coords scanPosFbk;
 	edgeMsg msg;
 	double posErrThr = 2.5; // position error threshold for how close the current position is to the target
 	cv::Point2d curPos;
 
-	//HACK: initialize position feedback
-	double curPosX = -999, curPosY = -999;
-	cv::Mat image = cv::Mat::zeros(raster.size(), CV_8UC3);
-
 	while (segmentNumScan < segments.size()){
 		if (collectData(handle, DCCHandle, &collectedData[0][0])) {
 			// Trigger the scanner and collect the scanner data
 			getScan(collectedData, &scanPosFbk, scan);
+			curPos = cv::Point2d(scanPosFbk.x, scanPosFbk.y);
 
-			curPosX = scanPosFbk.x;
-			curPosY = scanPosFbk.y;
 			// Find the part of the scan that is within the ROI of the print
-			if (scan2ROI(scan, scanPosFbk, printROI, raster.size(), scanROI, scanStart, scanEnd)){
+			if (scan2ROI(scan, scanPosFbk, raster.roi(), raster.size(), scanROI, scanStart, scanEnd)){
 				// Finding the edges
-				findEdges(edgeBoundary, scanStart, scanEnd, scanROI, gblEdges, locEdges, locWin, heightThresh);
+				findEdges(raster.boundaryMask(), scanStart, scanEnd, scanROI, edges, heightThresh);
+			}		
+		
+			// compare the current position to the scanDonePt of the segment
+			if (cv::norm(curPos - segments[segmentNumScan].scanDonePt()) < posErrThr) {
+				std::cout << "Segment " << segmentNumScan << " scanned. Sending data for processing." << std::endl;
+				// Check if this was the last segmet to scan
+				msg.addEdges(edges, segmentNumScan, (segmentNumScan == segments.size()-1) );
+				// push the edges to the error calculating thread
+				q_edgeMsg.push(msg);
+				// move to next segment
+				segmentNumScan++;
 			}
-			//else { std::cout << "scan outside of the ROI" << std::endl; }
-			
 		}
 		else { A3200Error(); }
-
-		// compare the current position to the scanDonePt of the segment
-		curPos = cv::Point2d(curPosX, curPosY);
-		if (cv::norm(curPos - segments[segmentNumScan].scanDonePt()) < posErrThr) {
-			std::cout << "Segment " << segmentNumScan << " scanned. Sending data for processing." << std::endl;
-			// Check if this was the last segmet to scan
-			msg.addEdges(gblEdges, segmentNumScan, (segmentNumScan == segments.size()-1) );
-			// push the edges to the error calculating thread
-			q_edgeMsg.push(msg);
-			// move to next segment
-			segmentNumScan++;
-		}
-		
-		//image = showRaster(raster, edgeBoundary, gblEdges, cv::Scalar(0, 0, 255), -MM2PIX(0.2));
-		//cv::Point nozzle = cv::Point(MM2PIX(curPos.x-printROI.tl().x), MM2PIX(curPos.y - printROI.tl().y));
-		//cv::circle(image, nozzle, 2, cv::Scalar(255, 0, 255), -1, cv::LINE_AA);
-		////cv::circle(image, (scanStart+scanEnd)/2, 2, cv::Scalar(255, 255, 0), -1, cv::LINE_AA);
-		//cv::circle(image, scanStart, 2, cv::Scalar(0, 255, 0), -1, cv::LINE_AA);
-		//cv::circle(image, scanEnd, 2, cv::Scalar(0, 255, 255), -1, cv::LINE_AA);
-		//cv::namedWindow("Scan", cv::WINDOW_NORMAL);
-		//cv::imshow("Scan", image);
-		//cv::waitKey(1);
-		//cv::transpose(image, image);
 	}
 	// Save the data
-	writeCSV(outDir + "edges.csv", gblEdges);
-	image = showRaster(raster, edgeBoundary, gblEdges, cv::Scalar(0, 0, 255), MM2PIX(0.2));
+	writeCSV(outDir + "edges.csv", edges);
+	cv::Mat image = cv::Mat::zeros(raster.size(), CV_8UC3);
+	image = showRaster(raster.draw(), raster.boundaryMask(), edges, cv::Scalar(0, 0, 255), MM2PIX(0.2));
 	cv::imwrite(outDir + "edges.png", image);
 	std::cout << "All segments have been scanned. Ending scanning thread." << std::endl;
 }
 
-void t_GetMatlErrors(const cv::Mat raster) {
+void t_GetMatlErrors(Raster raster) {
 	edgeMsg msg;
 	std::vector<cv::Point> centerline;
 	std::vector<cv::Point> lEdgePts, rEdgePts;
@@ -94,13 +75,13 @@ void t_GetMatlErrors(const cv::Mat raster) {
 		// find and smooth the right and left edges
 		getMatlEdges(segments[msg.segmentNum()].ROI(), msg.edges(), lEdgePts, rEdgePts);
 		segments[msg.segmentNum()].addEdges(lEdgePts, rEdgePts);
-		// Calculate Errors
+		// Calculate errors
 		centerline = segments[msg.segmentNum()].centerline();
 		getMatlErrors(centerline, targetWidth, raster.size(), segments[msg.segmentNum()].lEdgePts(), segments[msg.segmentNum()].rEdgePts(), errCL, errWD);
 		segments[msg.segmentNum()].addErrors(errCL, errWD, centerline);
 	}
 	cv::Mat image;
-	showErrors(raster, image, segments);
+	showErrors(raster.draw(), image, segments);
 	cv::imwrite(outDir + "errors.png", image);
 	std::cout << "All segments have been processed. Ending error processing thread." << std::endl;
 }

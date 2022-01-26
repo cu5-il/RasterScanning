@@ -23,7 +23,6 @@
 #include "scanner_functions.h"
 #include "processing_functions.h"
 #include "display_functions.h"
-#include "makeRaster.h"
 #include "gaussianSmooth.h"
 #include "edge_functions.h"
 #include "A3200_functions.h"
@@ -33,10 +32,20 @@
 #include "raster.h"
 #include "matlab.h"
 #include <ctime>
+#include "path.h"
+
 
 cv::Mat translateImg(cv::Mat& img, int offsetx, int offsety);
 
 std::string datetime();
+
+struct ptInside {
+	//ptInside(cv::Rect& roi) { this->roi = roi; }
+	bool operator() (cv::Point pt) { return (roi.contains(pt)); }
+	//bool operator() (cv::Point pt) { return (pt.inside(cv::Rect2i(roi))); }
+	//cv::Rect roi;
+	cv::Rect roi = cv::Rect(cv::Point(0, 0), cv::Point(560, 560));
+};
 
 int main() {
 	cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_SILENT);
@@ -50,25 +59,31 @@ int main() {
 	outDir.append(datetime() + "_");
 
 	//Load the raster path generated in Matlab
-	double rodLength, rodSpacing;
+	double rodLength, rodSpacing, rodWidth;
 	std::deque<std::vector<double>> path;
-	readPath("pathCoords.txt", rodLength, rodSpacing, path);
-
+	readPath("Input/pathCoords.txt", rodLength, rodSpacing, path);
+	rodWidth = 3;
 	// Make raster
-	cv::Mat raster, edgeBoundary;
-	std::vector<cv::Point> rasterCoords;
-	double border = 2;
-	makeRaster(rodLength, rodSpacing, border, 3 - 0.04, raster, edgeBoundary, rasterCoords);
-	//Raster ras(rodLength, rodSpacing, border, 1 - 0.04);
+
+	double border = 2.5;
+
+	Raster raster = Raster(rodLength, rodSpacing, rodWidth);
 
 	initPos = cv::Point2d(45, 15);
 	//initPos = cv::Point2d(95, 15);
-	printROI = cv::Rect2d(-border, -border, PIX2MM(raster.cols), PIX2MM(raster.rows)) + initPos;
+
+	raster.offset(initPos);
+
+	std::vector<std::vector<cv::Point2d>> path_mm;
+	std::vector<std::vector<cv::Point>> path_px;
+	interpolatePath(raster, 1, path_mm, path_px);
+	
 
 	// Creating the segmets
-	makeSegments(rasterCoords, border, segments, initPos);
+	makeSegments(raster.px(), rodWidth, segments, initPos);
 
-	//goto LoadData;
+
+//goto LoadData;
 
 	// A3200 Setup
 	//=======================================
@@ -89,53 +104,23 @@ int main() {
 	if (!A3200MotionWaitForMotionDone(handle, axisMask, WAITOPTION_InPosition, -1, NULL)) { A3200Error(); }
 	if (!A3200MotionDisable(handle, TASKID_Library, axisMask)) { A3200Error(); }
 	//=======================================
-	
-	//printPath(path, initPos, 3, 0.7);
-	t_CollectScans(raster, edgeBoundary, printROI);
+
 	goto cleanup;
 
-	t_scan = std::thread{ t_CollectScans, raster, edgeBoundary, printROI };
+	t_scan = std::thread{ t_CollectScans, raster };
 	t_process = std::thread{ t_GetMatlErrors, raster };
-
 	// Start the print
 	printPath(path, initPos, 1, 0/*0.7*/);
-
 	t_scan.join();
 	t_process.join();
-	
 
-	// Save the data
-	//cv::Mat outData(angles.size(), cols, CV_64FC1);
-	//writeCSV("errors.csv", outData);
 
-	//showErrors(img, img, segments);
-	//readCSV("edges.csv", gblEdges);
-	//temp = showRaster(raster, gblEdges, cv::Scalar(0, 0, 255), 10);
-
-	goto cleanup;
+	//goto cleanup;
 
 LoadData:
-	//// DEBUGGING ERROR CALCULATIONS
+	// DEBUGGING ERROR CALCULATIONS
 	//cv::Mat gblEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));
-	//readCSV("C:/Users/cu5/source/repos/RasterScanning/scan_and_process/Output/2022.01.20-09.50.48_edges.csv", gblEdges);
-	//std::vector<cv::Point> centerline;
-	//std::vector<cv::Point> lEdgePts, rEdgePts;
-	//std::vector<double> errCL, errWD;
-	//double targetWidth = .5;
-
-	//while (segmentNumError < segments.size()) {
-	//	// wait for the message to be pushed from the scanning thread
-	//	// find and smooth the right and left edges
-	//	getMatlEdges(segments[segmentNumError].ROI(), gblEdges, lEdgePts, rEdgePts);
-	//	segments[segmentNumError].addEdges(lEdgePts, rEdgePts);
-	//	// Calculate Errors
-	//	centerline = segments[segmentNumError].centerline();
-	//	getMatlErrors(centerline, targetWidth, raster.size(), segments[segmentNumError].lEdgePts(), segments[segmentNumError].rEdgePts(), errCL, errWD);
-	//	segments[segmentNumError].addErrors(errCL, errWD, centerline);
-	//	segmentNumError++;
-	//}
-	//cv::Mat image;
-	//showErrors(raster, image, segments);
+	//readCSV("C:/Users/cu5/source/repos/RasterScanning/scan_and_process/Output/2022.01.20-15.14.37_edges.csv", gblEdges);
 	
 cleanup:
 	//A3200 Cleanup
