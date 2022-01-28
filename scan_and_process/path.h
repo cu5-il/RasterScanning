@@ -12,10 +12,12 @@
 #ifndef PATH_H
 #define PATH_H
 
-void readPath(std::string filename, double& rodLength, double& rodSpacing, std::deque<std::vector<double>>& path);
+void interpPathPoints(std::vector<cv::Point2d> inPts, double wayptSpc, std::vector<cv::Point2d>& outPts);
 
-void segmentPath(Raster raster, double ROIwidth, std::vector<Segment>& seg, cv::Point2d initPos);
+void interpPathPoints(std::vector<cv::Point2i> inPts, double wayptSpc, std::vector<cv::Point2i>& outPts);
 
-void interpolatePath(Raster raster, double waypointSpacing, std::vector<std::vector<cv::Point2d>>& path_mm, std::vector<std::vector<cv::Point>>& path_px);
+bool makePath(Raster raster, double wayptSpc, std::deque<double>& theta, cv::Point3d initPos, double initVel, double initExt, std::vector<Segment>& seg, std::vector<std::vector<Path>>& path);
+
+void readPath(std::string filename, double& rodLen, double& rodSpc, double& wayptSpc, std::deque<std::vector<double>>& path, std::deque<double>& theta);
 
 #endif // PATH_H

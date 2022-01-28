@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <cmath>
+#include <string>
 
 #include "constants.h"
 #include "myTypes.h"
@@ -17,14 +18,17 @@ private:
 	bool _airEnabled;
 	bool _enabled() { return _augerEnabled && _airEnabled; }
 	A3200Handle _handle;
+	TASKID _taskId;
 public:
 	Extruder()
 	{
 		_augerEnabled = false;
 		_airEnabled = false;
 		_handle = NULL;
+		_taskId = TASKID_Library;
 	}
-	void initialize(A3200Handle handle);
+	Extruder(A3200Handle handle, TASKID taskId);
+
 	void enable();
 	void disable(); 
 	void set(double AO);
@@ -33,10 +37,12 @@ public:
 
 };
 
-inline void Extruder::initialize(A3200Handle handle) {
+inline Extruder::Extruder(A3200Handle handle, TASKID taskId) {
 	_handle = handle;
-	//enable auger and air
-	if (!A3200IODigitalOutput(handle, TASK_EXTRUDE, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $WO[0].X = 0
+	_taskId = taskId;
+	//disable auger and air
+	disable();
+	if (!A3200IODigitalOutput(handle, _taskId, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $WO[0].X = 0
 	_augerEnabled = false;
 	_airEnabled = false;
 }
@@ -44,7 +50,7 @@ inline void Extruder::initialize(A3200Handle handle) {
  * @brief Enables extrusion by enabling the auger and air
 */
 inline void Extruder::enable() {
-	if (!A3200IODigitalOutput(_handle, TASK_EXTRUDE, 0, AXISINDEX_00, 3)) { A3200Error(); } //equivalent to $WO[0].X = 3
+	if (!A3200IODigitalOutput(_handle, _taskId, 0, AXISINDEX_00, 3)) { A3200Error(); } //equivalent to $WO[0].X = 3
 	_augerEnabled = true;
 	_airEnabled = true;
 }
@@ -52,7 +58,7 @@ inline void Extruder::enable() {
  * @brief Disables extrusion by disabling the auger and air
 */
 inline void Extruder::disable() {
-	if (!A3200IODigitalOutput(_handle, TASK_EXTRUDE, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $WO[0].X = 0
+	if (!A3200IODigitalOutput(_handle, _taskId, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $WO[0].X = 0
 	_augerEnabled = false;
 	_airEnabled = false;
 }
@@ -62,7 +68,7 @@ inline void Extruder::disable() {
 */
 inline void Extruder::set(double AO) {
 	if (fabs(AO) > 10) { AO = copysign(10.0, AO); } // Saturate output at +/-10.0
-	if (!A3200IOAnalogOutput(_handle, TASK_EXTRUDE, 1, AXISINDEX_00, AO)) { A3200Error(); } //equivalent to $AO[1].X = AO
+	if (!A3200IOAnalogOutput(_handle, _taskId, 1, AXISINDEX_00, AO)) { A3200Error(); } //equivalent to $AO[1].X = AO
 	
 	if (AO < 0) {
 		if (_airEnabled)
@@ -75,11 +81,11 @@ inline void Extruder::set(double AO) {
 */
 inline void Extruder::auger(bool enable) {
 	if (enable) { // turn on the auger
-		if (!A3200IODigitalOutputBit(_handle, TASK_EXTRUDE, 1, AXISINDEX_00, 1)) { A3200Error(); } //equivalent to $DO[1].X = 1
+		if (!A3200IODigitalOutputBit(_handle, _taskId, 1, AXISINDEX_00, 1)) { A3200Error(); } //equivalent to $DO[1].X = 1
 		_augerEnabled = true;
 	}
 	else { // turn off the auger
-		if (!A3200IODigitalOutputBit(_handle, TASK_EXTRUDE, 1, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $DO[1].X = 0
+		if (!A3200IODigitalOutputBit(_handle, _taskId, 1, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $DO[1].X = 0
 		_augerEnabled = false;
 	}
 }
@@ -89,12 +95,13 @@ inline void Extruder::auger(bool enable) {
 */
 inline void Extruder::air(bool enable) {
 	if (enable) { // turn on the air
-		if (!A3200IODigitalOutputBit(_handle, TASK_EXTRUDE, 0, AXISINDEX_00, 1)) { A3200Error(); } //equivalent to $DO[0].X = 1
+		if (!A3200IODigitalOutputBit(_handle, _taskId, 0, AXISINDEX_00, 1)) { A3200Error(); } //equivalent to $DO[0].X = 1
 		_airEnabled = true;
 	}
 	else { // turn off the air
-		if (!A3200IODigitalOutputBit(_handle, TASK_EXTRUDE, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $DO[0].X = 0
+		if (!A3200IODigitalOutputBit(_handle, _taskId, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $DO[0].X = 0
 		_airEnabled = false;
 	}
 }
+
 #endif // EXTRUSION_H

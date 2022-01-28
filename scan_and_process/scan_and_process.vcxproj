@@ -156,6 +156,7 @@
     <ClInclude Include="extrusion.h" />
     <ClInclude Include="gaussianSmooth.h" />
     <ClInclude Include="path.h" />
+    <ClInclude Include="print.h" />
     <ClInclude Include="raster.h" />
     <ClInclude Include="motion.h" />
     <ClInclude Include="myGlobals.h" />
@@ -175,6 +176,7 @@
     <ClCompile Include="motion.cpp" />
     <ClCompile Include="myGlobals.cpp" />
     <ClCompile Include="path.cpp" />
+    <ClCompile Include="print.cpp" />
     <ClCompile Include="processing_functions.cpp" />
     <ClCompile Include="ScanAndProcess_main.cpp" />
     <ClCompile Include="scanner_functions.cpp" />

@@ -20,9 +20,11 @@ extern Extruder extruder;
 
 extern std::vector<Segment> segments;
 extern threadsafe_queue<edgeMsg> q_edgeMsg;
+extern threadsafe_queue<errsMsg> q_errsMsg;
+extern threadsafe_queue<pathMsg> q_pathMsg;
 
-extern int segmentNumScan;
-extern int segmentNumError;
+extern int segNumScan;
+extern int segNumError;
 
 extern std::string outDir;
 

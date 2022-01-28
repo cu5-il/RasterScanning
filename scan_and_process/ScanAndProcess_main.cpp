@@ -36,69 +36,85 @@
 std::string datetime();
 
 int main() {
+	// Disable openCV warning in console
 	cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_SILENT);
-	AXISMASK axisMask = (AXISMASK)(AXISMASK_00 | AXISMASK_01 | AXISMASK_02);
-
-	std::thread t_scan, t_process;
-	cv::Point2d initPos;
-	cv::Rect2d printROI;
-
 	// Set the output path with and prepend all file names with the time
 	outDir.append(datetime() + "_");
 
+	std::thread t_scan, t_process, t_control, t_print;
+
+	// Defining the initial parameters
+	
+	double initVel = 3;
+	double initExt = 0.7;
+	//cv::Point3d initPos = cv::Point3d(0, 0, 0);
+	cv::Point3d initPos = cv::Point3d(45, 15, -8);
+	//initPos = cv::Point3d(95, 15, 0);
+	double targetWidth = .5;
+
 	//Load the raster path generated in Matlab
-	double rodLength, rodSpacing, rodWidth;
-	std::deque<std::vector<double>> path;
-	readPath("Input/pathCoords.txt", rodLength, rodSpacing, path);
+	double rodLen, rodSpc, rodWidth, wayptSpc;
+	std::deque<std::vector<double>> xyTpath;
+	std::deque<double> theta;
+	readPath("Input/pathCoords.txt", rodLen, rodSpc, wayptSpc, xyTpath, theta);
+	xyTpath.clear();
 	
 	// Make raster
 	rodWidth = 3;
-	Raster raster = Raster(rodLength, rodSpacing, rodWidth);
+	Raster raster = Raster(rodLen, rodSpc, rodWidth);
+	raster.offset(cv::Point2d(initPos.x, initPos.y));
 
-	initPos = cv::Point2d(45, 15);
-	//initPos = cv::Point2d(95, 15);
-	raster.offset(initPos);
+	// Creating the path and segmets
+	int segsBeforeCtrl = 3;
+	std::vector<std::vector<Path>> path;
+	if (!makePath(raster, wayptSpc, theta, initPos, initVel, initExt, segments, path)) { return -1; }
+	//segsBeforeCtrl = path.size();
 
-	std::vector<std::vector<cv::Point2d>> path_mm;
-	std::vector<std::vector<cv::Point>> path_px;
-	interpolatePath(raster, 1, path_mm, path_px);
-	
-
-	// Creating the segmets
-	makeSegments(raster.px(), rodWidth, segments, initPos);
-
-
-//goto LoadData;
+//goto cleanup;
 
 	// A3200 Setup
 	//=======================================
 	//Connecting to the A3200
 	std::cout << "Connecting to A3200. Initializing if necessary." << std::endl;
 	if (!A3200Connect(&handle)) { A3200Error(); }
-	// Creating a data collection handle
+	// Creating a data collection handle and setting up the data collection
 	if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { A3200Error(); }
-	// Setting up the data collection
 	if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
-	// Initializing the extruder
-	extruder.initialize(handle);
-	// Homing and moving the axes to the start position
+	// Disabling the auger and air
+	if (!A3200IODigitalOutput(handle, TASKID_Library, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $WO[0].X = 0
+	// Homing the axes if not already done
 	std::cout << "Homing axes." << std::endl;
-	if (!A3200MotionEnable(handle, TASKID_Library, axisMask)) { A3200Error(); }
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_00 | AXISMASK_01 ))) { A3200Error(); } //home X & Y axes if not already done
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_02))) { A3200Error(); } //home Z axis if not already done
-	if (!A3200MotionWaitForMotionDone(handle, axisMask, WAITOPTION_InPosition, -1, NULL)) { A3200Error(); }
-	if (!A3200MotionDisable(handle, TASKID_Library, axisMask)) { A3200Error(); }
+	if (!A3200MotionEnable(handle, TASKID_Library, AXES_ALL)) { A3200Error(); }
+	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_03))) { A3200Error(); } // TH axis 
+	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_02))) { A3200Error(); } // Z axis 
+	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_00 | AXISMASK_01 ))) { A3200Error(); } // X & Y axes 
+	if (!A3200MotionWaitForMotionDone(handle, AXES_ALL, WAITOPTION_InPosition, -1, NULL)) { A3200Error(); }
+	if (!A3200MotionDisable(handle, TASKID_Library, AXES_ALL)) { A3200Error(); }
+	// End any program already running
+	if (!A3200ProgramStop(handle, TASK_PRINT)) { A3200Error(); }
+	// Initializing the extruder
+	extruder = Extruder(handle, TASK_PRINT);
+	// Clear the messages and the indicators in the CNC interface
+	if (!A3200CommandExecute(handle, TASK_PRINT, (LPCSTR)"MSGCLEAR -1\n", NULL)) { A3200Error(); }
+	for (int i = 1; i <= 6; i++) {
+		if (!A3200CommandExecute(handle, TASK_PRINT, std::string("MSGLAMP " + std::to_string(i) + ", GRAY, \"\"\n").c_str(), NULL)) { A3200Error(); }
+	}
 	//=======================================
 
 	//goto cleanup;
+	//t_controller(path, segsBeforeCtrl);
+	//t_queueCmds();
+	//goto cleanup;
 
 	t_scan = std::thread{ t_CollectScans, raster };
-	t_process = std::thread{ t_GetMatlErrors, raster };
-	// Start the print
-	printPath(path, initPos, 1, 0/*0.7*/);
+	t_process = std::thread{ t_GetMatlErrors, raster, targetWidth };
+	t_control = std::thread{ t_controller, path, segsBeforeCtrl };
+	t_print = std::thread{ t_printQueue, initPos };
+
+	t_print.join();
 	t_scan.join();
 	t_process.join();
-
+	t_control.join();
 
 	//goto cleanup;
 

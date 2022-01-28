@@ -66,6 +66,9 @@
     <ClInclude Include="path.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="print.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="myGlobals.cpp">
@@ -105,6 +108,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="path.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="print.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

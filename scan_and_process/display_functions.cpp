@@ -216,9 +216,9 @@ void showErrors(cv::InputArray src, cv::OutputArray dst, std::vector<Segment>& s
 		// check if the errors have been calculated
 		if (!(*it).errCL().empty() && !(*it).errWD().empty() ) {
 			for (int i = 0; i < (*it).errCL().size(); i++) {
-				actCenterline.push_back((*it).centerline()[i] + cv::Point((int)round((*it).errCL()[i]), 0));
-				lEdgeErr.push_back(actCenterline.back() - cv::Point((int)round((*it).errWD()[i] / 2), 0));
-				rEdgeErr.push_back(actCenterline.back() + cv::Point((int)round((*it).errWD()[i] / 2), 0));
+				actCenterline.push_back((*it).waypoints()[i] + cv::Point(0, (int)round((*it).errCL()[i])));
+				lEdgeErr.push_back(actCenterline.back() - cv::Point(0, (int)round((*it).errWD()[i] / 2)));
+				rEdgeErr.push_back(actCenterline.back() + cv::Point(0, (int)round((*it).errWD()[i] / 2)));
 			}
 			// Draw the errors
 			cv::polylines(tempLines, lEdgeErr, false, cv::Scalar(0, 255, 255), 1);

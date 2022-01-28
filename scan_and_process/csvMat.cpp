@@ -34,7 +34,7 @@ void readCSV(std::string filename, cv::Mat& m)
 		}
 	}
 	else {
-		std::cout << "Unable to open data file: " << filename << std::endl;;
+		std::cout << "Unable to open data file: " << filename << std::endl;
 		system("pause");
 		return;
 	}

@@ -26,10 +26,12 @@ private:
     std::vector<cv::Point> _cornersPix;
     std::vector<cv::Point2d> _cornersMM;
     int _rodWidth;
+    double _length;
+    double _spacing;
 
 public:
     // default constructor
-    Raster() {}
+    Raster();
 
     Raster(double rodLength, double rodSpacing, double rodWidthMax);
 
@@ -41,21 +43,28 @@ public:
     const std::vector<cv::Point2d>& mm() { return _cornersMM; };
     const cv::Size& size() { return _sz; }
     const int& rodWidth() { return _rodWidth; };
+    const double& length() { return _length; };
+    const double& spacing() { return _spacing; };
     const cv::Point2d& origin() { return _roi.tl(); };
 
     void offset(cv::Point2d);
 
 };
 
+inline Raster::Raster()
+    : _rodWidth(0), _length(0), _spacing(0) {}
+
 inline Raster::Raster(double rodLength, double rodSpacing, double rodWidthMax) {
 
     int i = 0;
     double border = rodWidthMax / 2 + 1;
-    _rodWidth = MM2PIX(rodWidthMax);
     int pixLen = MM2PIX(rodLength);
     int pixSpac = MM2PIX(rodSpacing);
     int pixBord = MM2PIX(border);
 
+    _rodWidth = MM2PIX(rodWidthMax);
+    _length = rodLength;
+    _spacing = rodSpacing;
   
     // initialize matrix to store raster with border
     _sz = cv::Size(pixLen + 2 * pixBord, pixLen + 2 * pixBord);
