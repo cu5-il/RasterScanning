@@ -99,7 +99,8 @@ bool makePath(Raster raster, double wayptSpc, std::deque<double>& theta, cv::Poi
 			}
 			break;
 		case 1: // vertical lines
-			roi = cv::Rect(*it - cv::Point(raster.rodWidth() / 2, 0), *std::next(it, 1) + cv::Point(raster.rodWidth() / 2, 0));
+			roi = cv::Rect(0,0,1,1);
+			//roi = cv::Rect(*it - cv::Point(raster.rodWidth() / 2, 0), *std::next(it, 1) + cv::Point(raster.rodWidth() / 2, 0));
 			// defining the point when the region has been completely scanned as 3/4 of the length of the next horizontal line
 			scanDonePt = wp_mm.front() + cv::Point2d(raster.length() * 0.75, raster.spacing() );
 			if (!raster.roi().contains(scanDonePt)) {
