@@ -81,7 +81,7 @@ void t_GetMatlErrors(Raster raster, double targetWidth) {
 		getMatlEdges(segments[segNumError].ROI(), inMsg.edges(), lEdgePts, rEdgePts);
 		// Calculate errors
 		waypoints = segments[segNumError].waypoints();
-		getErrorsAt(waypoints, targetWidth, raster.size(), segments[segNumError].lEdgePts(), segments[segNumError].rEdgePts(), errCL, errWD);
+		getErrorsAt(waypoints, targetWidth, raster.size(), lEdgePts, rEdgePts, errCL, errWD);
 		// Push the errors to the controller
 		std::cout << "Segment " << segNumError << " errors processed. Sending data to controller." << std::endl;
 		outMsg.addErrors(errCL, errWD, segNumError);
