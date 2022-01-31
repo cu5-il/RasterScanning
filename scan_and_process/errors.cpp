@@ -19,37 +19,6 @@ struct sortDist {
 	cv::Point pt0;
 };
 
-void makeSegments(const std::vector<cv::Point>& rasterCoords, double ROIwidth, std::vector<Segment>& seg, cv::Point2d initPos) {
-	//std::vector<cv::Rect> ROIs;
-	//std::vector<std::vector<cv::Point>> centerlines;
-	//std::vector<cv::Point2d> scanDonePts;
-	//int pixWidth = MM2PIX(ROIwidth);
-	//int direction = 1;
-	//// Rods
-	//for (auto it = rasterCoords.begin(); it != rasterCoords.end(); std::advance(it,2)) {
-	//	ROIs.push_back(cv::Rect(*it - cv::Point(0, pixWidth / 2), *std::next(it, 1) + cv::Point(0, pixWidth / 2)));
-	//	centerlines.push_back(std::vector<cv::Point> { *it, * std::next(it, 1)});
-	//}
-	//// defining the point when the region has been completely scanned as the midpoint of the next centerline
-	//for (auto it = std::next(centerlines.begin()); it != centerlines.end(); ++it) {
-	//	scanDonePts.push_back(PIX2MM((cv::Point2d( (*it).front() + (*it).back()) / 2  - cv::Point2d(rasterCoords.front()) )) + initPos);
-	//}
-	//// TODO: change scanning termination point to last point in raster + scanner offset
-	//// Make the point to end scanning for the final region the last point in the raster
-	//scanDonePts.push_back(PIX2MM((cv::Point2d(rasterCoords.back()) - cv::Point2d(rasterCoords.front()) )) + initPos);
-
-	//// Placing all of the values in the Segment class
-	//if ((ROIs.size() == centerlines.size()) && (ROIs.size() == scanDonePts.size())) {
-	//	for (int i = 0; i < ROIs.size(); i++){
-	//		seg.push_back(Segment(ROIs[i], centerlines[i], scanDonePts[i],direction));
-	//		direction *= -1; // flip direction
-	//	}
-	//}
-
-	//// Corners
-	//// TODO: add corner regions
-}
-
 void getMatlEdges(const cv::Rect& segmentROI, const cv::Mat& gblEdges, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, bool interp = false) {
 	std::vector<cv::Point> unfiltLeft, unfiltRight;
 	cv::Mat interpPts;

@@ -51,9 +51,6 @@
     <ClInclude Include="thread_functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="motion.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="extrusion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -96,9 +93,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="cvPlot_functions.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="motion.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="path.cpp">

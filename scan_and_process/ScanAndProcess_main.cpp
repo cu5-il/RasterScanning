@@ -27,7 +27,6 @@
 #include "A3200_functions.h"
 #include "thread_functions.h"
 #include "csvMat.h"
-#include "motion.h"
 #include "raster.h"
 #include <ctime>
 #include "path.h"

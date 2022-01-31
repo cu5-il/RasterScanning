@@ -6,16 +6,6 @@
 #define ERRORS_H
 
 /**
- * @brief Breaks up the raster pattern into segments. Each vertical rod in the raster is a segment; corners are neglected.
- * @param[in] rasterCoords Vector of (x,y) points of the raster pattern
- * @param[in] ROIwidth of the ROI
- * @param[out] ROIs Vector of regions that are around each rod. Used to determine which edges belong to which segment
- * @param[out] centerlines Vector of point pairs defining the centerline of the region
- * @param[out] scanDonePts Point in the raster pattern when the region has been finished scanning. Set to midpoint of the following rod except for the last region, which is just the offset of the last point of the raster
-*/
-void makeSegments(const std::vector<cv::Point>& rasterCoords, double ROIwidth, std::vector<Segment>& seg, cv::Point2d initPos);
-
-/**
  * @brief Finds the left and right edges of the material and smooths them
  * @param[in] segmentROI Rectangle specifying the region of the image to search for the edges
  * @param[in] gblEdges Image of edge points found by the scanner
