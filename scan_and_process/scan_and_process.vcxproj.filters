@@ -27,7 +27,7 @@
     <ClInclude Include="myTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="display_functions.h">
+    <ClInclude Include="draw.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gaussianSmooth.h">
@@ -77,7 +77,7 @@
     <ClCompile Include="scanning.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="display_functions.cpp">
+    <ClCompile Include="draw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="gaussianSmooth.cpp">

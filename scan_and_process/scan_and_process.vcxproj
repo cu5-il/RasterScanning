@@ -151,7 +151,7 @@
     <ClInclude Include="constants.h" />
     <ClInclude Include="csvMat.h" />
     <ClInclude Include="cvPlot_functions.h" />
-    <ClInclude Include="display_functions.h" />
+    <ClInclude Include="draw.h" />
     <ClInclude Include="errors.h" />
     <ClInclude Include="extrusion.h" />
     <ClInclude Include="gaussianSmooth.h" />
@@ -169,7 +169,7 @@
     <ClCompile Include="A3200_functions.cpp" />
     <ClCompile Include="csvMat.cpp" />
     <ClCompile Include="cvPlot_functions.cpp" />
-    <ClCompile Include="display_functions.cpp" />
+    <ClCompile Include="draw.cpp" />
     <ClCompile Include="errors.cpp" />
     <ClCompile Include="gaussianSmooth.cpp" />
     <ClCompile Include="motion.cpp" />

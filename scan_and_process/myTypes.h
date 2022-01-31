@@ -36,7 +36,7 @@ private:
 	std::string _cmd;
 };
 
- inline Path::Path()
+inline Path::Path()
 	 : x(0), y(0), z(0), T(0), f(0), e(0) {}
 
 inline Path::Path(double x_, double y_, double z_, double T_, double f_, double e_)

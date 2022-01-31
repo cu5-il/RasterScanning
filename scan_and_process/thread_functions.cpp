@@ -11,7 +11,7 @@
 #include "myTypes.h"
 #include "myGlobals.h"
 #include "scanning.h"
-#include "display_functions.h"
+#include "draw.h"
 #include "errors.h"
 #include "A3200_functions.h"
 #include "csvMat.h"
@@ -58,7 +58,9 @@ void t_CollectScans(Raster raster) {
 	// Save the data
 	writeCSV(outDir + "edges.csv", edges);
 	cv::Mat image = cv::Mat::zeros(raster.size(), CV_8UC3);
-	image = showRaster(raster.draw(), raster.boundaryMask(), edges, cv::Scalar(0, 0, 255), MM2PIX(0.2));
+	raster.draw(image, image);
+	raster.drawBdry(image, image, cv::Scalar(255, 0, 0));
+	drawEdges(image, image, edges, cv::Scalar(0, 0, 255), MM2PIX(0.2));
 	cv::imwrite(outDir + "edges.png", image);
 	std::cout << "All segments have been scanned. Ending scanning thread." << std::endl;
 }
@@ -90,8 +92,10 @@ void t_GetMatlErrors(Raster raster, double targetWidth) {
 		segments[segNumError].addEdges(lEdgePts, rEdgePts);
 		segments[segNumError].addErrors(errCL, errWD);
 	}
-	cv::Mat image;
-	showErrors(raster.draw(), image, segments);
+	cv::Mat image = cv::Mat::zeros(raster.size(), CV_8UC3);
+	raster.draw(image, image);
+	raster.drawBdry(image, image, cv::Scalar(255, 0, 0));
+	drawErrors(image, image, segments);
 	cv::imwrite(outDir + "errors.png", image);
 	std::cout << "All segments have been processed. Ending error processing thread." << std::endl;
 }

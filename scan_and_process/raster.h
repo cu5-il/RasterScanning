@@ -35,20 +35,20 @@ public:
 
     Raster(double rodLength, double rodSpacing, double rodWidthMax);
 
-    const cv::Mat& draw() { return _mat; }
     const cv::Rect2d& roi() { return _roi; }
-    const cv::Mat& boundaryMask() { return _boundaryMask; };
-    //const std::vector<cv::Point>& boundaryPoints() { return _boundaryPoints; };
-    const std::vector<cv::Point>& px() { return _cornersPix; };
-    const std::vector<cv::Point2d>& mm() { return _cornersMM; };
+    const cv::Mat& boundaryMask() { return _boundaryMask; }
+    const std::vector<cv::Point>& px() { return _cornersPix; }
+    const std::vector<cv::Point2d>& mm() { return _cornersMM; }
     const cv::Size& size() { return _sz; }
-    const int& rodWidth() { return _rodWidth; };
-    const double& length() { return _length; };
-    const double& spacing() { return _spacing; };
-    const cv::Point2d& origin() { return _roi.tl(); };
-
+    const int& rodWidth() { return _rodWidth; }
+    const double& length() { return _length; }
+    const double& spacing() { return _spacing; }
+    const cv::Point2d& origin() { return _roi.tl(); }
+    
     void offset(cv::Point2d);
-
+    const cv::Mat& draw() { return _mat; }
+    void draw(cv::Mat src, cv::Mat& dst, const cv::Scalar& color = cv::Scalar(255, 255, 255), int thickness = 1);
+    void drawBdry(cv::Mat src, cv::Mat& dst, const cv::Scalar& color, int thickness = 1);
 };
 
 inline Raster::Raster()
@@ -118,6 +118,28 @@ inline Raster::Raster(double rodLength, double rodSpacing, double rodWidthMax) {
 inline void Raster::offset(cv::Point2d offset) {
     for (auto it = _cornersMM.begin(); it != _cornersMM.end(); ++it) { *it += offset; }
     _roi += offset;
+}
+
+inline void Raster::draw(cv::Mat src, cv::Mat& dst, const cv::Scalar& color, int thickness ) {
+    // copy the source to the destination
+    src.copyTo(dst);
+    if (dst.channels() < 3) {
+        cv::cvtColor(dst, dst, cv::COLOR_GRAY2BGR);
+    }
+
+    // draw the raster on the image
+    cv::polylines(dst, _cornersPix, false, color, thickness, 4);
+}
+
+inline void Raster::drawBdry(cv::Mat src, cv::Mat& dst, const cv::Scalar& color, int thickness) {
+    // copy the source to the destination
+    src.copyTo(dst);
+    if (dst.channels() < 3) {
+        cv::cvtColor(dst, dst, cv::COLOR_GRAY2BGR);
+    }
+
+    // draw the boundary on the image
+    cv::polylines(dst, _boundaryPoints, true, color, thickness, 4);
 }
 
 #endif // RASTER_H

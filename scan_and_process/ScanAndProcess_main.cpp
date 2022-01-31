@@ -21,7 +21,7 @@
 #include "myTypes.h"
 #include "myGlobals.h"
 #include "scanning.h"
-#include "display_functions.h"
+#include "draw.h"
 #include "gaussianSmooth.h"
 #include "errors.h"
 #include "A3200_functions.h"
@@ -117,17 +117,17 @@ int main() {
 
 	//goto cleanup;
 
-LoadData:
-	// DEBUGGING ERROR CALCULATIONS
-	//edgeMsg msg;
-	//cv::Mat edges = cv::Mat::zeros(raster.size(), CV_8U);
-	//readCSV("C:/Users/cu5/source/repos/RasterScanning/scan_and_process/Output/2022.01.20-15.14.37_edges.csv", edges);
-	//edges.convertTo(edges, CV_8U);
-	//for (int i = 0; i < segments.size(); i++) {
-	//	msg.addEdges(edges, i, (i == segments.size() - 1));
-	//	q_edgeMsg.push(msg);
-	//}
-	//t_GetMatlErrors(raster, targetWidth);
+//LoadData:
+//	// DEBUGGING ERROR CALCULATIONS
+//	edgeMsg msg;
+//	cv::Mat edges = cv::Mat::zeros(raster.size(), CV_8U);
+//	readCSV("C:/Users/cu5/source/repos/RasterScanning/scan_and_process/Output/2022.01.28-17.05.30_edges.csv", edges);
+//	edges.convertTo(edges, CV_8U);
+//	for (int i = 0; i < segments.size(); i++) {
+//		msg.addEdges(edges, i, (i == segments.size() - 1));
+//		q_edgeMsg.push(msg);
+//	}
+//	t_GetMatlErrors(raster, targetWidth);
 	
 cleanup:
 	//A3200 Cleanup

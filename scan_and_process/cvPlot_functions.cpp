@@ -4,7 +4,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include "display_functions.h"
+#include "draw.h"
 
 // If cvPlot is installed, use the functions
 #  if __has_include(<CvPlot/cvplot.h>)
