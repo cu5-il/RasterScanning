@@ -21,13 +21,10 @@
     <ClInclude Include="myGlobals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="scanner_functions.h">
+    <ClInclude Include="scanning.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="myTypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="processing_functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="display_functions.h">
@@ -36,7 +33,7 @@
     <ClInclude Include="gaussianSmooth.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="edge_functions.h">
+    <ClInclude Include="errors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="csvMat.h">
@@ -77,10 +74,7 @@
     <ClCompile Include="ScanAndProcess_main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="scanner_functions.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="processing_functions.cpp">
+    <ClCompile Include="scanning.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="display_functions.cpp">
@@ -89,7 +83,7 @@
     <ClCompile Include="gaussianSmooth.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="edge_functions.cpp">
+    <ClCompile Include="errors.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="csvMat.cpp">

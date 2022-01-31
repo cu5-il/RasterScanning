@@ -2,8 +2,8 @@
 #include <vector>
 #include <opencv2/core.hpp>
 
-#ifndef EDGE_FNS_H
-#define EDGE_FNS_H
+#ifndef ERRORS_H
+#define ERRORS_H
 
 /**
  * @brief Breaks up the raster pattern into segments. Each vertical rod in the raster is a segment; corners are neglected.
@@ -49,4 +49,4 @@ void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size ra
 */
 void getErrorsAt(std::vector<cv::Point>& waypoints, double width, cv::Size rasterSize, const std::vector<cv::Point>& lEdgePts, const std::vector<cv::Point>& rEdgePts, std::vector<double>& errCL, std::vector<double>& errWD);
 
-#endif // EDGE_FNS_H
+#endif // !ERRORS_H

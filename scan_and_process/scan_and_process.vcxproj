@@ -152,7 +152,7 @@
     <ClInclude Include="csvMat.h" />
     <ClInclude Include="cvPlot_functions.h" />
     <ClInclude Include="display_functions.h" />
-    <ClInclude Include="edge_functions.h" />
+    <ClInclude Include="errors.h" />
     <ClInclude Include="extrusion.h" />
     <ClInclude Include="gaussianSmooth.h" />
     <ClInclude Include="path.h" />
@@ -161,8 +161,7 @@
     <ClInclude Include="motion.h" />
     <ClInclude Include="myGlobals.h" />
     <ClInclude Include="myTypes.h" />
-    <ClInclude Include="processing_functions.h" />
-    <ClInclude Include="scanner_functions.h" />
+    <ClInclude Include="scanning.h" />
     <ClInclude Include="threadsafeQueue.h" />
     <ClInclude Include="thread_functions.h" />
   </ItemGroup>
@@ -171,15 +170,14 @@
     <ClCompile Include="csvMat.cpp" />
     <ClCompile Include="cvPlot_functions.cpp" />
     <ClCompile Include="display_functions.cpp" />
-    <ClCompile Include="edge_functions.cpp" />
+    <ClCompile Include="errors.cpp" />
     <ClCompile Include="gaussianSmooth.cpp" />
     <ClCompile Include="motion.cpp" />
     <ClCompile Include="myGlobals.cpp" />
     <ClCompile Include="path.cpp" />
     <ClCompile Include="print.cpp" />
-    <ClCompile Include="processing_functions.cpp" />
     <ClCompile Include="ScanAndProcess_main.cpp" />
-    <ClCompile Include="scanner_functions.cpp" />
+    <ClCompile Include="scanning.cpp" />
     <ClCompile Include="thread_functions.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
