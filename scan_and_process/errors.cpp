@@ -92,6 +92,19 @@ void getErrorsAt(std::vector<cv::Point>& waypoints, double width, cv::Size raste
 	errWD.clear();
 	errCL.reserve(waypoints.size());
 	errWD.reserve(waypoints.size());
+
+	// Create rectangle containing aread with material on both sides of the rater
+	int minX = max(lEdgePts.front().x, rEdgePts.front().x);
+	int maxX = min(lEdgePts.back().x, rEdgePts.back().x);
+	int minY = (*std::min_element(lEdgePts.begin(), lEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.y < pt2.y; })).y;
+	int maxY = (*std::max_element(rEdgePts.begin(), rEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.y < pt2.y; })).y;
+	cv::Rect edgeRoi = cv::Rect(minX, minY, maxX-minX, maxY-minY);
+	// create a contour from the edges //UNUSED
+	//std::vector<cv::Point> edgeContour;
+	//edgeContour.reserve(lEdgePts.size() + rEdgePts.size()); // preallocate memory
+	//edgeContour.insert(edgeContour.end(), lEdgePts.begin(), lEdgePts.end());
+	//edgeContour.insert(edgeContour.end(), rEdgePts.rbegin(), rEdgePts.rend());
+	
 	// See how far the edges are from the unmodified path
 	// Draw the smoothed edges on an image
 	cv::polylines(lEdge, lEdgePts, false, cv::Scalar(0), 1);
@@ -99,11 +112,18 @@ void getErrorsAt(std::vector<cv::Point>& waypoints, double width, cv::Size raste
 	// apply a distance transform to the image with the smoothed edges
 	cv::distanceTransform(lEdge, lEdge, cv::DIST_L2, cv::DIST_MASK_PRECISE, CV_32F); //NOTE: regarding speed -  DIST_MASK_5 (3.9ms/rod) < DIST_MASK_PRECISE (4.7ms/rod) < DIST_MASK_3 (9.1ms/rod) 
 	cv::distanceTransform(rEdge, rEdge, cv::DIST_L2, cv::DIST_MASK_PRECISE, CV_32F);
-	// iterate over the target centerline to calculate the errors
+	// iterate over the waypoints to calculate the errors
 	for (auto it = waypoints.begin(); it != waypoints.end(); ++it) {
-		//TODO: check if there is a measured edge to the left / right of the path
-		// maybe check if the dXform distance is greater than the boundary width
-		errCL.push_back((rEdge.at<float>(*it) - lEdge.at<float>(*it)) / 2);
-		errWD.push_back(lEdge.at<float>(*it) + rEdge.at<float>(*it) - MM2PIX(width));
+		// Check if the waypoint is within the countour created by the edges
+		//if (cv::pointPolygonTest(edgeContour, *it, false) >= 0) { // UNUSED
+		if (edgeRoi.contains(*it)) {
+			errCL.push_back((rEdge.at<float>(*it) - lEdge.at<float>(*it)) / 2);
+			errWD.push_back(lEdge.at<float>(*it) + rEdge.at<float>(*it) - MM2PIX(width));
+		}
+		else {
+			errCL.push_back(0);
+			errWD.push_back(0);
+		}
+		
 	}
 }

@@ -80,9 +80,11 @@ void t_GetMatlErrors(Raster raster, double targetWidth) {
 		segNumError = inMsg.segmentNum();
 		// find and smooth the right and left edges
 		getMatlEdges(segments[segNumError].ROI(), inMsg.edges(), lEdgePts, rEdgePts);
-		// Calculate errors
-		waypoints = segments[segNumError].waypoints();
-		getErrorsAt(waypoints, targetWidth, raster.size(), lEdgePts, rEdgePts, errCL, errWD);
+		// If there are edge points, calculate errors
+		if (!lEdgePts.empty() && !rEdgePts.empty()) {
+			waypoints = segments[segNumError].waypoints();
+			getErrorsAt(waypoints, targetWidth, raster.size(), lEdgePts, rEdgePts, errCL, errWD);
+		}
 		// Push the errors to the controller
 		std::cout << "Segment " << segNumError << " errors processed. Sending data to controller." << std::endl;
 		outMsg.addErrors(errCL, errWD, segNumError);
@@ -91,6 +93,9 @@ void t_GetMatlErrors(Raster raster, double targetWidth) {
 		//TODO: store the errors someplace else?
 		segments[segNumError].addEdges(lEdgePts, rEdgePts);
 		segments[segNumError].addErrors(errCL, errWD);
+		// clear the errors
+		errCL.clear(); 
+		errWD.clear();
 	}
 	cv::Mat image = cv::Mat::zeros(raster.size(), CV_8UC3);
 	raster.draw(image, image);
