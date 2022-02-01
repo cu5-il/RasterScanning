@@ -89,10 +89,10 @@ bool makePath(Raster raster, double wayptSpc, std::deque<double>& theta, cv::Poi
 
 		// Defining the regions and the point when the region has been completely scanned
 		switch (direction % 2) {
-		case 0: 
+		case 0: // Horizontal lines
 			roi = cv::Rect(*it - cv::Point(0, raster.rodWidth() / 2), *std::next(it, 1) + cv::Point(0, raster.rodWidth() / 2));
-			// defining the point when the region has been completely scanned as the midpoint of the next horizontal line
-			scanDonePt = (wp_mm.front() + wp_mm.back()) / 2 + cv::Point2d(wayptSpc/2, raster.spacing());
+			// defining the point when the region has been completely scanned as the end of the next horizontal line
+			scanDonePt = wp_mm.front() + cv::Point2d(0, raster.spacing());
 			// if it is the final segment
 			if (std::next(it) == std::prev(raster.px().end())) {
 				scanDonePt = wp_mm.back() ;
@@ -101,10 +101,10 @@ bool makePath(Raster raster, double wayptSpc, std::deque<double>& theta, cv::Poi
 		case 1: // vertical lines
 			roi = cv::Rect(0,0,1,1);
 			//roi = cv::Rect(*it - cv::Point(raster.rodWidth() / 2, 0), *std::next(it, 1) + cv::Point(raster.rodWidth() / 2, 0));
-			// defining the point when the region has been completely scanned as 3/4 of the length of the next horizontal line
-			scanDonePt = wp_mm.front() + cv::Point2d(raster.length() * 0.75, raster.spacing() );
+			// defining the point when the region has been completely scanned as the midpoint of the next vertical line
+			scanDonePt = wp_mm.front() + cv::Point2d(raster.length() , 1.5*raster.spacing() );
 			if (!raster.roi().contains(scanDonePt)) {
-				scanDonePt -= cv::Point2d(raster.length() * 1.5, 0);
+				scanDonePt -= cv::Point2d(raster.length()*2, 0);
 			}
 			break;
 		}
