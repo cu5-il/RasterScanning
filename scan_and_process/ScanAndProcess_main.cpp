@@ -30,6 +30,7 @@
 #include "raster.h"
 #include <ctime>
 #include "path.h"
+#include "print.h"
 
 std::string datetime();
 
@@ -48,13 +49,13 @@ int main() {
 	//cv::Point3d initPos = cv::Point3d(0, 0, 0);
 	cv::Point3d initPos = cv::Point3d(45, 15, -8);
 	//initPos = cv::Point3d(95, 15, 0);
-	double targetWidth = .5;
+	double targetWidth = 1;
 
 	//Load the raster path generated in Matlab
 	double rodLen, rodSpc, rodWidth, wayptSpc;
 	std::deque<std::vector<double>> xyTpath;
 	std::deque<double> theta;
-	readPath("Input/pathCoords.txt", rodLen, rodSpc, wayptSpc, xyTpath, theta);
+	readPath("Input/pathCoords_36x12v3.txt", rodLen, rodSpc, wayptSpc, xyTpath, theta);
 	xyTpath.clear();
 	
 	// Make raster
@@ -99,9 +100,9 @@ int main() {
 	}
 	//=======================================
 
-	//goto cleanup;
-	//t_controller(path, segsBeforeCtrl);
-	//t_queueCmds();
+	//if (!A3200MotionEnable(handle, TASK_PRINT, AXES_ALL)) { A3200Error(); }
+	//prePrint(initPos);
+	//t_CollectScans(raster);
 	//goto cleanup;
 
 	t_scan = std::thread{ t_CollectScans, raster };

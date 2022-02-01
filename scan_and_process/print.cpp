@@ -29,9 +29,12 @@ void prePrint(cv::Point3d initPos) {
 	// Move Z axis to the starting position
 	if (!A3200MotionMoveAbs(handle, TASK_PRINT, (AXISINDEX)(AXISINDEX_02), initPos.z + 1, 10)) { A3200Error(); }
 	if (!A3200MotionWaitForMotionDone(handle, AXES_ALL, WAITOPTION_MoveDone, -1, NULL)) { A3200Error(); }
+#ifdef LEADIN_LINE
+	if (!A3200MotionMoveInc(handle, TASK_PRINT, (AXISINDEX)(AXISINDEX_00), -LEADIN_LINE, 5)) { A3200Error(); }
+	if (!A3200MotionWaitForMotionDone(handle, AXES_ALL, WAITOPTION_MoveDone, -1, NULL)) { A3200Error(); }
+#endif // LEADIN_LINE
 	if (!A3200MotionMoveAbs(handle, TASK_PRINT, (AXISINDEX)(AXISINDEX_02), initPos.z, 1)) { A3200Error(); }
 	if (!A3200MotionWaitForMotionDone(handle, AXES_ALL, WAITOPTION_InPosition, -1, NULL)) { A3200Error(); }
-	
 }
 
 

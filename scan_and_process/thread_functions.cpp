@@ -30,6 +30,9 @@ void t_CollectScans(Raster raster) {
 	double posErrThr = 2.5; // position error threshold for how close the current position is to the target
 	cv::Point2d curPos;
 
+	// wait for pre-print to complete before starting the scanner
+	q_scanMsg.wait_and_pop();
+
 	while (segNumScan < segments.size()){
 		if (collectData(handle, DCCHandle, &collectedData[0][0])) {
 			// Trigger the scanner and collect the scanner data
@@ -101,6 +104,7 @@ void t_GetMatlErrors(Raster raster, double targetWidth) {
 	raster.draw(image, image);
 	raster.drawBdry(image, image, cv::Scalar(255, 0, 0));
 	drawErrors(image, image, segments);
+	addScale(image, 10, cv::Point(5, 15));
 	cv::imwrite(outDir + "errors.png", image);
 	std::cout << "All segments have been processed. Ending error processing thread." << std::endl;
 }
@@ -141,10 +145,8 @@ void t_printQueue(cv::Point3d initPos) {
 	prePrint(initPos);
 	std::cout << "Pre-print complete" << std::endl;
 	
-#ifdef LEADIN_LINE
-	if (!A3200MotionMoveInc(handle, TASK_PRINT, (AXISINDEX)(AXISINDEX_00), -LEADIN_LINE, 5)) { A3200Error(); }
-	if (!A3200MotionWaitForMotionDone(handle, AXES_ALL, WAITOPTION_InPosition, -1, NULL)) { A3200Error(); }
-#endif // LEADIN_LINE
+	// notify scanner to start
+	q_scanMsg.push(true);
 
 	// Put task into Queue mode and then pause the program while queue is loaded.
 	if (!A3200ProgramInitializeQueue(handle, TASK_PRINT)) { A3200Error(); }

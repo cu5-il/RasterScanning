@@ -102,10 +102,18 @@ bool makePath(Raster raster, double wayptSpc, std::deque<double>& theta, cv::Poi
 			roi = cv::Rect(0,0,1,1);
 			//roi = cv::Rect(*it - cv::Point(raster.rodWidth() / 2, 0), *std::next(it, 1) + cv::Point(raster.rodWidth() / 2, 0));
 			// defining the point when the region has been completely scanned as the midpoint of the next vertical line
-			scanDonePt = wp_mm.front() + cv::Point2d(raster.length() , 1.5*raster.spacing() );
+			
+			// if it's not the last vertical rod
+			if (std::next(it, 2) != std::prev(raster.px().end())) {
+				scanDonePt = wp_mm.front() + cv::Point2d(raster.length(), 1.5 * raster.spacing());
+			}
+			else {
+				scanDonePt = wp_mm.front() + cv::Point2d(raster.length(), raster.spacing());
+			}
 			if (!raster.roi().contains(scanDonePt)) {
 				scanDonePt -= cv::Point2d(raster.length()*2, 0);
 			}
+			
 			break;
 		}
 		//TODO: change segment class to include waypoints in mm
