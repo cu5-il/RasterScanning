@@ -62,7 +62,8 @@ int main() {
 
 	// Creating the path and segmets
 	std::vector<std::vector<Path>> path;
-	makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+	std::vector<Segment> segs;
+	makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segs, path);
 	int segsBeforeCtrl = path.size();
 	//int segsBeforeCtrl = 3;
 
@@ -71,7 +72,7 @@ int main() {
 	makeTestPath(path, 1, fRange);
 
 	cv::Mat imSeg;
-	drawSegments(raster.draw(), imSeg, segments,3);
+	drawSegments(raster.draw(), imSeg, segs, raster.origin(), 3);
 
 	goto cleanup;
 

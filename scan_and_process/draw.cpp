@@ -98,8 +98,8 @@ void drawErrors(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg) {
 	tempLines.copyTo(dst, mask);
 }
 
-void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, const int pointSz = 1) {
-	cv::Point origin = seg[0].waypoints()[0];
+void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, cv::Point2d origin, const int pointSz = 1) {
+	//cv::Point origin = seg[0].waypoints()[0];
 	cv::Point ScanDonePt(0,0);
 	cv::Scalar color = cv::Scalar(255, 255, 0);
 	cv::RNG rng(0xFFFFFFFF);
@@ -123,8 +123,8 @@ void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, const in
 		cv::rectangle(dst, (*it).ROI(), color);
 		// Draw and label the scan done point
 		snprintf(buff, sizeof(buff), "%u", segNum);
-		ScanDonePt = origin + cv::Point(MM2PIX((*it).scanDonePt().x), MM2PIX((*it).scanDonePt().y));
-		if (it != seg.begin() && ScanDonePt == origin + cv::Point(MM2PIX((*std::prev(it)).scanDonePt().x), MM2PIX((*std::prev(it)).scanDonePt().y))) {
+		ScanDonePt = cv::Point(MM2PIX((*it).scanDonePt().x - origin.x ), MM2PIX((*it).scanDonePt().y - origin.y ));
+		if (it != seg.begin() && ScanDonePt == cv::Point(MM2PIX((*std::prev(it)).scanDonePt().x - origin.x), MM2PIX((*std::prev(it)).scanDonePt().y - origin.y))) {
 			samePtCnt++;
 			textSz = cv::getTextSize(buff, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
 			cv::putText(dst, buff, ScanDonePt + cv::Point(pointSz + samePtCnt * textSz.width, -2), cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv::LINE_8);

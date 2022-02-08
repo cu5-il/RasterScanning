@@ -159,6 +159,22 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\scan_and_process\A3200_functions.h" />
+    <ClInclude Include="..\scan_and_process\constants.h" />
+    <ClInclude Include="..\scan_and_process\csvMat.h" />
+    <ClInclude Include="..\scan_and_process\cvPlot_functions.h" />
+    <ClInclude Include="..\scan_and_process\draw.h" />
+    <ClInclude Include="..\scan_and_process\errors.h" />
+    <ClInclude Include="..\scan_and_process\extrusion.h" />
+    <ClInclude Include="..\scan_and_process\gaussianSmooth.h" />
+    <ClInclude Include="..\scan_and_process\myGlobals.h" />
+    <ClInclude Include="..\scan_and_process\myTypes.h" />
+    <ClInclude Include="..\scan_and_process\path.h" />
+    <ClInclude Include="..\scan_and_process\print.h" />
+    <ClInclude Include="..\scan_and_process\raster.h" />
+    <ClInclude Include="..\scan_and_process\scanning.h" />
+    <ClInclude Include="..\scan_and_process\threadsafeQueue.h" />
+    <ClInclude Include="..\scan_and_process\thread_functions.h" />
     <ClInclude Include="controlCalib.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
