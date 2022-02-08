@@ -46,12 +46,10 @@ void postPrint() {
 
 	if (!A3200MotionSetupAbsolute(handle, TASK_PRINT)) { A3200Error(); }
 	// raise the z axis
-	if (!A3200MotionMoveAbs(handle, TASK_PRINT, (AXISINDEX)(AXISINDEX_02), 5, 10)) { A3200Error(); }
-	if (!A3200MotionWaitForMotionDone(handle, AXES_ALL, WAITOPTION_MoveDone, -1, NULL)) { A3200Error(); }
+	if (!A3200CommandExecute(handle, TASK_PRINT, (LPCSTR)"G1 Z5 F5 ", NULL)) { A3200Error(); }
 	// Move X, Y, and TH axes to their final positions
 	cmd = "G0 X " + std::to_string(DISPOSAL_X) + " Y " + std::to_string(DISPOSAL_Y) + " TH 90" + " XF 15 YF 15 THF 20";
 	if (!A3200CommandExecute(handle, TASK_PRINT, cmd.c_str(), NULL)) { A3200Error(); }
-	if (!A3200MotionWaitForMotionDone(handle, AXES_ALL, WAITOPTION_InPosition, -1, NULL)) { A3200Error(); }
 	// Disable extrusion
 	extruder.disable();
 }

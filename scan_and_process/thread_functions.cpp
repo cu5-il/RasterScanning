@@ -136,6 +136,7 @@ void t_controller(std::vector<std::vector<Path>> path, int segsBeforeCtrl) {
 void t_printQueue(cv::Point3d initPos) {
 	pathMsg inMsg;
 	int segNum = 0;
+	double queueLineCount;
 	
 	// End any program already running
 	if (!A3200ProgramStop(handle, TASK_PRINT)) { A3200Error(); }
@@ -186,16 +187,21 @@ void t_printQueue(cv::Point3d initPos) {
 
 		if (!A3200ProgramStart(handle,TASK_PRINT)) { A3200Error(); }
 	}
-	if (!A3200MotionWaitForMotionDone(handle, AXES_ALL, WAITOPTION_InPosition, -1, NULL)) { A3200Error(); }
+	// Run post-print process
+	postPrint();
+	if (!A3200MotionDisable(handle, TASK_PRINT, AXES_ALL)) { A3200Error(); }
+
+	// Periodically check to see if the queue is empty
+	std::cout << "Print loaded. Waiting for queue to empty." << std::endl;
+	if (!A3200StatusGetItem(handle, TASK_PRINT, STATUSITEM_QueueLineCount, 0, &queueLineCount)) { A3200Error(); }
+	while (0 != (int)queueLineCount) {
+		Sleep(10);
+		if (!A3200StatusGetItem(handle, TASKID_01, STATUSITEM_QueueLineCount, 0, &queueLineCount)) { A3200Error(); }
+	}
 	// Stop using queue mode
 	if (!A3200ProgramStop(handle, TASK_PRINT)) { A3200Error(); }
 
-	// Run post-print process
-	postPrint();
-
-	if (!A3200MotionDisable(handle, TASK_PRINT, AXES_ALL)) { A3200Error(); }
 	std::cout << "Printing Complete. Ending printing thread." << std::endl;
-	
 }
 
 
