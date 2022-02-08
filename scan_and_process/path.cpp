@@ -131,6 +131,82 @@ bool makePath(Raster raster, double wayptSpc, std::deque<double>& theta, cv::Poi
 	return true;
 }
 
+void makePath(Raster raster, double wayptSpc, double theta, cv::Point3d initPos, double initVel, double initExt, std::vector<Segment>& seg, std::vector<std::vector<Path>>& path) {
+
+	std::vector<cv::Point> rasterCoords = raster.px();
+	cv::Rect roi;
+	std::vector<cv::Point2i> wp_px;
+	std::vector<cv::Point2d> wp_mm;
+	cv::Point2d scanDonePt;
+	int pixWidth = raster.rodWidth();
+	int direction = 1;
+	cv::Point2d origin = raster.origin();
+	std::vector<Path> tmp;
+
+	double z = initPos.z;
+	double T = theta;
+	double e = initExt;
+	double f = initVel;
+
+	// Rods
+	for (auto it = raster.px().begin(); it != std::prev(raster.px().end()); ++it) {
+		// Generate the waypoints
+		interpPathPoints(std::vector<cv::Point2i> {*it, * std::next(it)}, wayptSpc, wp_px);
+		// add the final point of the pattern
+		if (std::next(it) == std::prev(raster.px().end())) {
+			wp_px.push_back(*std::next(it));
+		}
+		wp_mm.resize(wp_px.size());
+		std::transform(wp_px.begin(), wp_px.end(), wp_mm.begin(), [&origin](cv::Point& pt) {return (PIX2MM(cv::Point2d(pt)) + origin); });
+
+		for (auto it2 = wp_mm.begin(); it2 != wp_mm.end(); ++it2) {
+			tmp.push_back(Path(*it2, z, T, f, e));
+		}
+		path.push_back(tmp);
+
+		// Determine the direction
+		if (((*std::next(it)).x - (*it).x) > 0) { direction = 0; }		// positive x direction
+		else if (((*std::next(it)).x - (*it).x) < 0) { direction = 2; } // negative x direction
+		else if (((*std::next(it)).y - (*it).y) > 0) { direction = 1; } // positive y direction
+		else if (((*std::next(it)).y - (*it).y) < 0) { direction = 3; } // negative y direction
+
+		// Defining the regions and the point when the region has been completely scanned
+		switch (direction % 2) {
+		case 0: // Horizontal lines
+			roi = cv::Rect(*it - cv::Point(0, raster.rodWidth() / 2), *std::next(it, 1) + cv::Point(0, raster.rodWidth() / 2));
+			// defining the point when the region has been completely scanned as the end of the next horizontal line
+			scanDonePt = wp_mm.front() + cv::Point2d(0, raster.spacing());
+			// if it is the final segment
+			if (std::next(it) == std::prev(raster.px().end())) {
+				scanDonePt = wp_mm.back();
+			}
+			break;
+		case 1: // vertical lines
+			roi = cv::Rect(0, 0, 1, 1);
+			//roi = cv::Rect(*it - cv::Point(raster.rodWidth() / 2, 0), *std::next(it, 1) + cv::Point(raster.rodWidth() / 2, 0));
+			// defining the point when the region has been completely scanned as the midpoint of the next vertical line
+
+			// if it's not the last vertical rod
+			if (std::next(it, 2) != std::prev(raster.px().end())) {
+				scanDonePt = wp_mm.front() + cv::Point2d(raster.length(), 1.5 * raster.spacing());
+			}
+			else {
+				scanDonePt = wp_mm.front() + cv::Point2d(raster.length(), raster.spacing());
+			}
+			if (!raster.roi().contains(scanDonePt)) {
+				scanDonePt -= cv::Point2d(raster.length() * 2, 0);
+			}
+
+			break;
+		}
+		//TODO: change segment class to include waypoints in mm
+		seg.push_back(Segment(roi, wp_px, scanDonePt, direction));
+		wp_px.clear();
+		wp_mm.clear();
+		tmp.clear();
+	}
+}
+
 void readPath(std::string filename, double& rodLen, double& rodSpc, double& wayptSpc, std::deque<std::vector<double>>& path, std::deque<double>& theta)
 {
 	std::ifstream inFile(filename.c_str());

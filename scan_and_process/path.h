@@ -18,6 +18,8 @@ void interpPathPoints(std::vector<cv::Point2i> inPts, double wayptSpc, std::vect
 
 bool makePath(Raster raster, double wayptSpc, std::deque<double>& theta, cv::Point3d initPos, double initVel, double initExt, std::vector<Segment>& seg, std::vector<std::vector<Path>>& path);
 
+void makePath(Raster raster, double wayptSpc, double theta, cv::Point3d initPos, double initVel, double initExt, std::vector<Segment>& seg, std::vector<std::vector<Path>>& path);
+
 void readPath(std::string filename, double& rodLen, double& rodSpc, double& wayptSpc, std::deque<std::vector<double>>& path, std::deque<double>& theta);
 
-#endif // PATH_H
+#endif // !PATH_H

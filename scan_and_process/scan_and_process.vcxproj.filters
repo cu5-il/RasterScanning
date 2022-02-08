@@ -15,52 +15,52 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="A3200_functions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="constants.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="myGlobals.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="scanning.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="myTypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="draw.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="gaussianSmooth.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="errors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="csvMat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="A3200_functions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="threadsafeQueue.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="cvPlot_functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="thread_functions.h">
+    <ClInclude Include="draw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="errors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="extrusion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="raster.h">
+    <ClInclude Include="gaussianSmooth.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myGlobals.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="path.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="print.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="raster.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scanning.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="thread_functions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="threadsafeQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
