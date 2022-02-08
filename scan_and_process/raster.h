@@ -27,13 +27,31 @@ private:
     std::vector<cv::Point2d> _cornersMM;
     int _rodWidth;
     double _length;
+    double _width;
     double _spacing;
+
+    void _makeRaster(double length, double width, double rodSpacing, double rodWidthMax);
 
 public:
     // default constructor
     Raster();
 
-    Raster(double rodLength, double rodSpacing, double rodWidthMax);
+    /**
+     * @brief Construsctor for a square raster
+     * @param length length & width of the raster
+     * @param rodSpacing spacing between the rods of a raster
+     * @param rodWidthMax maximum width of the raster rods (for finding edges)
+    */
+    Raster(double length, double rodSpacing, double rodWidthMax);
+
+    /**
+     * @brief Constructor for a non-square raster
+     * @param length length of the raster 
+     * @param width  width of the raster
+     * @param rodSpacing spacing between the rods of a raster
+     * @param rodWidthMax maximum width of the raster rods (for finding edges)
+    */
+    Raster(double length, double width, double rodSpacing, double rodWidthMax);
 
     const cv::Rect2d& roi() { return _roi; }
     const cv::Mat& boundaryMask() { return _boundaryMask; }
@@ -42,6 +60,7 @@ public:
     const cv::Size& size() { return _sz; }
     const int& rodWidth() { return _rodWidth; }
     const double& length() { return _length; }
+    const double& width() { return _width; }
     const double& spacing() { return _spacing; }
     const cv::Point2d& origin() { return _roi.tl(); }
     
@@ -54,27 +73,37 @@ public:
 inline Raster::Raster()
     : _rodWidth(0), _length(0), _spacing(0) {}
 
-inline Raster::Raster(double rodLength, double rodSpacing, double rodWidthMax) {
+inline Raster::Raster(double length, double rodSpacing, double rodWidthMax) {
+    _makeRaster(length, length, rodSpacing, rodWidthMax);
+}
+
+inline Raster::Raster(double length, double width, double rodSpacing, double rodWidthMax) {
+    _makeRaster(length, width, rodSpacing, rodWidthMax);
+}
+
+inline void Raster::_makeRaster(double length, double width, double rodSpacing, double rodWidthMax) {
 
     int i = 0;
     double border = rodWidthMax / 2 + 1;
-    int pixLen = MM2PIX(rodLength);
+    int pixLen = MM2PIX(length);
+    int pixWth = MM2PIX(width);
     int pixSpac = MM2PIX(rodSpacing);
     int pixBord = MM2PIX(border);
 
     _rodWidth = MM2PIX(rodWidthMax);
-    _length = rodLength;
+    _length = length;
+    _width = width;
     _spacing = rodSpacing;
-  
+
     // initialize matrix to store raster with border
-    _sz = cv::Size(pixLen + 2 * pixBord, pixLen + 2 * pixBord);
+    _sz = cv::Size(pixLen + 2 * pixBord, pixWth + 2 * pixBord);
     _mat = cv::Mat(_sz, CV_8U, cv::Scalar(0)).clone();
     _boundaryMask = _mat.clone();
 
     // add the first point to the raster
     _cornersPix.push_back(cv::Point(pixBord, pixBord));
 
-    while (_cornersPix.back().x <= (pixLen + _cornersPix.front().x) && _cornersPix.back().y <= (pixLen + _cornersPix.front().y)) {
+    while (_cornersPix.back().x <= (pixLen + _cornersPix.front().x) && _cornersPix.back().y <= (pixWth + _cornersPix.front().y)) {
         // Convert the points to mm
         _cornersMM.push_back(PIX2MM(cv::Point2d(_cornersPix.back() /*- _cornersPix.front()*/)));
 
@@ -101,7 +130,7 @@ inline Raster::Raster(double rodLength, double rodSpacing, double rodWidthMax) {
     // Draw the raster lines on an image
     cv::polylines(_mat, _cornersPix, false, cv::Scalar(255), 1, 4);
     cv::polylines(_boundaryMask, _cornersPix, false, cv::Scalar(255), _rodWidth, 8);
-    
+
     // Get the boundary points
     std::vector<std::vector<cv::Point> > contour;
     cv::findContours(_boundaryMask, contour, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
@@ -109,7 +138,7 @@ inline Raster::Raster(double rodLength, double rodSpacing, double rodWidthMax) {
 
 
     // define the roi of the raster
-    _roi = cv::Rect2d(0, 0, 2 * border + rodLength, 2 * border + rodLength);
+    _roi = cv::Rect2d(0, 0, 2 * border + length, 2 * border + width);
 
     // offset the coordinates
     offset(-_cornersMM.front());
