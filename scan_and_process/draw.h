@@ -12,6 +12,8 @@
 */
 void mouse_callback(int  event, int  x, int  y, int  flag, void* param);
 
+static cv::Scalar randomColor(cv::RNG& rng);
+
 /**
  * @brief Adds a scale bar to an image
  * @param image[in/out] Mat containing the image
@@ -23,5 +25,7 @@ void addScale(cv::Mat& image, double length = 1, cv::Point offset = cv::Point(25
 void drawEdges(cv::Mat src, cv::Mat& dst, cv::Mat edges, const cv::Scalar& color, const int pointSz = 1);
 
 void drawErrors(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg);
+
+void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, const int pointSz = 1);
 
 #endif // !DRAW_H
