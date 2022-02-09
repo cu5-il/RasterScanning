@@ -121,6 +121,10 @@ void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, cv::Poin
 		color = randomColor(rng);
 		// Draw the segment boundaries
 		cv::rectangle(dst, (*it).ROI(), color);
+		// Draw the waypoints
+		for (auto it2 = (*it).waypoints().begin(); it2 != (*it).waypoints().end(); ++it2) {
+			cv::circle(dst, *it2, pointSz, color, -1, cv::LINE_AA);
+		}
 		// Draw and label the scan done point
 		snprintf(buff, sizeof(buff), "%u", segNum);
 		ScanDonePt = cv::Point(MM2PIX((*it).scanDonePt().x - origin.x ), MM2PIX((*it).scanDonePt().y - origin.y ));
@@ -133,6 +137,6 @@ void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, cv::Poin
 			cv::putText(dst, buff, ScanDonePt + cv::Point(pointSz, -2), cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv::LINE_8);
 			samePtCnt = 0;
 		}
-		cv::circle(dst, ScanDonePt, pointSz, color, -1, cv::LINE_AA);
+		cv::drawMarker(dst, ScanDonePt, color, cv::MARKER_TILTED_CROSS, 10,1);
 	}
 }
