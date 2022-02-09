@@ -43,11 +43,18 @@ int main() {
 
 	std::thread t_scan, t_process, t_control, t_print;
 
-	// Defining the initial parameters
+	// Getting user input
+	std::string resp;
+	std::cout << "Select option: (p)rint, (s)can, or (l)oad data?" << std::endl;
+	std::cin >> resp;
+	if (resp.compare("p") != 0 && resp.compare("s") != 0 && resp.compare("l") != 0) {
+		return 0;
+	}
 
+	// Defining the initial parameters
 	double initVel = 3;
 	double initExt = 0.7;
-	cv::Point3d initPos = cv::Point3d(10, 11, 5);
+	cv::Point3d initPos = cv::Point3d(10, 11, -8);
 	double targetWidth = 1;
 
 	// Make raster
@@ -62,14 +69,27 @@ int main() {
 
 	// Creating the path and segmets
 	std::vector<std::vector<Path>> path;
-	makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+	if (resp.compare("p") == 0) {
+		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+		// Modifying the inputs
+		double fRange[2] = { 6, 2 };
+		makeTestPath(path, 0, fRange);
+	}
+	else if (resp.compare("s") == 0) {
+		Raster rasterScan = Raster(rasLen - SCAN_OFFSET_X + rodWidth, rasWth, rodSpc, rodWidth);
+		rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
+		makePath(rasterScan, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+	}
+	else if (resp.compare("l") == 0) {
+		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+		// Analyzing the print
+		std::string fileDate = "2022.02.09-10.21.37";
+		outDir = "Output/" + fileDate + "_";
+		analyzePrint(raster, std::string("./Output/" + fileDate + "_edges.csv"));
+		return 0;
+	}
 	int segsBeforeCtrl = path.size();
-	//int segsBeforeCtrl = 3;
-
-	// Modifying the inputs
-	double fRange[2] = { 6, 2 };
-	makeTestPath(path, 0, fRange);
-
+	
 	//cv::Mat imSeg;
 	//drawSegments(raster.draw(), imSeg, segments, raster.origin(), 3);
 
@@ -78,48 +98,61 @@ int main() {
 	// A3200 Setup
 	//=======================================
 	//Connecting to the A3200
-	std::cout << "Connecting to A3200. Initializing if necessary." << std::endl;
-	if (!A3200Connect(&handle)) { A3200Error(); }
-	// Creating a data collection handle and setting up the data collection
-	if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { A3200Error(); }
-	if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
-	// Disabling the auger and air
-	if (!A3200IODigitalOutput(handle, TASKID_Library, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $WO[0].X = 0
-	// Homing the axes if not already done
-	std::cout << "Homing axes." << std::endl;
-	if (!A3200MotionEnable(handle, TASKID_Library, AXES_ALL)) { A3200Error(); }
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_03))) { A3200Error(); } // TH axis 
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_02))) { A3200Error(); } // Z axis 
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_00 | AXISMASK_01))) { A3200Error(); } // X & Y axes 
-	if (!A3200MotionWaitForMotionDone(handle, AXES_ALL, WAITOPTION_InPosition, -1, NULL)) { A3200Error(); }
-	if (!A3200MotionDisable(handle, TASKID_Library, AXES_ALL)) { A3200Error(); }
-	// End any program already running
-	if (!A3200ProgramStop(handle, TASK_PRINT)) { A3200Error(); }
-	// Initializing the extruder
-	extruder = Extruder(handle, TASK_PRINT);
-	// Clear the messages and the indicators in the CNC interface
-	if (!A3200CommandExecute(handle, TASK_PRINT, (LPCSTR)"MSGCLEAR -1\n", NULL)) { A3200Error(); }
-	for (int i = 1; i <= 6; i++) {
-		if (!A3200CommandExecute(handle, TASK_PRINT, std::string("MSGLAMP " + std::to_string(i) + ", GRAY, \"\"\n").c_str(), NULL)) { A3200Error(); }
+	{
+		std::cout << "Connecting to A3200. Initializing if necessary." << std::endl;
+		if (!A3200Connect(&handle)) { A3200Error(); }
+		// Creating a data collection handle and setting up the data collection
+		if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { A3200Error(); }
+		if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
+		// Disabling the auger and air
+		if (!A3200IODigitalOutput(handle, TASKID_Library, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $WO[0].X = 0
+		// Homing the axes if not already done
+		std::cout << "Homing axes." << std::endl;
+		if (!A3200MotionEnable(handle, TASKID_Library, AXES_ALL)) { A3200Error(); }
+		if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_03))) { A3200Error(); } // TH axis 
+		if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_02))) { A3200Error(); } // Z axis 
+		if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_00 | AXISMASK_01))) { A3200Error(); } // X & Y axes 
+		if (!A3200MotionWaitForMotionDone(handle, AXES_ALL, WAITOPTION_InPosition, -1, NULL)) { A3200Error(); }
+		if (!A3200MotionDisable(handle, TASKID_Library, AXES_ALL)) { A3200Error(); }
+		// End any program already running
+		if (!A3200ProgramStop(handle, TASK_PRINT)) { A3200Error(); }
+		// Initializing the extruder
+		extruder = Extruder(handle, TASK_PRINT);
+		// Clear the messages and the indicators in the CNC interface
+		if (!A3200CommandExecute(handle, TASK_PRINT, (LPCSTR)"MSGCLEAR -1\n", NULL)) { A3200Error(); }
+		for (int i = 1; i <= 6; i++) {
+			if (!A3200CommandExecute(handle, TASK_PRINT, std::string("MSGLAMP " + std::to_string(i) + ", GRAY, \"\"\n").c_str(), NULL)) { A3200Error(); }
+		}
 	}
 	//=======================================
 
 	// just printing, no scanning
-	t_control = std::thread{ t_controller, path, segsBeforeCtrl };
-	t_print = std::thread{ t_printQueue, path[0][0] };
-	t_print.join();
-	t_control.join();
-	goto cleanup;
+	if (resp.compare("p") == 0){
+		t_control = std::thread{ t_controller, path, segsBeforeCtrl };
+		t_print = std::thread{ t_printQueue, path[0][0] };
+		t_print.join();
+		t_control.join();
+		goto cleanup;
+	}
+	// Scanning, no error calculations
+	else if (resp.compare("s") == 0) {
+		t_scan = std::thread{ t_CollectScans, raster };
+		t_control = std::thread{ t_controller, path, segsBeforeCtrl };
+		t_print = std::thread{ t_printQueue, path[0][0] };
+		t_print.join();
+		t_scan.join();
+		t_control.join();
+		goto cleanup;
+	}
 
-	t_scan = std::thread{ t_CollectScans, raster };
-	t_process = std::thread{ t_GetMatlErrors, raster, targetWidth };
-	t_control = std::thread{ t_controller, path, segsBeforeCtrl };
-	t_print = std::thread{ t_printQueue, path[0][0] };
-
-	t_print.join();
-	t_scan.join();
-	t_process.join();
-	t_control.join();
+	//t_scan = std::thread{ t_CollectScans, raster };
+	//t_process = std::thread{ t_GetMatlErrors, raster, targetWidth };
+	//t_control = std::thread{ t_controller, path, segsBeforeCtrl };
+	//t_print = std::thread{ t_printQueue, path[0][0] };
+	//t_print.join();
+	//t_scan.join();
+	//t_process.join();
+	//t_control.join();
 
 	//goto cleanup;
 
