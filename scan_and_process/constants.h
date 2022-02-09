@@ -31,5 +31,6 @@
 #define DISPOSAL_X 00
 #define DISPOSAL_Y 153
 #define LEADIN_LINE 5
+#define SAFE_Z 5
 
 #endif // CONSTANTS_H

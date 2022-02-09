@@ -47,13 +47,13 @@ int main() {
 
 	double initVel = 3;
 	double initExt = 0.7;
-	cv::Point3d initPos = cv::Point3d(45, 15, -8);
+	cv::Point3d initPos = cv::Point3d(10, 11, 5);
 	double targetWidth = 1;
 
 	// Make raster
-	double rasLen = 30;
-	double rasWth = 25;
-	double rodSpc = 5;
+	double rasLen = 36;// 30;
+	double rasWth = 36;// 25;
+	double rodSpc = 12;// 5;
 	double rodWidth = 3;
 	double wayptSpc = 1;
 
@@ -62,19 +62,18 @@ int main() {
 
 	// Creating the path and segmets
 	std::vector<std::vector<Path>> path;
-	std::vector<Segment> segs;
-	makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segs, path);
+	makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
 	int segsBeforeCtrl = path.size();
 	//int segsBeforeCtrl = 3;
 
 	// Modifying the inputs
-	double fRange[2] = { 1, 6 };
-	makeTestPath(path, 1, fRange);
+	double fRange[2] = { 6, 2 };
+	makeTestPath(path, 0, fRange);
 
-	cv::Mat imSeg;
-	drawSegments(raster.draw(), imSeg, segs, raster.origin(), 3);
+	//cv::Mat imSeg;
+	//drawSegments(raster.draw(), imSeg, segments, raster.origin(), 3);
 
-	goto cleanup;
+	//goto cleanup;
 
 	// A3200 Setup
 	//=======================================
@@ -105,15 +104,17 @@ int main() {
 	}
 	//=======================================
 
-	//if (!A3200MotionEnable(handle, TASK_PRINT, AXES_ALL)) { A3200Error(); }
-	//prePrint(initPos);
-	//t_CollectScans(raster);
-	//goto cleanup;
+	// just printing, no scanning
+	t_control = std::thread{ t_controller, path, segsBeforeCtrl };
+	t_print = std::thread{ t_printQueue, path[0][0] };
+	t_print.join();
+	t_control.join();
+	goto cleanup;
 
 	t_scan = std::thread{ t_CollectScans, raster };
 	t_process = std::thread{ t_GetMatlErrors, raster, targetWidth };
 	t_control = std::thread{ t_controller, path, segsBeforeCtrl };
-	t_print = std::thread{ t_printQueue, initPos };
+	t_print = std::thread{ t_printQueue, path[0][0] };
 
 	t_print.join();
 	t_scan.join();

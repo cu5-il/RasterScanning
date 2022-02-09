@@ -133,7 +133,7 @@ void t_controller(std::vector<std::vector<Path>> path, int segsBeforeCtrl) {
 	std::cout << "Ending controller thread" << std::endl;
 }
 
-void t_printQueue(cv::Point3d initPos) {
+void t_printQueue(Path firstWpt) {
 	pathMsg inMsg;
 	int segNum = 0;
 	double queueLineCount;
@@ -143,7 +143,7 @@ void t_printQueue(cv::Point3d initPos) {
 	if (!A3200MotionEnable(handle, TASK_PRINT, AXES_ALL)) { A3200Error(); }
 
 	// Run pre-print process
-	prePrint(initPos);
+	prePrint(firstWpt);
 	std::cout << "Pre-print complete" << std::endl;
 	
 	// notify scanner to start

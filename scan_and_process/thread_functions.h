@@ -1,5 +1,5 @@
 #pragma once
-#include<opencv2/core.hpp>
+
 #include "raster.h"
 #include "myTypes.h"
 
@@ -12,7 +12,7 @@ void t_GetMatlErrors(Raster raster, double targetWidth);
 
 void t_controller(std::vector<std::vector<Path>> pathSegs, int segsBeforeCtrl);
 
-void t_printQueue(cv::Point3d initPos);
+void t_printQueue(Path firstWpt);
 
 void t_PollPositionFeedback(int rate);
 
