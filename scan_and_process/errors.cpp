@@ -2,6 +2,7 @@
 #include <vector>
 #include <iterator> 
 #include <algorithm>
+#include <cmath>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
@@ -80,8 +81,8 @@ void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size ra
 		//TODO: check if there is a measured edge to the left / right of the path
 		// maybe check if the dXform distance is greater than the boundary width
 		centerline.push_back(lnit.pos()); // add the points from the centerline
-		errCL.push_back((rEdge.at<float>(lnit.pos()) - lEdge.at<float>(lnit.pos())) / 2);
-		errWD.push_back(lEdge.at<float>(lnit.pos()) + rEdge.at<float>(lnit.pos()) - MM2PIX(width));
+		errCL.push_back((PIX2MM(static_cast<__int64>(rEdge.at<float>(lnit.pos())) - static_cast<__int64>(lEdge.at<float>(lnit.pos())))) / 2);
+		errWD.push_back(PIX2MM(static_cast<__int64>(lEdge.at<float>(lnit.pos())) + static_cast<__int64>(rEdge.at<float>(lnit.pos()))) - width);
 	}
 }
 
@@ -117,13 +118,13 @@ void getErrorsAt(std::vector<cv::Point>& waypoints, double width, cv::Size raste
 		// Check if the waypoint is within the countour created by the edges
 		//if (cv::pointPolygonTest(edgeContour, *it, false) >= 0) { // UNUSED
 		if (edgeRoi.contains(*it)) {
-			errCL.push_back((rEdge.at<float>(*it) - lEdge.at<float>(*it)) / 2);
-			errWD.push_back(lEdge.at<float>(*it) + rEdge.at<float>(*it) - MM2PIX(width));
+			errCL.push_back((PIX2MM(static_cast<__int64>(rEdge.at<float>(*it)) - static_cast<__int64>(lEdge.at<float>(*it)))) / 2);
+			errWD.push_back( PIX2MM(static_cast<__int64>(lEdge.at<float>(*it)) + static_cast<__int64>(rEdge.at<float>(*it))) - width);
 		}
 		else {
-			errCL.push_back(0);
-			errWD.push_back(0);
+			// HACK: set invalid errors to NAN
+			errCL.push_back(NAN);
+			errWD.push_back(NAN);
 		}
-		
 	}
 }
