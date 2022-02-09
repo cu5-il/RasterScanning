@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 #include <opencv2/core.hpp>
 
 #include "myTypes.h"
@@ -17,5 +18,7 @@
  * @param range starting and ending values of the parameter 
 */
 void makeTestPath(std::vector<std::vector<Path>>& path, int param, double range[2]);
+
+void analyzePrint(Raster raster, std::string filename);
 
 #endif // !CONTROLCALIB_H
