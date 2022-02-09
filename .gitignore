@@ -379,3 +379,4 @@ FodyWeavers.xsd
 *.png
 /scan_and_process/Output
 /scan_and_process/Input
+/ControlCalibration/Output
