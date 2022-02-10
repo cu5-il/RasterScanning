@@ -125,7 +125,7 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const cv::Rect2d printROI, cv::Si
 	return false;
 }
 
-void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& edges, double heightThresh) {
+void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& edges, double heightThresh, int order = 1) {
 
 	if ((scanStart != cv::Point(-1, -1)) && (scanEnd != cv::Point(-1, -1))) //Check if scan is within ROI
 	{
@@ -173,19 +173,31 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 		int sigma = 61;
 		int sz = 19;
 		cv::GaussianBlur(scanROI, ROIblur, cv::Size(sz, sz), (double)sigma / 10);
-		cv::Sobel(ROIblur, dx, -1, 1, 0, aperture_size, 1, 0, cv::BORDER_REPLICATE);
+		cv::Sobel(ROIblur, dx, -1, order, 0, aperture_size, 1, 0, cv::BORDER_REPLICATE);
 		int foundEdges[2];
 		int maxIdx[2];
 		int minIdx[2];
 
 		// loop through all the search windows
 		for (auto it = windowPts.begin(); it != windowPts.end(); std::advance(it, 2)) {
-			// set the window search range
-			searchRange = cv::Range(*it, *std::next(it));
-			//find the edges by finding the local extrema of the profile derivative 
-			cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, minIdx, maxIdx);
-			foundEdges[0] = maxIdx[1] + searchRange.start;
-			foundEdges[1] = minIdx[1] + searchRange.start;
+			if (order == 1) {
+				// set the window search range
+				searchRange = cv::Range(*it, *std::next(it));
+				//find the edges by finding the local extrema of the profile derivative 
+				cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, minIdx, maxIdx);
+				foundEdges[0] = maxIdx[1] + searchRange.start;
+				foundEdges[1] = minIdx[1] + searchRange.start;
+			}
+			else if (order == 2) {
+				// search the first half of the window
+				searchRange = cv::Range(*it, (*it + *std::next(it))/2);
+				cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, NULL, maxIdx);
+				foundEdges[0] = maxIdx[1] + searchRange.start;
+				// search the second half of the window
+				searchRange = cv::Range((*it + *std::next(it)) / 2, *std::next(it));
+				cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, NULL, minIdx);
+				foundEdges[1] = minIdx[1] + searchRange.start;
+			}
 
 			// mark edges on local profile and global ROI
 			slope = cv::Point2d(scanEnd - scanStart) / lineit.count;

@@ -51,6 +51,6 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const cv::Rect2d printROI, cv::Si
  * @param[out] locWin Image output the same size as scanROI showing where the search windows are on the scan
  * @param[out] heightThresh UNUSED Points below this thresholds will not be considered edges
 */
-void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& edges, double heightThresh);
+void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& edges, double heightThresh, int order = 1);
 
 #endif // !SCANNING_H
