@@ -52,16 +52,16 @@ int main() {
 	}
 
 	// Defining the initial parameters
-	double initVel = 2;
-	double initExt = 0.7;
-	cv::Point3d initPos = cv::Point3d(10, 11, -8);
+	double initVel = 3;
+	double initExt = 2;
+	cv::Point3d initPos = cv::Point3d(35, 0, -11.6);
 	double targetWidth = 1;
 
 	// Make raster
-	double rasLen = 36;// 30;
-	double rasWth = 36;// 25;
-	double rodSpc = 12;// 5;
-	double rodWidth = 3;
+	double rasLen = 20;
+	double rasWth = 35;
+	double rodSpc = 5;
+	double rodWidth = 3.2;
 	double wayptSpc = 1;
 
 	Raster raster = Raster(rasLen, rasWth, rodSpc, rodWidth);
@@ -72,10 +72,11 @@ int main() {
 	if (resp.compare("p") == 0) {
 		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
 		// Modifying the inputs
-		double fRange[2] = { 6, 2 };
-		makeTestPath(path, 0, fRange);
+		double range[2] = { 6, 1 };
+		makeTestPath(path, 0, range);
 	}
 	else if (resp.compare("s") == 0) {
+		initVel = 2;
 		Raster rasterScan = Raster(rasLen - SCAN_OFFSET_X + rodWidth, rasWth, rodSpc, rodWidth);
 		rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
 		makePath(rasterScan, wayptSpc, 0, initPos, initVel, initExt, segments, path);
@@ -90,9 +91,8 @@ int main() {
 	}
 	int segsBeforeCtrl = path.size();
 	
-	//cv::Mat imSeg;
-	//drawSegments(raster.draw(), imSeg, segments, raster.origin(), 3);
-
+	cv::Mat imSeg;
+	drawSegments(raster.draw(), imSeg, segments, raster.origin(), 3);
 	//goto cleanup;
 
 	// A3200 Setup
