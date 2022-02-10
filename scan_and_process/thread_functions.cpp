@@ -42,7 +42,7 @@ void t_CollectScans(Raster raster) {
 			// Find the part of the scan that is within the ROI of the print
 			if (scan2ROI(scan, scanPosFbk, raster.roi(), raster.size(), scanROI, scanStart, scanEnd)){
 				// Finding the edges
-				findEdges(raster.boundaryMask(), scanStart, scanEnd, scanROI, edges, heightThresh, 1);
+				findEdges(raster.boundaryMask(), scanStart, scanEnd, scanROI, edges, heightThresh, 2);
 			}		
 		
 			// compare the current position to the scanDonePt of the segment

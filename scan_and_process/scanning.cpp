@@ -112,6 +112,9 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const cv::Rect2d printROI, cv::Si
 
 		// Interpolate scan so it is the same scale as the raster reference image
 		cv::LineIterator it(rasterSize, scanStart, scanEnd, 8); // make a line iterator between the start and end points of the scan
+		if (it.count == 0) {
+			return false;
+		}
 		cv::resize(scan.colRange(scanROIRange), scanROI, cv::Size(it.count, scan.rows), cv::INTER_LINEAR);
 		return true;
 	}
@@ -170,7 +173,7 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 		// Take derivative and blur
 		cv::Mat dx, ROIblur;
 		int aperture_size = 7;
-		int sigma = 61;
+		int sigma = 11;
 		int sz = 19;
 		cv::GaussianBlur(scanROI, ROIblur, cv::Size(sz, sz), (double)sigma / 10);
 		cv::Sobel(ROIblur, dx, -1, order, 0, aperture_size, 1, 0, cv::BORDER_REPLICATE);
@@ -200,7 +203,7 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 			}
 
 			// mark edges on local profile and global ROI
-			slope = cv::Point2d(scanEnd - scanStart) / lineit.count;
+ 			slope = cv::Point2d(scanEnd - scanStart) / lineit.count;
 			for (int j = 0; j < 2; j++) {
 				edgeCoord = cv::Point2d(scanStart) + foundEdges[j] * slope;
 				// check if edges are within height mask

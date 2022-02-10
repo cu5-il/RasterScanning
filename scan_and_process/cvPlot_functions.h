@@ -8,6 +8,8 @@
 
 cv::Mat plotScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showImage = false);
 
+cv::Mat plotScan(cv::Mat scanROI, bool showImage = false);
+
 void plotEdges(const std::vector<cv::Point>& unfiltered, const std::vector<cv::Point>& filtered);
 
 #endif // CVPLOT_FNS_H

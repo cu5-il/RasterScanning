@@ -15,7 +15,7 @@
 #define TASK_EXTRUDE TASKID_02
 
 #define SCAN_WIDTH 26.4
-#define RESOLUTION 0.1/*0.02*/  // 1 pixel = RESOLUTION mm
+#define RESOLUTION 0.05/*0.02*/  // 1 pixel = RESOLUTION mm
 #define PIX2MM(pix)  (pix)*RESOLUTION
 #define MM2PIX(mm)  std::lround( (mm) / RESOLUTION)
 #define RASTER_IMG_WIDTH 11.0 //TODO: incorporate this into the makeRaster Function
