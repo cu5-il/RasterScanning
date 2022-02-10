@@ -21,4 +21,6 @@ void makeTestPath(std::vector<std::vector<Path>>& path, int param, double range[
 
 void analyzePrint(Raster raster, std::string filename);
 
+void analyzePrint(Raster raster);
+
 #endif // !CONTROLCALIB_H

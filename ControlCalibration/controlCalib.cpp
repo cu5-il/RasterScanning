@@ -91,3 +91,42 @@ void analyzePrint(Raster raster, std::string filename) {
 	outfile.close();
 	return;
 }
+
+void analyzePrint(Raster raster) {
+	double targetWidth = 0;
+	double sum, mean, stdev;
+	int count;
+
+	// calculating the errors
+	t_GetMatlErrors(raster, targetWidth);
+
+	// Opening a file to write the results
+	std::ofstream outfile;
+	outfile.open(std::string(outDir + "widths.txt").c_str());
+	outfile.precision(5);
+
+	// calculating the average width for each segment
+	for (int i = 0; i < segments.size(); i += 2) {
+		sum = 0;
+		count = 0;
+		// calculate the mean
+		for (auto it = segments[i].errWD().begin(); it != segments[i].errWD().end(); ++it) {
+			if (!isnan(*it)) {
+				sum += *it;
+				count++;
+			}
+		}
+		mean = sum / count;
+		// calculate the standard deviation
+		sum = 0;
+		for (auto it = segments[i].errWD().begin(); it != segments[i].errWD().end(); ++it) {
+			if (!isnan(*it)) {
+				sum += pow((*it - mean), 2);
+			}
+		}
+		stdev = sqrt((sum / count));
+		outfile << std::fixed << mean << ",\t" << stdev << std::endl;
+	}
+	outfile.close();
+	return;
+}

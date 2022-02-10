@@ -52,7 +52,7 @@ int main() {
 	}
 
 	// Defining the initial parameters
-	double initVel = 3;
+	double initVel = 2;
 	double initExt = 0.7;
 	cv::Point3d initPos = cv::Point3d(10, 11, -8);
 	double targetWidth = 1;
@@ -83,7 +83,7 @@ int main() {
 	else if (resp.compare("l") == 0) {
 		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
 		// Analyzing the print
-		std::string fileDate = "2022.02.09-10.21.37";
+		std::string fileDate = "2022.02.10-10.29.51";
 		outDir = "Output/" + fileDate + "_";
 		analyzePrint(raster, std::string("./Output/" + fileDate + "_edges.csv"));
 		return 0;
@@ -125,6 +125,10 @@ int main() {
 		}
 	}
 	//=======================================
+	
+	//// notify scanner to start
+	//q_scanMsg.push(true);
+	//t_CollectScans(raster);
 
 	// just printing, no scanning
 	if (resp.compare("p") == 0){
@@ -142,6 +146,10 @@ int main() {
 		t_print.join();
 		t_scan.join();
 		t_control.join();
+		// calculate the average width of the segments
+		segments.clear();
+		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+		analyzePrint(raster);
 		goto cleanup;
 	}
 
