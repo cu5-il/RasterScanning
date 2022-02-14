@@ -149,29 +149,6 @@ int main() {
 		goto cleanup;
 	}
 
-	//t_scan = std::thread{ t_CollectScans, raster };
-	//t_process = std::thread{ t_GetMatlErrors, raster, targetWidth };
-	//t_control = std::thread{ t_controller, path, segsBeforeCtrl };
-	//t_print = std::thread{ t_printQueue, path[0][0] };
-	//t_print.join();
-	//t_scan.join();
-	//t_process.join();
-	//t_control.join();
-
-	//goto cleanup;
-
-//LoadData:
-//	// DEBUGGING ERROR CALCULATIONS
-//	edgeMsg msg;
-//	cv::Mat edges = cv::Mat::zeros(raster.size(), CV_8U);
-//	readCSV("C:/Users/cu5/source/repos/RasterScanning/scan_and_process/Output/2022.01.28-17.05.30_edges.csv", edges);
-//	edges.convertTo(edges, CV_8U);
-//	for (int i = 0; i < segments.size(); i++) {
-//		msg.addEdges(edges, i, (i == segments.size() - 1));
-//		q_edgeMsg.push(msg);
-//	}
-//	t_GetMatlErrors(raster, targetWidth);
-
 cleanup:
 	//A3200 Cleanup
 	//=======================================
