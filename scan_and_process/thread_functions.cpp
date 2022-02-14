@@ -133,7 +133,7 @@ void t_controller(std::vector<std::vector<Path>> path, int segsBeforeCtrl) {
 	std::cout << "Ending controller thread" << std::endl;
 }
 
-void t_printQueue(Path firstWpt) {
+void t_printQueue(Path firstWpt, bool extrude) {
 	pathMsg inMsg;
 	int segNum = 0;
 	double queueLineCount;
@@ -157,8 +157,10 @@ void t_printQueue(Path firstWpt) {
 	if (!A3200CommandExecute(handle, TASK_PRINT, (LPCSTR)"VELOCITY ON\nG90\n", NULL)) { A3200Error(); }
 	if (!A3200MotionSetupAbsolute(handle, TASK_PRINT)) { A3200Error(); }
 
-	// Enable the extruder
-	extruder.enable();
+	if (extrude) {
+		// Enable the extruder
+		extruder.enable();
+	}
 
 	// Fill the command queue with the path
 	while (static_cast<__int64>(segNum) < segments.size()-1) {

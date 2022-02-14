@@ -12,7 +12,7 @@ void t_GetMatlErrors(Raster raster, double targetWidth);
 
 void t_controller(std::vector<std::vector<Path>> pathSegs, int segsBeforeCtrl);
 
-void t_printQueue(Path firstWpt);
+void t_printQueue(Path firstWpt, bool extrude);
 
 void t_PollPositionFeedback(int rate);
 

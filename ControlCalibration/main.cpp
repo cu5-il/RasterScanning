@@ -75,6 +75,7 @@ int main() {
 		initVel = 2;
 		Raster rasterScan = Raster(raster.length() - SCAN_OFFSET_X + raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
 		rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
+		initPos += cv::Point3d(0, 0, 2);
 		makePath(rasterScan, wayptSpc, 0, initPos, initVel, 0, segments, path);
 	}
 	else if (resp.compare("a") == 0) {
@@ -128,7 +129,7 @@ int main() {
 	// just printing, no scanning
 	if (resp.compare("p") == 0){
 		t_control = std::thread{ t_controller, path, segsBeforeCtrl };
-		t_print = std::thread{ t_printQueue, path[0][0] };
+		t_print = std::thread{ t_printQueue, path[0][0], true };
 		t_print.join();
 		t_control.join();
 		goto cleanup;
@@ -137,7 +138,7 @@ int main() {
 	else if (resp.compare("s") == 0) {
 		t_scan = std::thread{ t_CollectScans, raster };
 		t_control = std::thread{ t_controller, path, segsBeforeCtrl };
-		t_print = std::thread{ t_printQueue, path[0][0] };
+		t_print = std::thread{ t_printQueue, path[0][0], false};
 		t_print.join();
 		t_scan.join();
 		t_control.join();
