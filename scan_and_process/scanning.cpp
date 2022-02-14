@@ -183,38 +183,41 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 
 		// loop through all the search windows
 		for (auto it = windowPts.begin(); it != windowPts.end(); std::advance(it, 2)) {
-			if (order == 1) {
-				// set the window search range
-				searchRange = cv::Range(*it, *std::next(it));
-				//find the edges by finding the local extrema of the profile derivative 
-				cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, minIdx, maxIdx);
-				foundEdges[0] = maxIdx[1] + searchRange.start;
-				foundEdges[1] = minIdx[1] + searchRange.start;
-			}
-			else if (order == 2) {
-				// search the first half of the window
-				searchRange = cv::Range(*it, (*it + *std::next(it))/2);
-				cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, NULL, maxIdx);
-				foundEdges[0] = maxIdx[1] + searchRange.start;
-				// search the second half of the window
-				searchRange = cv::Range((*it + *std::next(it)) / 2, *std::next(it));
-				cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, NULL, minIdx);
-				foundEdges[1] = minIdx[1] + searchRange.start;
-			}
-
-			// mark edges on local profile and global ROI
- 			slope = cv::Point2d(scanEnd - scanStart) / lineit.count;
-			for (int j = 0; j < 2; j++) {
-				edgeCoord = cv::Point2d(scanStart) + foundEdges[j] * slope;
-				// check if edges are within height mask
-				if (heightMask.at<uchar>(cv::Point(foundEdges[j], 0)) == 255) {
-					//locEdges.at<uchar>(cv::Point(foundEdges[j], 0)) = 255;
-					edges.at<uchar>(cv::Point2i(edgeCoord)) = 255;
+			// Check if the search window is at least 0.5mm wide
+			if ((*std::next(it) - *it) > MM2PIX(0.5)) {
+				if (order == 1) {
+					// set the window search range
+					searchRange = cv::Range(*it, *std::next(it));
+					//find the edges by finding the local extrema of the profile derivative 
+					cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, minIdx, maxIdx);
+					foundEdges[0] = maxIdx[1] + searchRange.start;
+					foundEdges[1] = minIdx[1] + searchRange.start;
 				}
+				else if (order == 2) {
+					// search the first half of the window
+					searchRange = cv::Range(*it, (*it + *std::next(it)) / 2);
+					cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, NULL, maxIdx);
+					foundEdges[0] = maxIdx[1] + searchRange.start;
+					// search the second half of the window
+					searchRange = cv::Range((*it + *std::next(it)) / 2, *std::next(it));
+					cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, NULL, minIdx);
+					foundEdges[1] = minIdx[1] + searchRange.start;
+				}
+
+				// mark edges on local profile and global ROI
+				slope = cv::Point2d(scanEnd - scanStart) / lineit.count;
+				for (int j = 0; j < 2; j++) {
+					edgeCoord = cv::Point2d(scanStart) + foundEdges[j] * slope;
+					// check if edges are within height mask
+					if (heightMask.at<uchar>(cv::Point(foundEdges[j], 0)) == 255) {
+						//locEdges.at<uchar>(cv::Point(foundEdges[j], 0)) = 255;
+						edges.at<uchar>(cv::Point2i(edgeCoord)) = 255;
+					}
+				}
+				// mark window borders
+				//locWin.at<uchar>(cv::Point(searchRange.start, 0)) = 255;
+				//locWin.at<uchar>(cv::Point(searchRange.end, 0)) = 255;
 			}
-			// mark window borders
-			//locWin.at<uchar>(cv::Point(searchRange.start, 0)) = 255;
-			//locWin.at<uchar>(cv::Point(searchRange.end, 0)) = 255;
 		}
 	}
 
