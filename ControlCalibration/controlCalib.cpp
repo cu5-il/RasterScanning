@@ -153,7 +153,7 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
 	int headerCnt = 0;
 	double rasLen = NAN, rasWth = NAN, rodSpc = NAN, rodWidth = NAN;
 	double X = NAN, Y = NAN, Z = NAN;
-	char const* digits = "0123456789.";
+	char const* digits = "0123456789.-";
 	char c;
 
 	if (inFile.is_open()) {
