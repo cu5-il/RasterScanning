@@ -13,21 +13,35 @@
 #include "draw.h"
 
 
-void makeTestPath( std::vector<std::vector<Path>>& path, int param, double range[2]) {
+void makeTestPath( std::vector<std::vector<Path>>& path, char test, double range[2]) {
 	double inc = (range[1]-range[0]) / ceil(path.size() / 2);
 	double setVal = range[0];
 	int i = 1;
 
+	switch (test)
+	{
+	default:
+		std::cout << "ERROR: unknown test type" << std::endl;
+		return;
+	case 'f':
+		std::cout << "Feed rate range (";
+		break;
+	case 'a':
+		std::cout << "Auger range (";
+		break;
+	}
+	std::cout << range[0] << ":" << inc << ":" << range[1] << ")" << std::endl;
+
 	for (auto it1 = path.begin(); it1 != path.end(); ++it1, i++) {
 		for (auto it2 = (*it1).begin(); it2 != (*it1).end(); ++it2) {
-			switch (param)
+			switch (test)
 			{
 			default:
 				break;
-			case 0:
+			case 'f':
 				(*it2).f = setVal;
 				break;
-			case 1:
+			case 'a':
 				(*it2).e = setVal;
 				break;
 			}
@@ -129,4 +143,56 @@ void analyzePrint(Raster raster) {
 	}
 	outfile.close();
 	return;
+}
+
+bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::Point3d& initPos, double& initVel, double& initExt, char& test, double range[2])
+{
+	std::ifstream inFile(filename.c_str());
+	std::string str;
+	double value;
+	int headerCnt = 0;
+	double rasLen = NAN, rasWth = NAN, rodSpc = NAN, rodWidth = NAN;
+	double X = NAN, Y = NAN, Z = NAN;
+	char const* digits = "0123456789.";
+	char c;
+
+	if (inFile.is_open()) {
+		while (std::getline(inFile, str)) {
+
+			// find the number in the string
+			std::size_t const n = str.find_first_of(digits);
+			if (n != std::string::npos){
+				std::size_t const m = str.find_first_not_of(digits, n);
+				 value = std::stod(str.substr(n, m != std::string::npos ? m - n : m));
+			}
+			// Extracting the raster parameters
+			if (str.find("raster length") != std::string::npos) { rasLen = value; }
+			else if (str.find("raster width") != std::string::npos) { rasWth = value; }
+			else if (str.find("rod spacing") != std::string::npos) { rodSpc = value; }
+			else if (str.find("rod width") != std::string::npos) { rodWidth = value; }
+			else if (str.find("waypoint spacing") != std::string::npos) { wayptSpc = value; }
+			// Extracting the test parameters
+			else if (str.find("test type") != std::string::npos) { test = str[0]; }
+			else if (str.find("feed rate") != std::string::npos) { initVel = value; }
+			else if (str.find("auger voltage") != std::string::npos) { initExt = value; }
+			else if (str.find("range start") != std::string::npos) { range[0] = value; }
+			else if (str.find("range end") != std::string::npos) { range[1] = value; }
+			// Extracting the initial coordinates
+			else if (str.find("Xpos") != std::string::npos) { X = value; }
+			else if (str.find("Ypos") != std::string::npos) { Y = value; }
+			else if (str.find("Zpos") != std::string::npos) { Z = value; }
+		}
+		if (isnan(X) || isnan(Y) || isnan(Z) || isnan(rasLen) || isnan(rasWth) || isnan(rodSpc) || isnan(rodWidth)) { return false; }
+		else {
+			initPos = cv::Point3d(X, Y, Z);
+			raster = Raster(rasLen, rasWth, rodSpc, rodWidth);
+			raster.offset(cv::Point2d(initPos.x, initPos.y));
+		}
+	}
+	else {
+		std::cout << "Unable to open data file: " << filename << std::endl;
+		system("pause");
+		return false;
+	}
+	return true;
 }

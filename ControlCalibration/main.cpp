@@ -43,50 +43,45 @@ int main() {
 
 	std::thread t_scan, t_process, t_control, t_print;
 
+	// Initialize parameters
+	double initVel;
+	double initExt;
+	cv::Point3d initPos;
+	double wayptSpc = 1;
+	Raster raster;
+	char testTp;
+	double range[2];
+	std::vector<std::vector<Path>> path;
+
 	// Getting user input
-	std::string resp;
-	std::cout << "Select option: (p)rint, (s)can, or (l)oad data?" << std::endl;
+	std::string resp, file;
+	std::cout << "Select option: (p)rint, (s)can, or (a)nalyze data?" << std::endl;
 	std::cin >> resp;
-	if (resp.compare("p") != 0 && resp.compare("s") != 0 && resp.compare("l") != 0) {
+	if (resp.compare("p") != 0 && resp.compare("s") != 0 && resp.compare("a") != 0) {
 		return 0;
 	}
-
-	// Defining the initial parameters
-	double initVel = 3;
-	double initExt = 2;
-	cv::Point3d initPos = cv::Point3d(35, 0, -11.6);
-	double targetWidth = 1;
-
-	// Make raster
-	double rasLen = 20;
-	double rasWth = 35;
-	double rodSpc = 5;
-	double rodWidth = 3.2;
-	double wayptSpc = 1;
-
-	Raster raster = Raster(rasLen, rasWth, rodSpc, rodWidth);
-	raster.offset(cv::Point2d(initPos.x, initPos.y));
+	std::cout << "Name of file to load" << std::endl;
+	std::cin >> file;
+	// read in test parameters and generate raster
+	if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range)) { return 0; }
 
 	// Creating the path and segmets
-	std::vector<std::vector<Path>> path;
 	if (resp.compare("p") == 0) {
 		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
 		// Modifying the inputs
-		double range[2] = { 6, 1 };
-		makeTestPath(path, 0, range);
+		makeTestPath(path, testTp, range);
 	}
 	else if (resp.compare("s") == 0) {
 		initVel = 2;
-		Raster rasterScan = Raster(rasLen - SCAN_OFFSET_X + rodWidth, rasWth, rodSpc, rodWidth);
+		Raster rasterScan = Raster(raster.length() - SCAN_OFFSET_X + raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
 		rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
-		makePath(rasterScan, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+		makePath(rasterScan, wayptSpc, 0, initPos, initVel, 0, segments, path);
 	}
-	else if (resp.compare("l") == 0) {
-		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+	else if (resp.compare("a") == 0) {
+		makePath(raster, wayptSpc, 0, initPos, initVel, 0, segments, path);
 		// Analyzing the print
-		std::string fileDate = "2022.02.10-10.29.51";
-		outDir = "Output/" + fileDate + "_";
-		analyzePrint(raster, std::string("./Output/" + fileDate + "_edges.csv"));
+		outDir = "Output/" + file + "_";
+		analyzePrint(raster, std::string("./Output/" + file + "_edges.csv"));
 		return 0;
 	}
 	int segsBeforeCtrl = path.size();
