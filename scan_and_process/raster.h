@@ -25,7 +25,7 @@ private:
     std::vector<cv::Point> _boundaryPoints;
     std::vector<cv::Point> _cornersPix;
     std::vector<cv::Point2d> _cornersMM;
-    int _rodWidth;
+    double _rodWidth;
     double _length;
     double _width;
     double _spacing;
@@ -58,7 +58,7 @@ public:
     const std::vector<cv::Point>& px() { return _cornersPix; }
     const std::vector<cv::Point2d>& mm() { return _cornersMM; }
     const cv::Size& size() { return _sz; }
-    const int& rodWidth() { return _rodWidth; }
+    const double& rodWidth() { return _rodWidth; }
     const double& length() { return _length; }
     const double& width() { return _width; }
     const double& spacing() { return _spacing; }
@@ -89,8 +89,9 @@ inline void Raster::_makeRaster(double length, double width, double rodSpacing, 
     int pixWth = MM2PIX(width);
     int pixSpac = MM2PIX(rodSpacing);
     int pixBord = MM2PIX(border);
+    int pixRodWth = MM2PIX(rodWidthMax);
 
-    _rodWidth = MM2PIX(rodWidthMax);
+    _rodWidth = rodWidthMax;
     _length = length;
     _width = width;
     _spacing = rodSpacing;
@@ -129,7 +130,7 @@ inline void Raster::_makeRaster(double length, double width, double rodSpacing, 
 
     // Draw the raster lines on an image
     cv::polylines(_mat, _cornersPix, false, cv::Scalar(255), 1, 4);
-    cv::polylines(_boundaryMask, _cornersPix, false, cv::Scalar(255), _rodWidth, 8);
+    cv::polylines(_boundaryMask, _cornersPix, false, cv::Scalar(255), pixRodWth, 8);
 
     // Get the boundary points
     std::vector<std::vector<cv::Point> > contour;

@@ -46,7 +46,7 @@ bool makePath(Raster raster, double wayptSpc, std::deque<double>& theta, cv::Poi
 	std::vector<cv::Point2i> wp_px;
 	std::vector<cv::Point2d> wp_mm;
 	cv::Point2d scanDonePt;
-	int pixWidth = raster.rodWidth();
+	int pixRodWth = MM2PIX(raster.rodWidth());
 	int direction = 1;
 	cv::Point2d origin = raster.origin();
 	std::vector<Path> tmp;
@@ -90,7 +90,7 @@ bool makePath(Raster raster, double wayptSpc, std::deque<double>& theta, cv::Poi
 		// Defining the regions and the point when the region has been completely scanned
 		switch (direction % 2) {
 		case 0: // Horizontal lines
-			roi = cv::Rect(*it - cv::Point(0, raster.rodWidth() / 2), *std::next(it, 1) + cv::Point(0, raster.rodWidth() / 2));
+			roi = cv::Rect(*it - cv::Point(0, pixRodWth / 2), *std::next(it, 1) + cv::Point(0, pixRodWth / 2));
 			// defining the point when the region has been completely scanned as the end of the next horizontal line
 			scanDonePt = wp_mm.front() + cv::Point2d(0, raster.spacing());
 			// if it is the final segment
@@ -100,7 +100,7 @@ bool makePath(Raster raster, double wayptSpc, std::deque<double>& theta, cv::Poi
 			break;
 		case 1: // vertical lines
 			roi = cv::Rect(0,0,1,1);
-			//roi = cv::Rect(*it - cv::Point(raster.rodWidth() / 2, 0), *std::next(it, 1) + cv::Point(raster.rodWidth() / 2, 0));
+			//roi = cv::Rect(*it - cv::Point(pixRodWth / 2, 0), *std::next(it, 1) + cv::Point(pixRodWth / 2, 0));
 			// defining the point when the region has been completely scanned as the midpoint of the next vertical line
 			
 			// if it's not the last vertical rod
@@ -138,7 +138,7 @@ void makePath(Raster raster, double wayptSpc, double theta, cv::Point3d initPos,
 	std::vector<cv::Point2i> wp_px;
 	std::vector<cv::Point2d> wp_mm;
 	cv::Point2d scanDonePt;
-	int pixWidth = raster.rodWidth();
+	int pixRodWth = MM2PIX(raster.rodWidth());
 	int direction = 1;
 	cv::Point2d origin = raster.origin();
 	std::vector<Path> tmp;
@@ -173,7 +173,7 @@ void makePath(Raster raster, double wayptSpc, double theta, cv::Point3d initPos,
 		// Defining the regions and the point when the region has been completely scanned
 		switch (direction % 2) {
 		case 0: // Horizontal lines
-			roi = cv::Rect(*it - cv::Point(0, raster.rodWidth() / 2), *std::next(it, 1) + cv::Point(0, raster.rodWidth() / 2));
+			roi = cv::Rect(*it - cv::Point(0, pixRodWth / 2), *std::next(it, 1) + cv::Point(0, pixRodWth / 2));
 			// defining the point when the region has been completely scanned as the end of the next horizontal line
 			scanDonePt = wp_mm.front() + cv::Point2d(0, raster.spacing());
 			// if it is the final segment
@@ -183,7 +183,7 @@ void makePath(Raster raster, double wayptSpc, double theta, cv::Point3d initPos,
 			break;
 		case 1: // vertical lines
 			roi = cv::Rect(0, 0, 1, 1);
-			//roi = cv::Rect(*it - cv::Point(raster.rodWidth() / 2, 0), *std::next(it, 1) + cv::Point(raster.rodWidth() / 2, 0));
+			//roi = cv::Rect(*it - cv::Point(pixRodWth / 2, 0), *std::next(it, 1) + cv::Point(pixRodWth / 2, 0));
 			// defining the point when the region has been completely scanned as the midpoint of the next vertical line
 
 			// if it's not the last vertical rod
