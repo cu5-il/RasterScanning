@@ -7,6 +7,10 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include <vector>
+#include "cvPlot_functions.h"
+
+
 bool setupDataCollection(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle) {
 	// Adding the signals to be collected
 	if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_AnalogInput0, AXISINDEX_00, 0)) { return false; }		// AI0
@@ -43,9 +47,9 @@ bool collectData(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle, DOU
 	return true;
 }
 
-void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
+bool getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
 	int fbIdx[2];
-	int scanStartIdx;
+	int scanStartIdx, scanEndIdx;
 	cv::Mat scanVoltage_8U, scanEdges, scanEdgesIdx;
 
 	cv::Mat dataMat(NUM_DATA_SIGNALS, NUM_DATA_SAMPLES, CV_64F, data); // copying the collected data into a matrix
@@ -58,38 +62,42 @@ void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
 	fbk->z = dataMat.at<double>(4, fbIdx[1]) / 10000;
 	fbk->T = dataMat.at<double>(5, fbIdx[1]) * 360 / 200000;
 
-	// Finding the voltage header of the scanner signal, i.e find the start of the scanned profile
-	// Search only the data after the triggering signal was sent (after index fbIdx[1])
-	cv::normalize(dataMat(cv::Range(0, 1), cv::Range(fbIdx[1], dataMat.cols)), scanVoltage_8U, 0, 255, cv::NORM_MINMAX, CV_8U);
-	cv::Canny(scanVoltage_8U, scanEdges, 10, 30, 3);
-	cv::findNonZero(scanEdges, scanEdgesIdx);
-
-	scanStartIdx = scanEdgesIdx.at<int>(1, 0) + fbIdx[1]; // Starting index of the scan profile
-	// Check if entire scan captured
-	if ((scanStartIdx + NUM_PROFILE_PTS) <= NUM_DATA_SAMPLES) {
-		scan = dataMat(cv::Rect(scanStartIdx, 0, NUM_PROFILE_PTS, 1)).clone() / OPAMP_GAIN; // Isolating the scanned profile and converting to height
+	// check if the scan voltage goes below 3V to verify a scan was sent
+	if (!cv::checkRange(dataMat.row(0), true, (cv::Point*)0, 3, DBL_MAX)) {
+		// Finding the voltage header of the scanner signal, i.e find the start of the scanned profile
+		// Search only the data after the triggering signal was sent (after index fbIdx[1])
+		cv::normalize(dataMat(cv::Range(0, 1), cv::Range(fbIdx[1], dataMat.cols)), scanVoltage_8U, 0, 255, cv::NORM_MINMAX, CV_8U);
+		cv::Canny(scanVoltage_8U, scanEdges, 10, 30, 3);
+		cv::findNonZero(scanEdges, scanEdgesIdx);
+		// Isolating the scanned profile and converting to height
+		scanStartIdx = scanEdgesIdx.at<int>(1, 0) + fbIdx[1]; // Starting index of the scan profile
+		scanEndIdx = scanEdgesIdx.at<int>(scanEdgesIdx.rows - 1, 0) + fbIdx[1] - 2;
+		// Check if entire scan captured
+		if ((scanStartIdx + NUM_PROFILE_PTS) <= NUM_DATA_SAMPLES) {
+			scan = dataMat(cv::Rect(cv::Point(scanStartIdx + SCAN_TRUNC_X, 0), cv::Point(scanEndIdx, 1))).clone() / OPAMP_GAIN;
+		}
+		else {
+			scan = dataMat(cv::Rect(cv::Point(scanStartIdx + SCAN_TRUNC_X, 0), cv::Point(dataMat.cols, 1))).clone() / OPAMP_GAIN;
+		}
+		return true;
 	}
-	else {
-		//HACK: if entire scan isn't captured, send junk data
-		scan = cv::Mat(1, NUM_PROFILE_PTS, CV_64F, -11).clone();
-	}
-
-	return;
+	else
+		return false;
 }
 
 bool scan2ROI(cv::Mat& scan, const Coords fbk, const cv::Rect2d printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point& scanStart, cv::Point& scanEnd) {
-	//TODO: Convert printROI from mm to pixels
 	cv::Point2d XY_start, XY_end;
 	double X, Y;
 	double local_x;
 	int startIdx = -1, endIdx = -1;
+	double dx = SCAN_WIDTH / (NUM_PROFILE_PTS - 1);
 
 	for (int i = 0; i < scan.cols; i++) {
 		// Local coordinate of the scanned point (with respect to the scanner)
-		local_x = -SCAN_WIDTH / 2 + i * SCAN_WIDTH / (int(scan.cols) - 1);
+		local_x = -SCAN_WIDTH / 2 + dx * (i + SCAN_TRUNC_X) + SCAN_OFFSET_Y;
 		// Transforming local coordinate to global coordinates
-		X = fbk.x + SCAN_OFFSET_X * cos(fbk.T * PI / -180) - (local_x + SCAN_OFFSET_Y) * sin(fbk.T * PI / -180);
-		Y = fbk.y + SCAN_OFFSET_X * sin(fbk.T * PI / -180) + (local_x + SCAN_OFFSET_Y) * cos(fbk.T * PI / -180);
+		X = fbk.x + SCAN_OFFSET_X * cos(fbk.T * PI / -180) - (local_x) * sin(fbk.T * PI / -180);
+		Y = fbk.y + SCAN_OFFSET_X * sin(fbk.T * PI / -180) + (local_x) * cos(fbk.T * PI / -180);
 		// Check if scanned point in outside the print ROI 
 		if (!printROI.contains(cv::Point2d(X, Y))) {
 		}
@@ -165,8 +173,9 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 
 		// create a height mask for the scan profile to remove all edges below a height threshold
 		cv::Mat heightMask;
-		cv::threshold(scanROI, heightMask, heightThresh, 1, cv::THRESH_BINARY);
-		cv::normalize(heightMask, heightMask, 0, 255, cv::NORM_MINMAX, CV_8U);
+		cv::threshold(scanROI, heightMask, heightThresh, 255, cv::THRESH_BINARY);
+		heightMask.convertTo(heightMask, CV_8U);
+		//cv::normalize(heightMask, heightMask, 0, 255, cv::NORM_MINMAX, CV_8U);
 
 		// Search within the edges of the dialated raster for the actual edges
 		cv::Range searchRange;
@@ -177,10 +186,12 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 		int sz = 19;
 		cv::GaussianBlur(scanROI, ROIblur, cv::Size(sz, sz), (double)sigma / 10);
 		cv::Sobel(ROIblur, dx, -1, order, 0, aperture_size, 1, 0, cv::BORDER_REPLICATE);
-		int foundEdges[2];
-		int maxIdx[2];
-		int minIdx[2];
 
+		//plotScan(scanROI);
+
+		int foundEdges[2] = { NAN };
+		int maxIdx[2] = { NAN };
+		int minIdx[2] = { NAN };
 		// loop through all the search windows
 		for (auto it = windowPts.begin(); it != windowPts.end(); std::advance(it, 2)) {
 			// Check if the search window is at least 0.5mm wide
@@ -194,14 +205,17 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 					foundEdges[1] = minIdx[1] + searchRange.start;
 				}
 				else if (order == 2) {
+					// split the window at the minimum point
+					searchRange = cv::Range(*it, *std::next(it));
+					cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, minIdx, NULL);
 					// search the first half of the window
-					searchRange = cv::Range(*it, (*it + *std::next(it)) / 2);
+					searchRange = cv::Range(*it, minIdx[1] + *it);
 					cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, NULL, maxIdx);
 					foundEdges[0] = maxIdx[1] + searchRange.start;
 					// search the second half of the window
-					searchRange = cv::Range((*it + *std::next(it)) / 2, *std::next(it));
-					cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, NULL, minIdx);
-					foundEdges[1] = minIdx[1] + searchRange.start;
+					searchRange = cv::Range(minIdx[1] + *it, *std::next(it));
+					cv::minMaxIdx(dx(cv::Range::all(), searchRange), NULL, NULL, NULL, maxIdx);
+					foundEdges[1] = maxIdx[1] + searchRange.start;
 				}
 
 				// mark edges on local profile and global ROI
@@ -209,7 +223,7 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 				for (int j = 0; j < 2; j++) {
 					edgeCoord = cv::Point2d(scanStart) + foundEdges[j] * slope;
 					// check if edges are within height mask
-					if (heightMask.at<uchar>(cv::Point(foundEdges[j], 0)) == 255) {
+					if ((heightMask.at<uchar>(cv::Point(foundEdges[j], 0)) == 255) && (foundEdges[j] != *it) && (foundEdges[j] != *std::next(it))) {
 						//locEdges.at<uchar>(cv::Point(foundEdges[j], 0)) = 255;
 						edges.at<uchar>(cv::Point2i(edgeCoord)) = 255;
 					}
@@ -222,4 +236,73 @@ void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv:
 	}
 
 	return;
+}
+
+void findEdges2(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& edges) {
+
+	if ((scanStart != cv::Point(-1, -1)) && (scanEnd != cv::Point(-1, -1))) //Check if scan is within ROI
+	{
+		cv::LineIterator lineit(edgeBoundary, scanStart, scanEnd, 8);
+		cv::Point2d edgeCoord, slope;
+
+		cv::Mat ROIblur, morph, pkMask, mask, median, baseline, kern;
+		cv::Scalar mean, stddev;
+		double minV, maxV;
+		int sigma, sz;
+
+		// Blur the scan
+		sigma = 61;
+		sz = 9;
+		cv::GaussianBlur(scanROI, ROIblur, cv::Size(sz, sz), (double)sigma / 10);
+
+		std::vector<cv::Mat> temp;
+
+		cv::meanStdDev(ROIblur, mean, stddev);
+		if (stddev.val[0] > 0.015){
+			// find the meadian height value of the scan and use the median mask to average only the heights below the median
+			cv::minMaxIdx(ROIblur, &minV, &maxV, NULL, NULL);
+			cv::threshold(ROIblur, median, (maxV + minV) / 2, 255, cv::THRESH_BINARY_INV);
+			median.convertTo(median, CV_8U);
+			kern = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+			cv::morphologyEx(median, median, cv::MORPH_CLOSE, kern, cv::Point(-1, -1), 1);
+			cv::meanStdDev(scanROI, mean, stddev, median);
+
+			// truncate all values above the mean baseline value and set as the baseline then smooth the baseline
+			cv::threshold(ROIblur, baseline, mean.val[0], 255, cv::THRESH_TRUNC);
+			cv::morphologyEx(baseline, baseline, cv::MORPH_OPEN, kern, cv::Point(-1, -1), 2);
+			cv::blur(baseline, baseline, cv::Size(scanROI.cols / 8, scanROI.cols / 8));
+
+			// merge the baseline and the scan
+			ROIblur.copyTo(morph);
+			baseline.copyTo(morph, median);
+			kern = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+			cv::morphologyEx(morph, morph, cv::MORPH_CLOSE, kern, cv::Point(-1, -1), 2);
+			sigma = 19;
+			cv::GaussianBlur(morph, morph, cv::Size(sz, sz), (double)sigma / 10);
+
+			// find the parts of the scan that are above the baseline
+			cv::compare(morph, baseline + 0.001, pkMask, cv::CMP_GT);
+			cv::Sobel(pkMask, pkMask, -1, 2, 0, 7, 1, 0, cv::BORDER_REPLICATE);
+
+			// filter out any peaks near the edges of the scan
+			mask = cv::Mat::zeros(pkMask.size(), CV_8U);
+			mask(cv::Range(0, 1), cv::Range(MM2PIX(0.5), mask.cols - MM2PIX(0.5))) = 255;
+			cv::bitwise_and(pkMask, mask, pkMask);
+			
+			//temp.push_back(ROIblur);
+			//temp.push_back(morph);
+			//temp.push_back(baseline);
+			//plotScan(scanROI, temp);
+
+			std::vector<cv::Point> peaks;
+			cv::findNonZero(pkMask, peaks);
+
+			// mark edges on local profile and global ROI
+			slope = cv::Point2d(scanEnd - scanStart) / lineit.count;
+			for (auto it = peaks.begin(); it != peaks.end(); ++it) {
+				edgeCoord = cv::Point2d(scanStart) + (*it).x * slope;
+				edges.at<uchar>(cv::Point2i(edgeCoord)) = 255;
+			}
+		}
+	}
 }

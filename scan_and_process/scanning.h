@@ -25,7 +25,7 @@ bool collectData(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle, DOU
  * @param[out] fbk structure with x, y, z, and theta coordinates of gantry when scan was taken
  * @param[out] scan	Z profile from scanner
 */
-void getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan);
+bool getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan);
 
 /**
  * @brief Extracts the part of the scan that is within the print area defined by the printROI
@@ -52,5 +52,7 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const cv::Rect2d printROI, cv::Si
  * @param[out] heightThresh UNUSED Points below this thresholds will not be considered edges
 */
 void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& edges, double heightThresh, int order = 1);
+
+void findEdges2(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& edges);
 
 #endif // !SCANNING_H
