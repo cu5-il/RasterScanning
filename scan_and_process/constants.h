@@ -22,7 +22,7 @@
 #define PI 3.14159265
 
 #define SCAN_OFFSET_X -13.89
-#define SCAN_OFFSET_Y 0
+#define SCAN_OFFSET_Y -1
 #define VELOCITY 1
 
 #define CVPLOT_HEADER_ONLY

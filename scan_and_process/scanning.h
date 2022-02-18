@@ -25,7 +25,7 @@ bool collectData(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle, DOU
  * @param[out] fbk structure with x, y, z, and theta coordinates of gantry when scan was taken
  * @param[out] scan	Z profile from scanner
 */
-bool getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan);
+bool getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan, int &locXoffset);
 
 /**
  * @brief Extracts the part of the scan that is within the print area defined by the printROI
@@ -38,7 +38,7 @@ bool getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan);
  * @param[out] scanEnd Pixel coordinates of the end of the scan
  * @return TRUE if part of the scan is in the ROI, FALSE if the scan is outside of the ROI
 */
-bool scan2ROI(cv::Mat& scan, const Coords fbk, const cv::Rect2d printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point& scanStart, cv::Point& scanEnd);
+bool scan2ROI(cv::Mat& scan, const Coords fbk, const int locXoffset, const cv::Rect2d printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point& scanStart, cv::Point& scanEnd);
 
 /**
  * @brief Find the material edges in a single scan

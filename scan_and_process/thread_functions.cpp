@@ -23,12 +23,13 @@ void t_CollectScans(Raster raster) {
 	cv::Point scanStart, scanEnd;
 	cv::Mat edges(raster.size(), CV_8U, cv::Scalar({ 0 }));
 	cv::Mat scanROI;
-	double heightThresh = -5;
+	double heightThresh = -3;
 	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
 	Coords scanPosFbk;
 	edgeMsg msg;
 	double posErrThr = 2.5; // position error threshold for how close the current position is to the target
 	cv::Point2d curPos;
+	int locXoffset = 0;
 
 	// wait for pre-print to complete before starting the scanner
 	q_scanMsg.wait_and_pop();
@@ -36,25 +37,25 @@ void t_CollectScans(Raster raster) {
 	while (segNumScan < segments.size()){
 		if (collectData(handle, DCCHandle, &collectedData[0][0])) {
 			// Trigger the scanner and collect the scanner data
-			getScan(collectedData, &scanPosFbk, scan);
-			curPos = cv::Point2d(scanPosFbk.x, scanPosFbk.y);
-
-			// Find the part of the scan that is within the ROI of the print
-			if (scan2ROI(scan, scanPosFbk, raster.roi(), raster.size(), scanROI, scanStart, scanEnd)){
-				// Finding the edges
-				findEdges(raster.boundaryMask(), scanStart, scanEnd, scanROI, edges, heightThresh, 2);
-			}		
-		
+			if (getScan(collectedData, &scanPosFbk, scan, locXoffset)){
+				// Find the part of the scan that is within the ROI of the print
+				if (scan2ROI(scan, scanPosFbk, locXoffset, raster.roi(), raster.size(), scanROI, scanStart, scanEnd)) {
+					// Finding the edges
+					findEdges2(raster.boundaryMask(), scanStart, scanEnd, scanROI, edges);
+				}
+			}
 			// compare the current position to the scanDonePt of the segment
+			curPos = cv::Point2d(scanPosFbk.x, scanPosFbk.y);
 			if (cv::norm(curPos - segments[segNumScan].scanDonePt()) < posErrThr) {
 				std::cout << "Segment " << segNumScan << " scanned. Sending data for processing." << std::endl;
 				// Check if this was the last segmet to scan
-				msg.addEdges(edges, segNumScan, (segNumScan == segments.size()-1) );
+				msg.addEdges(edges, segNumScan, (segNumScan == segments.size() - 1));
 				// push the edges to the error calculating thread
 				q_edgeMsg.push(msg);
 				// move to next segment
 				segNumScan++;
 			}
+			
 		}
 		else { A3200Error(); }
 	}

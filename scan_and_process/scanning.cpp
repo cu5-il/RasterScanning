@@ -7,10 +7,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include <vector>
-#include "cvPlot_functions.h"
-
-
 bool setupDataCollection(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle) {
 	// Adding the signals to be collected
 	if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_AnalogInput0, AXISINDEX_00, 0)) { return false; }		// AI0
@@ -47,12 +43,14 @@ bool collectData(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle, DOU
 	return true;
 }
 
-bool getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
-	int fbIdx[2];
+bool getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan, int &locXoffset) {
+	int fbIdx[2], voltHead[2];
 	int scanStartIdx, scanEndIdx;
-	cv::Mat scanVoltage_8U, scanEdges, scanEdgesIdx;
-
+	cv::Mat scanVoltage_8U, scanEdges;
+	std::vector<cv::Point> scanEdgesIdx;
+	cv::Mat morph, kern;
 	cv::Mat dataMat(NUM_DATA_SIGNALS, NUM_DATA_SAMPLES, CV_64F, data); // copying the collected data into a matrix
+	int scanXtrunc = 20;
 
 	// Get the position feedback when the laser was triggered
 	//NOTE: feedback values are given as counts and can be converted using the CountsPerUnit Parameter in the A3200 software
@@ -62,30 +60,44 @@ bool getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan) {
 	fbk->z = dataMat.at<double>(4, fbIdx[1]) / 10000;
 	fbk->T = dataMat.at<double>(5, fbIdx[1]) * 360 / 200000;
 
+	scan = dataMat(cv::Range(0, 1), cv::Range(fbIdx[1], dataMat.cols)).clone();
+
 	// check if the scan voltage goes below 3V to verify a scan was sent
 	if (!cv::checkRange(dataMat.row(0), true, (cv::Point*)0, 3, DBL_MAX)) {
 		// Finding the voltage header of the scanner signal, i.e find the start of the scanned profile
 		// Search only the data after the triggering signal was sent (after index fbIdx[1])
-		cv::normalize(dataMat(cv::Range(0, 1), cv::Range(fbIdx[1], dataMat.cols)), scanVoltage_8U, 0, 255, cv::NORM_MINMAX, CV_8U);
-		cv::Canny(scanVoltage_8U, scanEdges, 10, 30, 3);
-		cv::findNonZero(scanEdges, scanEdgesIdx);
+		kern = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+		cv::morphologyEx(scan, morph, cv::MORPH_BLACKHAT, kern, cv::Point(-1, -1), 2);
+		cv::minMaxIdx(morph, NULL, NULL, NULL, voltHead);
+
 		// Isolating the scanned profile and converting to height
-		scanStartIdx = scanEdgesIdx.at<int>(1, 0) + fbIdx[1]; // Starting index of the scan profile
-		scanEndIdx = scanEdgesIdx.at<int>(scanEdgesIdx.rows - 1, 0) + fbIdx[1] - 2;
+		cv::normalize(scan, scanVoltage_8U, 0, 255, cv::NORM_MINMAX, CV_8U);
+		cv::threshold(scanVoltage_8U, scanEdges, 2, 255, cv::THRESH_BINARY + cv::THRESH_OTSU);
+		cv::morphologyEx(scanEdges, scanEdges, cv::MORPH_DILATE, kern, cv::Point(-1, -1), 2);
+		cv::Sobel(scanEdges, scanEdges, -1, 2, 0, 3, 1, 0, cv::BORDER_REPLICATE);
+		cv::findNonZero(scanEdges, scanEdgesIdx);
 		// Check if entire scan captured
-		if ((scanStartIdx + NUM_PROFILE_PTS) <= NUM_DATA_SAMPLES) {
-			scan = dataMat(cv::Rect(cv::Point(scanStartIdx + SCAN_TRUNC_X, 0), cv::Point(scanEndIdx, 1))).clone() / OPAMP_GAIN;
+		if (scanEdgesIdx.size() == 2) {
+			locXoffset = scanEdgesIdx[0].x - voltHead[1] + scanXtrunc;
+			scanStartIdx = fbIdx[1] + scanEdgesIdx[0].x + scanXtrunc;
+			scanEndIdx = fbIdx[1] + scanEdgesIdx[1].x;
 		}
-		else {
-			scan = dataMat(cv::Rect(cv::Point(scanStartIdx + SCAN_TRUNC_X, 0), cv::Point(dataMat.cols, 1))).clone() / OPAMP_GAIN;
+		else if (scanEdgesIdx.size() == 1) {
+			locXoffset = scanEdgesIdx[0].x - voltHead[1] + scanXtrunc;
+			scanStartIdx = fbIdx[1] + scanEdgesIdx[0].x + scanXtrunc;
+			scanEndIdx = dataMat.cols;
 		}
+		else
+			return false;
+		
+		scan = dataMat(cv::Range(0, 1), cv::Range(scanStartIdx, scanEndIdx)).clone() / OPAMP_GAIN;
 		return true;
 	}
 	else
 		return false;
 }
 
-bool scan2ROI(cv::Mat& scan, const Coords fbk, const cv::Rect2d printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point& scanStart, cv::Point& scanEnd) {
+bool scan2ROI(cv::Mat& scan, const Coords fbk, const int locXoffset, const cv::Rect2d printROI, cv::Size rasterSize, cv::Mat& scanROI, cv::Point& scanStart, cv::Point& scanEnd) {
 	cv::Point2d XY_start, XY_end;
 	double X, Y;
 	double local_x;
@@ -94,7 +106,7 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const cv::Rect2d printROI, cv::Si
 
 	for (int i = 0; i < scan.cols; i++) {
 		// Local coordinate of the scanned point (with respect to the scanner)
-		local_x = -SCAN_WIDTH / 2 + dx * (i + SCAN_TRUNC_X) + SCAN_OFFSET_Y;
+		local_x = -SCAN_WIDTH / 2 + dx * (i + locXoffset) + SCAN_OFFSET_Y;
 		// Transforming local coordinate to global coordinates
 		X = fbk.x + SCAN_OFFSET_X * cos(fbk.T * PI / -180) - (local_x) * sin(fbk.T * PI / -180);
 		Y = fbk.y + SCAN_OFFSET_X * sin(fbk.T * PI / -180) + (local_x) * cos(fbk.T * PI / -180);
@@ -247,7 +259,6 @@ void findEdges2(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv
 
 		cv::Mat ROIblur, morph, pkMask, mask, median, baseline, kern;
 		cv::Scalar mean, stddev;
-		double minV, maxV;
 		int sigma, sz;
 
 		// Blur the scan
@@ -255,13 +266,12 @@ void findEdges2(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv
 		sz = 9;
 		cv::GaussianBlur(scanROI, ROIblur, cv::Size(sz, sz), (double)sigma / 10);
 
-		std::vector<cv::Mat> temp;
 
 		cv::meanStdDev(ROIblur, mean, stddev);
 		if (stddev.val[0] > 0.015){
 			// find the meadian height value of the scan and use the median mask to average only the heights below the median
-			cv::minMaxIdx(ROIblur, &minV, &maxV, NULL, NULL);
-			cv::threshold(ROIblur, median, (maxV + minV) / 2, 255, cv::THRESH_BINARY_INV);
+			cv::normalize(ROIblur, median, 0, 255, cv::NORM_MINMAX, CV_8U);
+			cv::threshold(median, median, 2, 255, cv::THRESH_BINARY_INV + cv::THRESH_OTSU);
 			median.convertTo(median, CV_8U);
 			kern = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
 			cv::morphologyEx(median, median, cv::MORPH_CLOSE, kern, cv::Point(-1, -1), 1);
@@ -282,27 +292,23 @@ void findEdges2(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv
 
 			// find the parts of the scan that are above the baseline
 			cv::compare(morph, baseline + 0.001, pkMask, cv::CMP_GT);
-			cv::Sobel(pkMask, pkMask, -1, 2, 0, 7, 1, 0, cv::BORDER_REPLICATE);
+			cv::Sobel(pkMask, pkMask, -1, 2, 0, 3, 1, 0, cv::BORDER_REPLICATE);
 
 			// filter out any peaks near the edges of the scan
 			mask = cv::Mat::zeros(pkMask.size(), CV_8U);
 			mask(cv::Range(0, 1), cv::Range(MM2PIX(0.5), mask.cols - MM2PIX(0.5))) = 255;
 			cv::bitwise_and(pkMask, mask, pkMask);
 			
-			//temp.push_back(ROIblur);
-			//temp.push_back(morph);
-			//temp.push_back(baseline);
-			//plotScan(scanROI, temp);
-
 			std::vector<cv::Point> peaks;
 			cv::findNonZero(pkMask, peaks);
 
-			// mark edges on local profile and global ROI
+			// mark edges on global ROI
 			slope = cv::Point2d(scanEnd - scanStart) / lineit.count;
 			for (auto it = peaks.begin(); it != peaks.end(); ++it) {
 				edgeCoord = cv::Point2d(scanStart) + (*it).x * slope;
 				edges.at<uchar>(cv::Point2i(edgeCoord)) = 255;
 			}
+			cv::bitwise_and(edgeBoundary, edges, edges);
 		}
 	}
 }
