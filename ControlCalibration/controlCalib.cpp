@@ -196,3 +196,80 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
 	}
 	return true;
 }
+
+bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::Point3d& initPos, double& initVel, double& initExt, char& test, double range[2], int lineNum)
+{
+	std::ifstream inFile(filename.c_str());
+	std::string str, temp;
+	double value;
+	int lineCnt = 0;
+	double rasLen = NAN, rasWth = NAN, rodSpc = NAN, rodWidth = NAN;
+	char const* digits = "0123456789.-";
+	char c;
+
+	// read the initial positions and the test
+	if (inFile.is_open()) {
+		while (std::getline(inFile, str)) {
+			std::stringstream ss(str);
+			if (lineCnt == 0) {
+				ss >> temp;
+				initPos.z = std::stod(temp);
+			}
+			else if (lineCnt == lineNum) {
+				ss >> temp;
+				initPos.x = std::stod(temp);
+				ss >> temp;
+				initPos.y = std::stod(temp);
+				ss >> temp;
+				break;
+			}
+			lineCnt++;
+		}
+		inFile.close();
+	}
+	else {
+		std::cout << "Unable to open data file: " << filename << std::endl;
+		system("pause");
+		return false;
+	}
+	std::cout << "Test selected: " << temp << " @ " << initPos << std::endl;
+
+	// read the test parameters
+	filename = filename.substr(0, filename.rfind("/") + 1) + temp + ".txt";
+	inFile = std::ifstream(filename.c_str());
+	if (inFile.is_open()) {
+		while (std::getline(inFile, str)) {
+
+			// find the number in the string
+			std::size_t const n = str.find_first_of(digits);
+			if (n != std::string::npos) {
+				std::size_t const m = str.find_first_not_of(digits, n);
+				value = std::stod(str.substr(n, m != std::string::npos ? m - n : m));
+			}
+			// Extracting the raster parameters
+			if (str.find("raster length") != std::string::npos) { rasLen = value; }
+			else if (str.find("raster width") != std::string::npos) { rasWth = value; }
+			else if (str.find("rod spacing") != std::string::npos) { rodSpc = value; }
+			else if (str.find("rod width") != std::string::npos) { rodWidth = value; }
+			else if (str.find("waypoint spacing") != std::string::npos) { wayptSpc = value; }
+			// Extracting the test parameters
+			else if (str.find("test type") != std::string::npos) { test = str[0]; }
+			else if (str.find("feed rate") != std::string::npos) { initVel = value; }
+			else if (str.find("auger voltage") != std::string::npos) { initExt = value; }
+			else if (str.find("range start") != std::string::npos) { range[0] = value; }
+			else if (str.find("range end") != std::string::npos) { range[1] = value; }
+
+		}
+		if ( isnan(rasLen) || isnan(rasWth) || isnan(rodSpc) || isnan(rodWidth)) { return false; }
+		else {
+			raster = Raster(rasLen, rasWth, rodSpc, rodWidth);
+			raster.offset(cv::Point2d(initPos.x, initPos.y));
+		}
+	}
+	else {
+		std::cout << "Unable to open data file: " << filename << std::endl;
+		system("pause");
+		return false;
+	}
+	return true;
+}

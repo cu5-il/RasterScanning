@@ -25,4 +25,6 @@ void analyzePrint(Raster raster);
 
 bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::Point3d& initPos, double& initVel, double& initExt, char& test, double range[2]);
 
+bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::Point3d& initPos, double& initVel, double& initExt, char& test, double range[2], int lineNum);
+
 #endif // !CONTROLCALIB_H
