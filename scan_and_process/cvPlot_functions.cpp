@@ -65,52 +65,93 @@ cv::Mat plotScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showIma
 	return image1;
 }
 
-cv::Mat plotScan(cv::Mat scanROI, bool showImage = false) {
+cv::Mat plotScan(cv::Mat scanROI, std::vector<cv::Mat> mats) {
 	cv::Mat image1, image2, image3;
 
 	// HACK: calculating the derivative separately for plotting function
 	cv::Mat dx, dx2, scanROIblur;
 	int aperture_size = 7;
-	int sigma = 11;
-	int sz = 19;
+	int sigma = 61;
+	int sz = 9;
+	cv::Mat dxBlur;
 	cv::GaussianBlur(scanROI, scanROIblur, cv::Size(sz, sz), (double)sigma / 10);
 	cv::Sobel(scanROIblur, dx, -1, 1, 0, aperture_size, 1, 0, cv::BORDER_REPLICATE);
 	cv::Sobel(scanROIblur, dx2, -1, 2, 0, aperture_size, 1, 0, cv::BORDER_REPLICATE);
 
-	//Plotting
+	double minV, maxV;
+	cv::Mat median;
+	cv::Scalar mean, stddev;
+	int op ;
+	int mSz = 5;
+	int iter = 2;
+	cv::Mat k;
+	cv::Mat morph, aa, morph2;
 	
-	auto axes_dx = CvPlot::makePlotAxes();
-	axes_dx.create<CvPlot::Series>(dx, "-b");
+	cv::Mat normed, otsu;
+	cv::normalize(scanROIblur, normed, 0, 255, cv::NORM_MINMAX, CV_8U);
+	cv::threshold(normed, median, 2, 255, cv::THRESH_BINARY_INV + cv::THRESH_OTSU);
 
-	auto axes_dx2 = CvPlot::makePlotAxes();
-	axes_dx2.create<CvPlot::Series>(dx2, "-r");
+	cv::meanStdDev(scanROI, mean, stddev);
+	// find the baseline average
+	cv::minMaxIdx(scanROIblur, &minV, &maxV, NULL, NULL);
+	//cv::threshold(scanROIblur, median, (maxV + minV) / 2, 255, cv::THRESH_BINARY_INV);
+	median.convertTo(median, CV_8U);
+	k = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+	cv::morphologyEx(median, median, cv::MORPH_CLOSE, k, cv::Point(-1, -1), 1);
+	cv::meanStdDev(scanROI, mean, stddev, median);
 
 
-	auto axes_prfl = CvPlot::makePlotAxes();
-	axes_prfl.create<CvPlot::Series>(scanROI, "-k");
-	axes_prfl.create<CvPlot::Series>(scanROIblur, "-b");
-	//axes_prfl.create<CvPlot::Series>(dx2, "-r");
+	// closing method
+	cv::Mat baseline;// = (mean.val[0] * cv::Mat::ones(scanROIblur.size(), scanROIblur.type()));
+	//scanROIblur.copyTo(baseline);
+	cv::threshold(scanROIblur, baseline, mean.val[0] , 255, cv::THRESH_TRUNC);
+	op =  cv::MORPH_OPEN;
+	op = cv::MORPH_ERODE;
+	//iter = 30;
+	//mSz = 9;
+	//k = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(mSz, mSz));
+	cv::morphologyEx(baseline, baseline, op, k, cv::Point(-1, -1), iter);
+	int blursz = scanROI.cols / 8;
+	cv::blur(baseline, baseline, cv::Size(blursz, blursz));
 
-	if (showImage) {
-		// Display the image
-		image1 = axes_prfl.render();
-		cv::namedWindow("Scan", cv::WINDOW_NORMAL);
-		cv::setMouseCallback("Scan", mouse_callback);
-		cv::imshow("Scan", image1);
 
-		image2 = axes_dx.render();
-		cv::namedWindow("Derivative", cv::WINDOW_NORMAL);
-		cv::setMouseCallback("Derivative", mouse_callback);
-		cv::imshow("Derivative", image2);
+	iter = 2;
+	scanROIblur.copyTo(morph2);
+	k = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+	//cv::morphologyEx(median, median, cv::MORPH_ERODE, k, cv::Point(-1, -1), 1);
+	baseline.copyTo(morph2, median);
+	k = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+	op = cv::MORPH_CLOSE;
+	cv::morphologyEx(morph2, morph2, op, k, cv::Point(-1, -1), iter);
+	//cv::threshold(morph2, morph2, mean.val[0]+stddev.val[0], mean.val[0], cv::THRESH_BINARY);
+	sigma = 19;
+	cv::GaussianBlur(morph2, morph2, cv::Size(sz, sz), (double)sigma / 10);
 
-		image3 = axes_dx2.render();
-		cv::namedWindow("2nd Derivative", cv::WINDOW_NORMAL);
-		cv::setMouseCallback("2nd Derivative", mouse_callback);
-		cv::imshow("2nd Derivative", image3);
-		cv::waitKey(0);
-	}
+	cv::Mat edgeMask, edges;
+	cv::compare(morph2, baseline+0.001, edgeMask, cv::CMP_GT);
 
-	return image1;
+	cv::Sobel(edgeMask, dx2, -1, 2, 0, aperture_size, 1, 0, cv::BORDER_REPLICATE);
+	baseline.copyTo(edges, edgeMask);
+
+	
+	auto axes_1 = CvPlot::makePlotAxes();
+	axes_1.create<CvPlot::Series>(scanROI, "-k");
+	axes_1.create<CvPlot::Series>(scanROIblur, "-b");
+	//axes_1.create<CvPlot::Series>(morph, "-r");
+	axes_1.create<CvPlot::Series>(morph2, "-m");
+	axes_1.create<CvPlot::Series>(baseline, "-c");
+	//axes_1.create<CvPlot::Series>(edges, "-r");
+	aa = axes_1.render();
+
+	auto axes_2 = CvPlot::makePlotAxes();
+	axes_2.create<CvPlot::Series>(scanROI, "-k");
+	axes_2.create<CvPlot::Series>(mats[0], "-b");
+	axes_2.create<CvPlot::Series>(mats[1], "-m");
+	axes_2.create<CvPlot::Series>(mats[2], "-c");
+	cv::Mat ab = axes_2.render();
+
+
+	return aa;
 }
 
 void plotEdges(const std::vector<cv::Point>& unfiltered, const std::vector<cv::Point>& filtered) {
