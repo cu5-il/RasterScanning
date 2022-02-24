@@ -15,7 +15,7 @@
 
 
 void makeTestPath( std::vector<std::vector<Path>>& path, char test, double range[2]) {
-	double inc = (range[1]-range[0]) / ceil(path.size() / 2);
+	double inc = (range[1]-range[0]) / ceil(path.size() / 2.0);
 	double setVal = range[0];
 	int i = 1;
 
