@@ -7,6 +7,7 @@
 #include <iterator> 
 #include <valarray>
 #include <deque>
+#include <Windows.h>
 
 #include <opencv2/core.hpp>
 #include "opencv2/core/utility.hpp"
@@ -33,13 +34,19 @@
 #include "print.h"
 #include "controlCalib.h"
 
-std::string datetime();
+std::string datetime(std::string format = "%Y.%m.%d-%H.%M.%S");
 
 int main() {
 	// Disable openCV warning in console
 	cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_SILENT);
 	// Set the output path with and prepend all file names with the time
-	outDir.append(datetime() + "_");
+	outDir.append(datetime("%Y.%m.%d") + "/");
+	if (CreateDirectoryA(outDir.c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {}
+	else{
+		std::cout << "Error creating output directory" << std::endl;
+		system("pause");
+		return 0;
+	}
 
 	std::thread t_scan, t_process, t_control, t_print;
 
@@ -55,15 +62,41 @@ int main() {
 
 	// Getting user input
 	std::string resp, file;
-	std::cout << "Select option: (p)rint, (s)can, or (a)nalyze data?" << std::endl;
+	int lineNum;
+	std::cout << "Select option: (p)rint, (s)can, or (a)nalyze data? " ;
 	std::cin >> resp;
-	if (resp.compare("p") != 0 && resp.compare("s") != 0 && resp.compare("a") != 0) {
+	if (resp.compare("a") == 0) {
+		std::cout << "Enter test name: ";
+		//std::cin >> file;
+		file = "plate3";
+		lineNum = 1;
+		// read in test parameters and generate raster
+		if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum)) { return 0; }
+		makePath(raster, wayptSpc, 0, initPos, initVel, 0, segments, path);
+
+		file = "./Output/2022.02.18/auger2/a10_17.44";
+		cv::Mat edges = cv::Mat::zeros(raster.size(), CV_8U);
+		readCSV(file + "_edges.csv", edges);
+		edges.convertTo(edges, CV_8U);
+		cv::imwrite(file + "_edgedata.png", edges);
+		//edges = cv::imread(file + "_edgedata.png");
+		//edges.convertTo(edges, CV_8U);
+
+		// Analyzing the print
+		outDir = file + "_";
+		analyzePrint(raster, std::string(file + "_edgedata.png"));
 		return 0;
 	}
-	std::cout << "Name of file to load" << std::endl;
-	std::cin >> file;
+	else if (resp.compare("p") != 0 && resp.compare("s") != 0 ) {
+		return 0;
+	}
+	std::cout << "Test #: ";
+	std::cin >> lineNum;
+	file = "plate2";
 	// read in test parameters and generate raster
-	if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range)) { return 0; }
+	if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum)) { return 0; }
+	outDir.append(testTp + std::to_string(lineNum) + "_"+ datetime("%H.%M") + "_");
+
 
 	// Creating the path and segmets
 	if (resp.compare("p") == 0) {
@@ -73,23 +106,22 @@ int main() {
 	}
 	else if (resp.compare("s") == 0) {
 		initVel = 2;
-		Raster rasterScan = Raster(raster.length() - SCAN_OFFSET_X + raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
+		//Raster rasterScan = Raster(raster.length() - SCAN_OFFSET_X + raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
+		Raster rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
 		rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
-		initPos += cv::Point3d(0, 0, 2);
+		rasterScan.offset(cv::Point2d(-SCAN_OFFSET_X - raster.rodWidth()));
+		//initPos += cv::Point3d(0, 0, 2);
 		makePath(rasterScan, wayptSpc, 0, initPos, initVel, 0, segments, path);
-	}
-	else if (resp.compare("a") == 0) {
-		makePath(raster, wayptSpc, 0, initPos, initVel, 0, segments, path);
-		// Analyzing the print
-		outDir = "Output/" + file + "_";
-		analyzePrint(raster, std::string("./Output/" + file + "_edges.csv"));
-		return 0;
 	}
 	int segsBeforeCtrl = path.size();
 	
 	cv::Mat imSeg;
 	drawSegments(raster.draw(), imSeg, segments, raster.origin(), 3);
+
 	//goto cleanup;
+
+	// Sanity check
+	//system("pause");
 
 	// A3200 Setup
 	//=======================================
@@ -174,13 +206,12 @@ cv::Mat translateImg(cv::Mat& img, int offsetx, int offsety) {
 	return img;
 }
 
-std::string datetime() {
+std::string datetime(std::string format) {
 	time_t rawtime = time(NULL);
 	struct tm timeinfo;
 	char buffer[80];
 
 	localtime_s(&timeinfo, &rawtime);
-
-	strftime(buffer, 80, "%Y.%m.%d-%H.%M.%S", &timeinfo);
+	strftime(buffer, 80, format.c_str(), &timeinfo);
 	return std::string(buffer);
 }
