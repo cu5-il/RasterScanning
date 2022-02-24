@@ -55,6 +55,7 @@ bool makePath(Raster raster, double wayptSpc, std::deque<double>& theta, cv::Poi
 	double T = 90;
 	double e = initExt;
 	double f = initVel;
+	double w = 0;
 
 	// Rods
 	for (auto it = raster.px().begin(); it != std::prev(raster.px().end()); ++it) {
@@ -70,7 +71,7 @@ bool makePath(Raster raster, double wayptSpc, std::deque<double>& theta, cv::Poi
 		for (auto it2 = wp_mm.begin(); it2 != wp_mm.end(); ++it2) {
 			if (!theta.empty()) {
 				T = theta.front();
-				tmp.push_back(Path(*it2, z, T, f, e));
+				tmp.push_back(Path(*it2, z, T, f, e, w));
 				theta.pop_front();
 			}
 			else {
@@ -147,6 +148,7 @@ void makePath(Raster raster, double wayptSpc, double theta, cv::Point3d initPos,
 	double T = theta;
 	double e = initExt;
 	double f = initVel;
+	double w = 0;
 
 	// Rods
 	for (auto it = raster.px().begin(); it != std::prev(raster.px().end()); ++it) {
@@ -160,7 +162,7 @@ void makePath(Raster raster, double wayptSpc, double theta, cv::Point3d initPos,
 		std::transform(wp_px.begin(), wp_px.end(), wp_mm.begin(), [&origin](cv::Point& pt) {return (PIX2MM(cv::Point2d(pt)) + origin); });
 
 		for (auto it2 = wp_mm.begin(); it2 != wp_mm.end(); ++it2) {
-			tmp.push_back(Path(*it2, z, T, f, e));
+			tmp.push_back(Path(*it2, z, T, f, e, w));
 		}
 		path.push_back(tmp);
 
@@ -254,3 +256,4 @@ void readPath(std::string filename, double& rodLen, double& rodSpc, double& wayp
 
 	return;
 }
+

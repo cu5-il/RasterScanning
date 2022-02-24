@@ -18,17 +18,18 @@ struct Coords {
 class Path
 {
 public:
-	double x;
-	double y;
-	double z;
-	double T;
-	double f;
-	double e;
+	double x; // X position
+	double y; // Y position
+	double z; // Z position
+	double T; // TH position
+	double f; // Feed rate
+	double e; // Auger current command
+	double w; // Target width at waypoint
 
 	Path();
-	Path(double _x, double _y, double _z, double _T, double _f, double _e);
+	Path(double _x, double _y, double _z, double _T, double _f, double _e, double _w);
 	Path(const Path& in);
-	Path(const cv::Point2d& pt, double _z, double _T, double _f, double _e);
+	Path(const cv::Point2d& pt, double _z, double _T, double _f, double _e, double _w);
 
 	const char* cmd();
 
@@ -37,16 +38,16 @@ private:
 };
 
 inline Path::Path()
-	 : x(0), y(0), z(0), T(0), f(0), e(0) {}
+	 : x(0), y(0), z(0), T(0), f(0), e(0), w(0) {}
 
-inline Path::Path(double x_, double y_, double z_, double T_, double f_, double e_)
-	 : x(x_), y(y_), z(z_), T(T_), f(f_), e(e_) {}
+inline Path::Path(double _x, double _y, double _z, double _T, double _f, double _e, double _w)
+	 : x(_x), y(_y), z(_z), T(_T), f(_f), e(_e), w(_w) {}
 
 inline Path::Path(const Path& in)
-	 : x(in.x), y(in.y), z(in.z), T(in.T), f(in.f), e(in.e) {}
+	 : x(in.x), y(in.y), z(in.z), T(in.T), f(in.f), e(in.e), w(in.w) {}
 
-inline Path::Path(const cv::Point2d& pt, double z_, double T_, double f_, double e_)
-	 : x(pt.x), y(pt.y), z(z_), T(T_), f(f_), e(e_) {}
+inline Path::Path(const cv::Point2d& pt, double _z, double _T, double _f, double _e, double _w)
+	 : x(pt.x), y(pt.y), z(_z), T(_T), f(_f), e(_e), w(_w) {}
 
 inline const char* Path::cmd(){
 	_cmd = "$AO[1].X =" + std::to_string(e) + "\n";
