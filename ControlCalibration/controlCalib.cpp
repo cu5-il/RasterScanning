@@ -204,7 +204,7 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
 	return true;
 }
 
-bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::Point3d& initPos, double& initVel, double& initExt, char& test, double range[2], int lineNum)
+bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::Point3d& initPos, double& initVel, double& initExt, std::string& test, double range[2], int lineNum)
 {
 	std::ifstream inFile(filename.c_str());
 	std::string str, temp;
@@ -267,7 +267,9 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
 			else if (str.find("rod width") != std::string::npos) { rodWidth = value; }
 			else if (str.find("waypoint spacing") != std::string::npos) { wayptSpc = value; }
 			// Extracting the test parameters
-			else if (str.find("test type") != std::string::npos) { test = str[0]; }
+			else if (str.find("test type") != std::string::npos) { 
+				//test = str;
+				test = str.substr( 0, str.find_first_of('\t')); }
 			else if (str.find("feed rate") != std::string::npos) { initVel = value; }
 			else if (str.find("auger voltage") != std::string::npos) { initExt = value; }
 			else if (str.find("range start") != std::string::npos) { range[0] = value; }
@@ -286,4 +288,85 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
 		return false;
 	}
 	return true;
+}
+
+void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double range[2]) {
+	int numPts;
+	double inc, width, fixedParam;
+	double setVal = range[0];
+
+	if (param != 'f' && param != 'a') {
+		std::cout << "ERROR: unknown parameter type" << std::endl;
+		return;
+	}
+	if (type != 'b' && type != 'g') {
+		std::cout << "ERROR: unknown scaffold type" << std::endl;
+		return;
+	}
+	//fixedParam = path[0][0].f;
+
+	switch (type)
+	{
+	default:
+		break;
+	case 'b': // bowtie scaffold
+		numPts = path[0].size();
+		inc = (range[1] - range[0]) / ceil(numPts / 2.0);
+
+		for (auto it_seg = path.begin(); it_seg != path.end(); ++it_seg) {
+			for (auto it_rod = (*it_seg).begin(); it_rod != (*it_seg).end(); ++it_rod) {
+
+				// Modify the values
+				switch (param)
+				{
+				case 'f':
+					(*it_rod).f = setVal;
+					break;
+				case 'a':
+					(*it_rod).e = setVal;
+					break;
+				}
+
+				// if long rods
+				if (std::distance(path.begin(), it_seg) % 2 == 0) {
+					// decrease for first half of rod then increase for second half
+					if (std::distance((*it_seg).begin(), it_rod) < ceil(numPts / 2.0)) {
+						setVal += inc;
+					}
+					else {
+						setVal -= inc;
+					}
+				}
+				else {
+					setVal = range[0];
+				}
+			}
+		}
+		break;
+	case 'g': // continuous gradient scaffold
+		numPts = ceil(path[0].size() * ceil(path.size() / 2.0));
+		inc = (range[1] - range[0]) / numPts;
+
+		for (auto it_seg = path.begin(); it_seg != path.end(); ++it_seg) {
+			for (auto it_rod = (*it_seg).begin(); it_rod != (*it_seg).end(); ++it_rod) {
+
+				// Modify the values
+				switch (param)
+				{
+				case 'f':
+					(*it_rod).f = setVal;
+					break;
+				case 'a':
+					(*it_rod).e = setVal;
+					break;
+				}
+
+				// if long rods
+				if (std::distance(path.begin(), it_seg) % 2 == 0) {
+					setVal += inc;
+				}
+			}
+		}
+		break;
+	}
 }

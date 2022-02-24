@@ -56,7 +56,7 @@ int main() {
 	cv::Point3d initPos;
 	double wayptSpc = 1;
 	Raster raster;
-	char testTp;
+	std::string testTp;
 	double range[2];
 	std::vector<std::vector<Path>> path;
 
@@ -102,7 +102,7 @@ int main() {
 	if (resp.compare("p") == 0) {
 		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
 		// Modifying the inputs
-		makeTestPath(path, testTp, range);
+		makeTestPath(path, testTp[0], range);
 	}
 	else if (resp.compare("s") == 0) {
 		initVel = 2;

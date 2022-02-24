@@ -56,7 +56,7 @@ int main() {
 	cv::Point3d initPos;
 	double wayptSpc = 1;
 	Raster raster;
-	char testTp;
+	std::string testTp;
 	double range[2];
 	std::vector<std::vector<Path>> path;
 
@@ -92,7 +92,7 @@ int main() {
 	}
 	std::cout << "Test #: ";
 	std::cin >> lineNum;
-	file = "plate2";
+	file = "plate1";
 	// read in test parameters and generate raster
 	if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum)) { return 0; }
 	outDir.append(testTp + std::to_string(lineNum) + "_" + datetime("%H.%M") + "_");
@@ -102,11 +102,10 @@ int main() {
 	if (resp.compare("p") == 0) {
 		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
 		// Modifying the inputs
-		makeTestPath(path, testTp, range);
+		makeFGS(path, testTp[0], testTp[1], range);
 	}
 	else if (resp.compare("s") == 0) {
 		initVel = 2;
-		//Raster rasterScan = Raster(raster.length() - SCAN_OFFSET_X + raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
 		Raster rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
 		rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
 		rasterScan.offset(cv::Point2d(-SCAN_OFFSET_X - raster.rodWidth()));
@@ -118,11 +117,6 @@ int main() {
 	cv::Mat imSeg;
 	drawSegments(raster.draw(), imSeg, segments, raster.origin(), 3);
 
-	// Functionally graded scaffold
-	//makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
-	range[0] = 10;
-	range[1] = 1;
-	makeFGS(path, 'f', 2, range);
 	goto cleanup;
 
 	// Sanity check
