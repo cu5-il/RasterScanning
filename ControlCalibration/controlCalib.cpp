@@ -11,6 +11,7 @@
 #include "csvMat.h"
 #include "thread_functions.h"
 #include "draw.h"
+#include <opencv2/imgcodecs.hpp>
 
 
 void makeTestPath( std::vector<std::vector<Path>>& path, char test, double range[2]) {
@@ -59,9 +60,15 @@ void analyzePrint(Raster raster, std::string filename) {
 
 	edgeMsg msg;
 	// loading the data
-	cv::Mat edges = cv::Mat::zeros(raster.size(), CV_8U);
-	readCSV(filename, edges);
-	edges.convertTo(edges, CV_8U);
+	cv::Mat edges = cv::Mat::zeros(raster.size(), CV_8UC1);
+	if (filename.substr(filename.find_last_of(".") + 1) == "csv") {
+		readCSV(filename, edges);
+	}
+	else if (filename.substr(filename.find_last_of(".") + 1) == "png") {
+		edges = cv::imread(filename);
+		cv::cvtColor(edges, edges, cv::COLOR_BGR2GRAY);
+	}
+	edges.convertTo(edges, CV_8UC1);
 
 	cv::Mat imSeg;
 	//drawSegments(raster.draw(), imSeg, segments, raster.origin(), 2);
@@ -233,6 +240,13 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
 		return false;
 	}
 	std::cout << "Test selected: " << temp << " @ " << initPos << std::endl;
+
+	outDir.append(temp + "/");
+	if (CreateDirectoryA(outDir.c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {}
+	else {
+		std::cout << "Error creating output directory" << std::endl;
+		return false;
+	}
 
 	// read the test parameters
 	filename = filename.substr(0, filename.rfind("/") + 1) + temp + ".txt";

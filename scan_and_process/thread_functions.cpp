@@ -66,6 +66,7 @@ void t_CollectScans(Raster raster) {
 	raster.drawBdry(image, image, cv::Scalar(255, 0, 0));
 	drawEdges(image, image, edges, cv::Scalar(0, 0, 255), MM2PIX(0.1));
 	cv::imwrite(outDir + "edges.png", image);
+	cv::imwrite(outDir + "edgedata.png", edges);
 	std::cout << "All segments have been scanned. Ending scanning thread." << std::endl;
 }
 
