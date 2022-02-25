@@ -146,6 +146,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\ControlCalibration\controlCalib.h" />
+    <ClInclude Include="..\ControlCalibration\MaterialModels.h" />
     <ClInclude Include="..\scan_and_process\A3200_functions.h" />
     <ClInclude Include="..\scan_and_process\constants.h" />
     <ClInclude Include="..\scan_and_process\csvMat.h" />
@@ -165,6 +166,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ControlCalibration\controlCalib.cpp" />
+    <ClCompile Include="..\ControlCalibration\MaterialModels.cpp" />
     <ClCompile Include="..\scan_and_process\A3200_functions.cpp" />
     <ClCompile Include="..\scan_and_process\csvMat.cpp" />
     <ClCompile Include="..\scan_and_process\cvPlot_functions.cpp" />

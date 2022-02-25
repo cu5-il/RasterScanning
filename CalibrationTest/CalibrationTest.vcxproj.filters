@@ -66,6 +66,9 @@
     <ClInclude Include="..\scan_and_process\threadsafeQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\ControlCalibration\MaterialModels.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\scan_and_process\A3200_functions.cpp">
@@ -105,6 +108,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ControlCalibration\MaterialModels.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

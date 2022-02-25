@@ -12,6 +12,7 @@
 #include "thread_functions.h"
 #include "draw.h"
 #include <opencv2/imgcodecs.hpp>
+#include "MaterialModels.h"
 
 
 void makeTestPath( std::vector<std::vector<Path>>& path, char test, double range[2]) {
@@ -292,10 +293,10 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
 
 void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double range[2]) {
 	int numPts;
-	double inc, width, fixedParam;
-	double setVal = range[0];
+	double inc, fixedParam;
+	double width = range[0];
 
-	if (param != 'f' && param != 'a') {
+	if (/*param != 'f' &&*/ param != 'a') {
 		std::cout << "ERROR: unknown parameter type" << std::endl;
 		return;
 	}
@@ -316,29 +317,20 @@ void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double
 		for (auto it_seg = path.begin(); it_seg != path.end(); ++it_seg) {
 			for (auto it_rod = (*it_seg).begin(); it_rod != (*it_seg).end(); ++it_rod) {
 
-				// Modify the values
-				switch (param)
-				{
-				case 'f':
-					(*it_rod).f = setVal;
-					break;
-				case 'a':
-					(*it_rod).e = setVal;
-					break;
-				}
-
+				// Modify the width
+				(*it_rod).w = width;
 				// if long rods
 				if (std::distance(path.begin(), it_seg) % 2 == 0) {
 					// decrease for first half of rod then increase for second half
 					if (std::distance((*it_seg).begin(), it_rod) < ceil(numPts / 2.0)) {
-						setVal += inc;
+						width += inc;
 					}
 					else {
-						setVal -= inc;
+						width -= inc;
 					}
 				}
 				else {
-					setVal = range[0];
+					width = range[0];
 				}
 			}
 		}
@@ -350,23 +342,33 @@ void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double
 		for (auto it_seg = path.begin(); it_seg != path.end(); ++it_seg) {
 			for (auto it_rod = (*it_seg).begin(); it_rod != (*it_seg).end(); ++it_rod) {
 
-				// Modify the values
-				switch (param)
-				{
-				case 'f':
-					(*it_rod).f = setVal;
-					break;
-				case 'a':
-					(*it_rod).e = setVal;
-					break;
-				}
-
+				// Modify the width
+				(*it_rod).w = width;
 				// if long rods
 				if (std::distance(path.begin(), it_seg) % 2 == 0) {
-					setVal += inc;
+					width += inc;
 				}
 			}
 		}
 		break;
 	}
+
+	// modify the inputs
+	for (auto it_seg = path.begin(); it_seg != path.end(); ++it_seg) {
+		for (auto it_rod = (*it_seg).begin(); it_rod != (*it_seg).end(); ++it_rod) {
+
+			// Modify the width
+			switch (param)
+			{
+			case 'f':
+				(*it_rod).f = (*it_rod).w;
+				break;
+			case 'a':
+				(*it_rod).e = augerModel((*it_rod).w, (*it_rod).f);
+				break;
+			}
+
+		}
+	}
+
 }

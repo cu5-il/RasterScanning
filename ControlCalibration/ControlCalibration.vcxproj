@@ -161,6 +161,7 @@
     <ClCompile Include="..\scan_and_process\thread_functions.cpp" />
     <ClCompile Include="controlCalib.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MaterialModels.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\scan_and_process\A3200_functions.h" />
@@ -180,6 +181,7 @@
     <ClInclude Include="..\scan_and_process\threadsafeQueue.h" />
     <ClInclude Include="..\scan_and_process\thread_functions.h" />
     <ClInclude Include="controlCalib.h" />
+    <ClInclude Include="MaterialModels.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
