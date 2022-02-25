@@ -137,7 +137,7 @@ void t_controller(std::vector<std::vector<Path>> path, int segsBeforeCtrl) {
 
 void t_printQueue(Path firstWpt, bool extrude) {
 	pathMsg inMsg;
-	int segNum = 0;
+	int segNum = -1;
 	double queueLineCount;
 	
 	// End any program already running
@@ -165,7 +165,7 @@ void t_printQueue(Path firstWpt, bool extrude) {
 	}
 
 	// Fill the command queue with the path
-	while (static_cast<__int64>(segNum) < segments.size()-1) {
+	while (static_cast<__int64>(segNum) + 1 < segments.size()) {
 		// wait for the path coordinates to be pushed
 		q_pathMsg.wait_and_pop(inMsg);
 		segNum = inMsg.segmentNum();
