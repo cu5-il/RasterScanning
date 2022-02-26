@@ -95,8 +95,8 @@ void getErrorsAt(std::vector<cv::Point>& waypoints, double width, cv::Size raste
 	errWD.reserve(waypoints.size());
 
 	// Create rectangle containing aread with material on both sides of the rater
-	int minX = max(lEdgePts.front().x, rEdgePts.front().x);
-	int maxX = min(lEdgePts.back().x, rEdgePts.back().x);
+	int minX = (std::max)(lEdgePts.front().x, rEdgePts.front().x);
+	int maxX = (std::min)(lEdgePts.back().x, rEdgePts.back().x);
 	int minY = (*std::min_element(lEdgePts.begin(), lEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.y < pt2.y; })).y;
 	int maxY = (*std::max_element(rEdgePts.begin(), rEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.y < pt2.y; })).y;
 	cv::Rect edgeRoi = cv::Rect(minX, minY, maxX-minX, maxY-minY);
