@@ -7,6 +7,10 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
+//for debugging scanning
+//#include <opencv2/highgui.hpp>
+//#include <CvPlot/cvplot.h>
+
 bool setupDataCollection(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle) {
 	// Adding the signals to be collected
 	if (!A3200DataCollectionConfigAddSignal(DCCHandle, DATASIGNAL_AnalogInput0, AXISINDEX_00, 0)) { return false; }		// AI0
@@ -290,8 +294,10 @@ void findEdges2(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv
 			sigma = 19;
 			cv::GaussianBlur(morph, morph, cv::Size(sz, sz), (double)sigma / 10);
 
+			// offset the baseline
+			baseline += 0.004;
 			// find the parts of the scan that are above the baseline
-			cv::compare(morph, baseline + 0.001, pkMask, cv::CMP_GT);
+			cv::compare(morph, baseline, pkMask, cv::CMP_GT);
 			cv::Sobel(pkMask, pkMask, -1, 2, 0, 3, 1, 0, cv::BORDER_REPLICATE);
 
 			// filter out any peaks near the edges of the scan
@@ -301,6 +307,14 @@ void findEdges2(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv
 			
 			std::vector<cv::Point> peaks;
 			cv::findNonZero(pkMask, peaks);
+
+			// debugging edge detection
+			//auto ax1 = CvPlot::makePlotAxes();
+			//ax1.create<CvPlot::Series>(scanROI, "-k");
+			//ax1.create<CvPlot::Series>(ROIblur, "-b");
+			//ax1.create<CvPlot::Series>(morph, "-m");
+			//ax1.create<CvPlot::Series>(baseline, "-c");
+			//cv::Mat ax_1 = ax1.render();
 
 			// mark edges on global ROI
 			slope = cv::Point2d(scanEnd - scanStart) / lineit.count;
