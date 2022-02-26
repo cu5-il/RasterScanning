@@ -60,7 +60,6 @@ void t_CollectScans(Raster raster) {
 		else { A3200Error(); }
 	}
 	// Save the data
-	writeCSV(outDir + "edges.csv", edges);
 	cv::Mat image = cv::Mat::zeros(raster.size(), CV_8UC3);
 	raster.draw(image, image);
 	raster.drawBdry(image, image, cv::Scalar(255, 0, 0));
@@ -70,12 +69,12 @@ void t_CollectScans(Raster raster) {
 	std::cout << "All segments have been scanned. Ending scanning thread." << std::endl;
 }
 
-void t_GetMatlErrors(Raster raster, double targetWidth) {
+void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 	edgeMsg inMsg;
 	errsMsg outMsg;
 	std::vector<cv::Point> waypoints;
 	std::vector<cv::Point> lEdgePts, rEdgePts;
-	std::vector<double> errCL, errWD;
+	std::vector<double> errCL, errWD, targetWidths;
 	bool doneScanning = false;
 
 	while (!doneScanning){
@@ -83,12 +82,14 @@ void t_GetMatlErrors(Raster raster, double targetWidth) {
 		q_edgeMsg.wait_and_pop(inMsg);
 		doneScanning = inMsg.doneScanning();
 		segNumError = inMsg.segmentNum();
+		
 		// find and smooth the right and left edges
 		getMatlEdges(segments[segNumError].ROI(), inMsg.edges(), lEdgePts, rEdgePts);
 		// If there are edge points, calculate errors
 		if (!lEdgePts.empty() && !rEdgePts.empty()) {
+			std::for_each(path[segNumError].begin(), path[segNumError].end(), [&targetWidths](Path& pth) {targetWidths.push_back(pth.w); });
 			waypoints = segments[segNumError].waypoints();
-			getErrorsAt(waypoints, targetWidth, raster.size(), lEdgePts, rEdgePts, errCL, errWD);
+			getErrorsAt(waypoints, targetWidths, raster.size(), lEdgePts, rEdgePts, errCL, errWD);
 		}
 		// Push the errors to the controller
 		std::cout << "Segment " << segNumError << " errors processed. Sending data to controller." << std::endl;
@@ -106,7 +107,7 @@ void t_GetMatlErrors(Raster raster, double targetWidth) {
 	raster.draw(image, image);
 	raster.drawBdry(image, image, cv::Scalar(255, 0, 0));
 	drawErrors(image, image, segments);
-	addScale(image, 10, cv::Point(5, 15));
+	addScale(image, 1, cv::Point(5, 15));
 	cv::imwrite(outDir + "errors.png", image);
 	std::cout << "All segments have been processed. Ending error processing thread." << std::endl;
 }

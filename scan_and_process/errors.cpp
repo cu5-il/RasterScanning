@@ -86,13 +86,14 @@ void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size ra
 	}
 }
 
-void getErrorsAt(std::vector<cv::Point>& waypoints, double width, cv::Size rasterSize, const std::vector<cv::Point>& lEdgePts, const std::vector<cv::Point>& rEdgePts, std::vector<double>& errCL, std::vector<double>& errWD) {
+void getErrorsAt(std::vector<cv::Point>& waypoints, std::vector<double>targetWidths, cv::Size rasterSize, const std::vector<cv::Point>& lEdgePts, const std::vector<cv::Point>& rEdgePts, std::vector<double>& errCL, std::vector<double>& errWD) {
 	cv::Mat lEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255)); // Image to draw the left edge on
 	cv::Mat rEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255)); // Image to draw the right edge on
 	errCL.clear(); // clear the errors
 	errWD.clear();
 	errCL.reserve(waypoints.size());
 	errWD.reserve(waypoints.size());
+	int i = 0;
 
 	// Create rectangle containing aread with material on both sides of the rater
 	int minX = (std::max)(lEdgePts.front().x, rEdgePts.front().x);
@@ -114,12 +115,12 @@ void getErrorsAt(std::vector<cv::Point>& waypoints, double width, cv::Size raste
 	cv::distanceTransform(lEdge, lEdge, cv::DIST_L2, cv::DIST_MASK_PRECISE, CV_32F); //NOTE: regarding speed -  DIST_MASK_5 (3.9ms/rod) < DIST_MASK_PRECISE (4.7ms/rod) < DIST_MASK_3 (9.1ms/rod) 
 	cv::distanceTransform(rEdge, rEdge, cv::DIST_L2, cv::DIST_MASK_PRECISE, CV_32F);
 	// iterate over the waypoints to calculate the errors
-	for (auto it = waypoints.begin(); it != waypoints.end(); ++it) {
+	for (auto it = waypoints.begin(); it != waypoints.end(); ++it, i++) {
 		// Check if the waypoint is within the countour created by the edges
 		//if (cv::pointPolygonTest(edgeContour, *it, false) >= 0) { // UNUSED
 		if (edgeRoi.contains(*it)) {
 			errCL.push_back((PIX2MM(static_cast<__int64>(rEdge.at<float>(*it)) - static_cast<__int64>(lEdge.at<float>(*it)))) / 2);
-			errWD.push_back( PIX2MM(static_cast<__int64>(lEdge.at<float>(*it)) + static_cast<__int64>(rEdge.at<float>(*it))) - width);
+			errWD.push_back( PIX2MM(static_cast<__int64>(lEdge.at<float>(*it)) + static_cast<__int64>(rEdge.at<float>(*it))) - targetWidths[i]);
 		}
 		else {
 			// HACK: set invalid errors to NAN

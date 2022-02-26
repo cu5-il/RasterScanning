@@ -54,7 +54,7 @@ void makeTestPath( std::vector<std::vector<Path>>& path, char test, double range
 	}
 }
 
-void analyzePrint(Raster raster, std::string filename) {
+/*void analyzePrint(Raster raster, std::string filename) {
 	double targetWidth = 0;
 	double sum, mean, stdev;
 	int count;
@@ -112,15 +112,12 @@ void analyzePrint(Raster raster, std::string filename) {
 	}
 	outfile.close();
 	return;
-}
+}*/
 
 void analyzePrint(Raster raster) {
 	double targetWidth = 0;
 	double sum, mean, stdev;
 	int count;
-
-	// calculating the errors
-	t_GetMatlErrors(raster, targetWidth);
 
 	// Opening a file to write the results
 	std::ofstream outfile;

@@ -1,12 +1,12 @@
 #include <iostream>
 #include <fstream>
-#include <cmath>
+//#include <cmath>
 #include <vector> 
 #include <string>
-#include <algorithm>
-#include <iterator> 
-#include <valarray>
-#include <deque>
+//#include <algorithm>
+//#include <iterator> 
+//#include <valarray>
+//#include <deque>
 #include <Windows.h>
 
 #include <opencv2/core.hpp>
@@ -23,15 +23,15 @@
 #include "myGlobals.h"
 #include "scanning.h"
 #include "draw.h"
-#include "gaussianSmooth.h"
-#include "errors.h"
+//#include "gaussianSmooth.h"
+//#include "errors.h"
 #include "A3200_functions.h"
 #include "thread_functions.h"
 #include "csvMat.h"
 #include "raster.h"
 #include <ctime>
 #include "path.h"
-#include "print.h"
+//#include "print.h"
 #include "controlCalib.h"
 
 std::string datetime(std::string format = "%Y.%m.%d-%H.%M.%S");
@@ -47,6 +47,17 @@ int main() {
 		system("pause");
 		return 0;
 	}
+
+	//=======================================
+	// Connecting to and setting up the A3200
+	std::cout << "Connecting to A3200. Initializing if necessary." << std::endl;
+	if (!A3200Connect(&handle)) { A3200Error(); }
+	// Creating a data collection handle and setting up the data collection
+	if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { A3200Error(); }
+	if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
+	// Initializing the extruder
+	extruder = Extruder(handle, TASK_PRINT);
+	//=======================================
 
 	std::thread t_scan, t_process, t_control, t_print;
 
@@ -66,7 +77,7 @@ int main() {
 	std::cout << "Select option: (p)rint, (s)can, or (a)nalyze data? ";
 	std::cin >> resp;
 	if (resp.compare("a") == 0) {
-		std::cout << "Enter test name: ";
+		/*std::cout << "Enter test name: ";
 		//std::cin >> file;
 		file = "plate3";
 		lineNum = 1;
@@ -84,7 +95,7 @@ int main() {
 
 		// Analyzing the print
 		outDir = file + "_";
-		analyzePrint(raster, std::string(file + "_edgedata.png"));
+		analyzePrint(raster, std::string(file + "_edgedata.png"));*/
 		return 0;
 	}
 	else if (resp.compare("p") != 0 && resp.compare("s") != 0) {
@@ -107,9 +118,10 @@ int main() {
 	else if (resp.compare("s") == 0) {
 		initVel = 2;
 		Raster rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
+		//initPos += cv::Point3d(0, 0, 1);
+		initPos += cv::Point3d(0, 2, 0);
 		rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
 		rasterScan.offset(cv::Point2d(-SCAN_OFFSET_X - raster.rodWidth()));
-		//initPos += cv::Point3d(0, 0, 2);
 		makePath(rasterScan, wayptSpc, 0, initPos, initVel, 0, segments, path);
 	}
 	int segsBeforeCtrl = path.size();
@@ -117,43 +129,17 @@ int main() {
 	cv::Mat imSeg;
 	drawSegments(raster.draw(), imSeg, segments, raster.origin(), 3);
 
-	goto cleanup;
+	
+
+	//goto cleanup;
 
 	// Sanity check
-	//system("pause");
+	system("pause");
 
 	// A3200 Setup
-	//=======================================
-	//Connecting to the A3200
-	{
-		std::cout << "Connecting to A3200. Initializing if necessary." << std::endl;
-		if (!A3200Connect(&handle)) { A3200Error(); }
-		// Creating a data collection handle and setting up the data collection
-		if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { A3200Error(); }
-		if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
-		// Disabling the auger and air
-		if (!A3200IODigitalOutput(handle, TASKID_Library, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $WO[0].X = 0
-		// Homing the axes if not already done
-		std::cout << "Homing axes." << std::endl;
-		if (!A3200MotionEnable(handle, TASKID_Library, AXES_ALL)) { A3200Error(); }
-		if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_03))) { A3200Error(); } // TH axis 
-		if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_02))) { A3200Error(); } // Z axis 
-		if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_00 | AXISMASK_01))) { A3200Error(); } // X & Y axes 
-		if (!A3200MotionWaitForMotionDone(handle, AXES_ALL, WAITOPTION_InPosition, -1, NULL)) { A3200Error(); }
-		if (!A3200MotionDisable(handle, TASKID_Library, AXES_ALL)) { A3200Error(); }
-		// End any program already running
-		if (!A3200ProgramStop(handle, TASK_PRINT)) { A3200Error(); }
-		// Initializing the extruder
-		extruder = Extruder(handle, TASK_PRINT);
-		// Clear the messages and the indicators in the CNC interface
-		if (!A3200CommandExecute(handle, TASK_PRINT, (LPCSTR)"MSGCLEAR -1\n", NULL)) { A3200Error(); }
-		for (int i = 1; i <= 6; i++) {
-			if (!A3200CommandExecute(handle, TASK_PRINT, std::string("MSGLAMP " + std::to_string(i) + ", GRAY, \"\"\n").c_str(), NULL)) { A3200Error(); }
-		}
-	}
-	//=======================================
-
-	//// notify scanner to start
+	
+	
+	// notify scanner to start
 	//q_scanMsg.push(true);
 	//t_CollectScans(raster);
 
@@ -176,6 +162,8 @@ int main() {
 		// calculate the average width of the segments
 		segments.clear();
 		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+		makeFGS(path, testTp[0], testTp[1], range);
+		t_GetMatlErrors(raster, path);
 		analyzePrint(raster);
 		goto cleanup;
 	}

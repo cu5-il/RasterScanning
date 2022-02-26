@@ -8,7 +8,7 @@
 
 void t_CollectScans(Raster raster);
 
-void t_GetMatlErrors(Raster raster, double targetWidth);
+void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path);
 
 void t_controller(std::vector<std::vector<Path>> pathSegs, int segsBeforeCtrl);
 

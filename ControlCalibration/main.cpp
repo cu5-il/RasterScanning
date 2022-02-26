@@ -177,6 +177,7 @@ int main() {
 		// calculate the average width of the segments
 		segments.clear();
 		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+		t_GetMatlErrors(raster, path);
 		analyzePrint(raster);
 		goto cleanup;
 	}
