@@ -106,7 +106,8 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 	cv::Mat image = cv::Mat::zeros(raster.size(), CV_8UC3);
 	raster.draw(image, image);
 	raster.drawBdry(image, image, cv::Scalar(255, 0, 0));
-	drawErrors(image, image, segments);
+	//drawErrors(image, image, segments);
+	drawMaterial(image, image, segments, path);
 	addScale(image, 1, cv::Point(5, 15));
 	cv::imwrite(outDir + "errors.png", image);
 	std::cout << "All segments have been processed. Ending error processing thread." << std::endl;

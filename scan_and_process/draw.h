@@ -26,6 +26,8 @@ void drawEdges(cv::Mat src, cv::Mat& dst, cv::Mat edges, const cv::Scalar& color
 
 void drawErrors(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg);
 
+void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vector<std::vector<Path>> path);
+
 void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, cv::Point2d, const int pointSz = 1);
 
 #endif // !DRAW_H
