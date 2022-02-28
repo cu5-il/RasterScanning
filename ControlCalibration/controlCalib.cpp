@@ -308,8 +308,8 @@ void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double
 	default:
 		break;
 	case 'b': // bowtie scaffold
-		numPts = path[0].size();
-		inc = (range[1] - range[0]) / ceil(numPts / 2.0);
+		numPts = path[0].size() - 1;
+		inc = (range[1] - range[0]) / (numPts / 2.0);
 
 		for (auto it_seg = path.begin(); it_seg != path.end(); ++it_seg) {
 			for (auto it_rod = (*it_seg).begin(); it_rod != (*it_seg).end(); ++it_rod) {
@@ -319,7 +319,7 @@ void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double
 				// if long rods
 				if (std::distance(path.begin(), it_seg) % 2 == 0) {
 					// decrease for first half of rod then increase for second half
-					if (std::distance((*it_seg).begin(), it_rod) < ceil(numPts / 2.0)) {
+					if (std::distance((*it_seg).begin(), it_rod) < (numPts / 2.0)) {
 						width += inc;
 					}
 					else {
@@ -333,7 +333,7 @@ void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double
 		}
 		break;
 	case 'g': // continuous gradient scaffold
-		numPts = ceil(path[0].size() * ceil(path.size() / 2.0));
+		numPts = ceil((path[0].size()-1) * ceil(path.size() / 2.0));
 		inc = (range[1] - range[0]) / numPts;
 
 		for (auto it_seg = path.begin(); it_seg != path.end(); ++it_seg) {
