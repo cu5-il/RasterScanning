@@ -107,6 +107,9 @@ void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vec
 	cv::Mat matlDes = cv::Mat::zeros(src.size(), CV_8UC3);
 	cv::Mat mask = cv::Mat(src.size(), CV_8UC3);
 
+	cv::Scalar colorMatlAct(255, 255, 0);
+	cv::Scalar colorMatlDes(255, 255, 255);
+
 	// getting the values from each segment
 	for (auto it = seg.begin(); it != seg.end(); ++it) {
 		// check if there are edge points
@@ -118,7 +121,7 @@ void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vec
 			allEdgePts.reserve((*it).lEdgePts().size() + (*it).rEdgePts().size()); // preallocate memory
 			allEdgePts.insert(allEdgePts.end(), (*it).lEdgePts().begin(), (*it).lEdgePts().end());
 			allEdgePts.insert(allEdgePts.end(), (*it).rEdgePts().rbegin(), (*it).rEdgePts().rend());
-			cv::fillPoly(matlAct, allEdgePts, cv::Scalar(255, 255, 255));
+			cv::fillPoly(matlAct, allEdgePts, colorMatlAct);
 			allEdgePts.clear();
 		}
 		// check if the errors have been calculated
@@ -129,7 +132,7 @@ void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vec
 					
 				}
 			}
-			// Draw the errors
+			// Draw the centerline error
 			cv::polylines(tempLines, actCenterline, false, cv::Scalar(0, 0, 255), 1);
 
 			actCenterline.clear();
@@ -149,7 +152,7 @@ void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vec
 	allEdgePts.reserve(lEdge.size() + rEdge.size()); // preallocate memory
 	allEdgePts.insert(allEdgePts.end(), lEdge.begin(), lEdge.end());
 	allEdgePts.insert(allEdgePts.end(), rEdge.rbegin(), rEdge.rend());
-	cv::fillPoly(matlDes, allEdgePts, cv::Scalar(255, 255, 0));
+	cv::fillPoly(matlDes, allEdgePts, colorMatlDes);
 	//cv::polylines(tempLines, lEdge, false, cv::Scalar(0, 255, 255), 1);
 	//cv::polylines(tempLines, rEdge, false, cv::Scalar(0, 255, 255), 1);
 
@@ -160,7 +163,7 @@ void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vec
 	}
 	// overlay the material
 	cv::addWeighted(matlDes, 0.5, matlAct, 0.5, 0, matlDes);
-	cv::addWeighted(matlDes, 0.5, dst, 1, 0, dst);
+	cv::addWeighted(matlDes, 0.75, dst, 1, 0, dst);
 	// add the lines to the destination
 	cv::cvtColor(tempLines, mask, cv::COLOR_BGR2GRAY);
 	cv::threshold(mask, mask, 1, 255, cv::THRESH_BINARY);
