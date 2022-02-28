@@ -1,12 +1,13 @@
 #include <iostream>
 #include <fstream>
+#include <iomanip>      // std::setw
 //#include <cmath>
 #include <vector> 
 #include <string>
 //#include <algorithm>
 //#include <iterator> 
 //#include <valarray>
-//#include <deque>
+#include <deque>
 #include <Windows.h>
 
 #include <opencv2/core.hpp>
@@ -70,6 +71,9 @@ int main() {
 	std::string testTp;
 	double range[2];
 	std::vector<std::vector<Path>> path;
+	int segsBeforeCtrl = 0;
+
+	cv::Mat imSeg;
 
 	// Getting user input
 	std::string resp, file;
@@ -109,64 +113,89 @@ int main() {
 	outDir.append(testTp + std::to_string(lineNum) + "_" + datetime("%H.%M") + "_");
 
 
+
 	// Creating the path and segmets
 	if (resp.compare("p") == 0) {
 		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
 		// Modifying the inputs
 		makeFGS(path, testTp[0], testTp[1], range);
-	}
-	else if (resp.compare("s") == 0) {
-		initVel = 2;
-		Raster rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
-		//initPos += cv::Point3d(0, 0, 1);
-		initPos += cv::Point3d(0, 2, 0);
-		rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
-		rasterScan.offset(cv::Point2d(-SCAN_OFFSET_X - raster.rodWidth()));
-		makePath(rasterScan, wayptSpc, 0, initPos, initVel, 0, segments, path);
-	}
-	int segsBeforeCtrl = path.size();
+		segsBeforeCtrl = path.size();
+		// Sanity check
+		system("pause");
 
-	cv::Mat imSeg;
-	drawSegments(raster.draw(), imSeg, segments, raster.origin(), 3);
-
-	
-
-	//goto cleanup;
-
-	// Sanity check
-	system("pause");
-
-	// A3200 Setup
-	
-	
-	// notify scanner to start
-	//q_scanMsg.push(true);
-	//t_CollectScans(raster);
-
-	// just printing, no scanning
-	if (resp.compare("p") == 0) {
+		//start printing
 		t_control = std::thread{ t_controller, path, segsBeforeCtrl };
 		t_print = std::thread{ t_printQueue, path[0][0], true };
 		t_print.join();
 		t_control.join();
-		goto cleanup;
+
+		std::cout << "Scan the print? (y/n) ";
+		std::cin >> resp;
+		if (resp.compare("y") == 0) {
+			resp = "s";
+		}
+		
 	}
-	// Scanning, no error calculations
-	else if (resp.compare("s") == 0) {
+
+	if (resp.compare("s") == 0) {
+		segments.clear();
+		path.clear();
+		initVel = 1;
+		// make a raster pattern used for scanning
+		Raster rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
+		//initPos += cv::Point3d(0, 0, 1);
+		initPos += cv::Point3d(0, 2.5, 0);
+		rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
+		rasterScan.offset(cv::Point2d(-SCAN_OFFSET_X - raster.rodWidth()));
+		makePath(rasterScan, wayptSpc, 0, initPos, initVel, 0, segments, path);
+		segsBeforeCtrl = path.size();
+		// Sanity check
+		system("pause");
+
+#ifdef DEBUG_SCANNING
+		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+		q_scanMsg.push(true);
+		t_CollectScans(raster);
+		return 0;
+#endif // DEBUG_SCANNING
+
+		// start scanning
 		t_scan = std::thread{ t_CollectScans, raster };
 		t_control = std::thread{ t_controller, path, segsBeforeCtrl };
 		t_print = std::thread{ t_printQueue, path[0][0], false };
-		t_print.join();
+		
 		t_scan.join();
-		t_control.join();
-		// calculate the average width of the segments
+
+		// Make the actual rater path used in the print
 		segments.clear();
+		path.clear();
 		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
 		makeFGS(path, testTp[0], testTp[1], range);
 		t_GetMatlErrors(raster, path);
-		analyzePrint(raster);
-		goto cleanup;
+
+		// Opening a file to save the results
+		std::ofstream outfile;
+		outfile.open(std::string(outDir + "pathData.txt").c_str());
+		outfile.precision(3);
+		
+		// loop through each long segment
+		for (int i = 0; i < path.size(); i += 2) {
+			// loop through all the waypoints
+			for (int j = 0; j < path[i].size(); j++) {
+				outfile << std::setw(7) << std::fixed << path[i][j].x << "\t";
+				outfile << std::setw(7) << std::fixed << path[i][j].y << "\t";
+				outfile << std::setw(6) << std::fixed << path[i][j].w << "\t";
+				outfile << std::setw(9) << std::fixed << segments[i].errWD()[j] << "\t";
+				outfile << std::setw(9) << std::fixed << segments[i].errCL()[j] << "\n";
+			}
+		}
+		outfile.close();
+
+		t_print.join();
+		t_control.join();
 	}
+	
+	drawSegments(raster.draw(), imSeg, segments, raster.origin(), 3);
 
 cleanup:
 	//A3200 Cleanup
