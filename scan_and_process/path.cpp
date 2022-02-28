@@ -180,8 +180,8 @@ void makePath(Raster raster, double wayptSpc, double theta, cv::Point3d initPos,
 		case 0: // Horizontal lines
 			roi = cv::Rect(*it - cv::Point(0, pixRodWth / 2), *std::next(it, 1) + cv::Point(0, pixRodWth / 2));
 			// shifting and stretching the roi
-			roi -= cv::Point(pixRodWth / 2, 0);
-			roi += cv::Size(pixRodWth, 0);
+			roi -= cv::Point(pixRodWth / 4, 0);
+			roi += cv::Size(pixRodWth / 2, 0);
 			// defining the point when the region has been completely scanned as the end of the next horizontal line
 			scanDonePt = wp_mm.front() + cv::Point2d(0, raster.spacing());
 			// if it is the final segment
