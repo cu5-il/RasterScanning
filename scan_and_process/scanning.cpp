@@ -1,5 +1,6 @@
 #include "myGlobals.h"
 #include "constants.h"
+#include "scanning.h"
 #include "A3200.h"
 #include <iostream>
 #include <cmath>
@@ -39,7 +40,7 @@ bool collectData(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle, DOU
 	if (!A3200DataCollectionStart(handle, DCCHandle)) { return false; }
 
 	// Triggering the laser scanner by sending a pulse from AnalogOutput0 
-	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, OUT_VOLTAGE)) { return false; }
+	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, -6)) { return false; }
 	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, 0)) { return false; }
 
 	// Retrieving the collected data
@@ -157,7 +158,7 @@ bool scan2ROI(cv::Mat& scan, const Coords fbk, const int locXoffset, const cv::R
 	return false;
 }
 
-void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& edges, double heightThresh, int order = 1) {
+void findEdges(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv::Mat& scanROI, cv::Mat& edges, double heightThresh, int order) {
 
 	if ((scanStart != cv::Point(-1, -1)) && (scanEnd != cv::Point(-1, -1))) //Check if scan is within ROI
 	{
@@ -300,7 +301,7 @@ void findEdges2(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv
 			cv::GaussianBlur(morph, morph, cv::Size(sz, sz), (double)sigma / 10);
 
 			// offset the baseline
-			baseline += 0.004;
+			baseline += 0.005;
 			// find the parts of the scan that are above the baseline
 			cv::compare(morph, baseline, pkMask, cv::CMP_GT);
 			cv::Sobel(pkMask, pkMask, -1, 2, 0, 3, 1, 0, cv::BORDER_REPLICATE);
@@ -321,8 +322,6 @@ void findEdges2(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv
 			ax1.create<CvPlot::Series>(baseline, "-c");
 			cv::Mat ax_1 = ax1.render();
 #endif // DEBUG_SCANNING
-
-			
 
 			// mark edges on global ROI
 			slope = cv::Point2d(scanEnd - scanStart) / lineit.count;
