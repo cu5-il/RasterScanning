@@ -1,3 +1,4 @@
+#include "draw.h"
 #include <iostream>
 #include "constants.h"
 #include "myTypes.h"
@@ -18,7 +19,7 @@ static cv::Scalar randomColor(cv::RNG& rng){
 	return cv::Scalar(icolor & 255, (icolor >> 8) & 255, (icolor >> 16) & 255);
 }
 
-void addScale(cv::Mat& image, double length = 1, cv::Point offset = cv::Point(25, 25), double fontScale = 0.5) {
+void addScale(cv::Mat& image, double length, cv::Point offset, double fontScale) {
 	cv::Point location(offset.x, image.rows - offset.y);
 	char buff[50];
 	snprintf(buff, sizeof(buff), "%gmm", length);
@@ -26,7 +27,7 @@ void addScale(cv::Mat& image, double length = 1, cv::Point offset = cv::Point(25
 	cv::rectangle(image, cv::Rect(location.x + 6, location.y + 5, MM2PIX(length), 5), cv::Scalar(255, 255, 255), -1);
 }
 
-void drawEdges(cv::Mat src, cv::Mat&  dst, cv::Mat edges, const cv::Scalar& color, const int pointSz = 1) {
+void drawEdges(cv::Mat src, cv::Mat&  dst, cv::Mat edges, const cv::Scalar& color, const int pointSz) {
 	
 	// copy the source to the destination
 	src.copyTo(dst);
@@ -171,7 +172,7 @@ void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vec
 	return;
 }
 
-void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, cv::Point2d origin, const int pointSz = 1) {
+void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, cv::Point2d origin, const int pointSz) {
 	//cv::Point origin = seg[0].waypoints()[0];
 	cv::Point ScanDonePt(0,0);
 	cv::Scalar color = cv::Scalar(255, 255, 0);

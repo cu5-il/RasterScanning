@@ -1,3 +1,4 @@
+#include "cvPlot_functions.h"
 #include <iostream>
 #include "constants.h"
 #include "myTypes.h"
@@ -12,7 +13,7 @@
 
 // Functions using CV-Plot
 
-cv::Mat plotScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showImage = false) {
+cv::Mat plotScan(cv::Mat scanROI, cv::Mat locEdges, cv::Mat locWin, bool showImage ) {
 	cv::Mat image1, image2;
 
 	// HACK: calculating the derivative separately for plotting function

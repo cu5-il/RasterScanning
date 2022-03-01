@@ -1,3 +1,4 @@
+#include "thread_functions.h"
 #include <iostream>
 #include <algorithm>
 #include <string>

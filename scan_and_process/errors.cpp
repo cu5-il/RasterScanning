@@ -1,3 +1,4 @@
+#include "errors.h"
 #include <iostream>
 #include <vector>
 #include <iterator> 
@@ -20,7 +21,7 @@ struct sortDist {
 	cv::Point pt0;
 };
 
-void getMatlEdges(const cv::Rect& segmentROI, const cv::Mat& gblEdges, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, bool interp = false) {
+void getMatlEdges(const cv::Rect& segmentROI, const cv::Mat& gblEdges, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, bool interp) {
 	std::vector<cv::Point> unfiltLeft, unfiltRight;
 	cv::Mat interpPts;
 	// find the left and right edge points in the regions

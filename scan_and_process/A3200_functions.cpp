@@ -1,3 +1,4 @@
+#include "A3200_functions.h"
 #include <iostream>
 #include "A3200.h"
 
