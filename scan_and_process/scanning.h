@@ -8,6 +8,13 @@
 #ifndef SCANNING_H
 #define SCANNING_H
 
+#define SAMPLING_TIME 0.25
+#define NUM_DATA_SAMPLES 1800
+#define NUM_DATA_SIGNALS 6
+#define NUM_PROFILE_PTS 1600 // = 800 * Profile_out_update / SAMPLING_TIME  (Profile_out_update from LJ navigator "Common > Analog output > prof out update")
+#define OPAMP_GAIN -0.49875
+#define SCAN_WIDTH 26.4
+
 bool setupDataCollection(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle);
 
 /**
