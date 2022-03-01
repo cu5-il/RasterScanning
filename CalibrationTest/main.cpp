@@ -77,122 +77,119 @@ int main() {
 
 	// Getting user input
 	std::string resp, file;
-	int lineNum;
-	std::cout << "Select option: (p)rint, (s)can, or (a)nalyze data? ";
-	std::cin >> resp;
-	if (resp.compare("a") == 0) {
-		/*std::cout << "Enter test name: ";
-		//std::cin >> file;
-		file = "plate3";
-		lineNum = 1;
-		// read in test parameters and generate raster
-		if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum)) { return 0; }
-		makePath(raster, wayptSpc, 0, initPos, initVel, 0, segments, path);
-
-		file = "./Output/2022.02.18/auger2/a10_17.44";
-		cv::Mat edges = cv::Mat::zeros(raster.size(), CV_8U);
-		readCSV(file + "_edges.csv", edges);
-		edges.convertTo(edges, CV_8U);
-		cv::imwrite(file + "_edgedata.png", edges);
-		//edges = cv::imread(file + "_edgedata.png");
-		//edges.convertTo(edges, CV_8U);
-
-		// Analyzing the print
-		outDir = file + "_";
-		analyzePrint(raster, std::string(file + "_edgedata.png"));*/
-		return 0;
-	}
-	else if (resp.compare("p") != 0 && resp.compare("s") != 0) {
-		return 0;
-	}
-	std::cout << "Test #: ";
-	std::cin >> lineNum;
+	int lineNum[2];
 	file = "plate1";
-	// read in test parameters and generate raster
-	if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum)) { return 0; }
-	outDir.append(testTp + std::to_string(lineNum) + "_" + datetime("%H.%M") + "_");
 
-
-
-	// Creating the path and segmets
-	if (resp.compare("p") == 0) {
-		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
-		// Modifying the inputs
-		makeFGS(path, testTp[0], testTp[1], range);
-		segsBeforeCtrl = path.size();
-		// Sanity check
-		system("pause");
-
-		//start printing
-		t_control = std::thread{ t_controller, path, segsBeforeCtrl };
-		t_print = std::thread{ t_printQueue, path[0][0], true };
-		t_print.join();
-		t_control.join();
-
-		std::cout << "Scan the print? (y/n) ";
+	std::cout << "Select option: (p)rint, (s)can, or (m)ultiple? ";
+	std::cin >> resp;
+	if ( resp.compare("m") == 0) {
+		std::cout << "Select option: (p)rint or (s)can? ";
 		std::cin >> resp;
-		if (resp.compare("y") == 0) {
-			resp = "s";
-		}
-		
+		std::cout << "Test # range: ";
+		std::cin >> lineNum[0] >> lineNum[1];
 	}
+	else if (resp.compare("p") == 0 || resp.compare("s") == 0) {
+		std::cout << "Test #: ";
+		std::cin >> lineNum[0];
+		lineNum[1] = lineNum[0];
+	}
+	else { return 0; }
+	
+	while (lineNum[0] <= lineNum[1]) {
+		std::cout << "Test #: " << lineNum[0] << std::endl;
+		outDir = "Output/" + datetime("%Y.%m.%d") + "/";
+		// read in test parameters and generate raster
+		if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum[0])) { return 0; }
+		outDir.append(testTp + std::to_string(lineNum[0]) + "_" + datetime("%H.%M") + "_");
 
-	if (resp.compare("s") == 0) {
-		segments.clear();
-		path.clear();
-		initVel = 1;
-		// make a raster pattern used for scanning
-		Raster rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
-		//initPos += cv::Point3d(0, 0, 1);
-		initPos += cv::Point3d(0, 2.5, 0);
-		rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
-		rasterScan.offset(cv::Point2d(-SCAN_OFFSET_X - raster.rodWidth()));
-		makePath(rasterScan, wayptSpc, 0, initPos, initVel, 0, segments, path);
-		segsBeforeCtrl = path.size();
-		// Sanity check
-		system("pause");
+		// Creating the path and segmets
+		if (resp.compare("p") == 0 || resp.compare("y") == 0) {
+			makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+			// Modifying the inputs
+			makeFGS(path, testTp[0], testTp[1], range);
+			segsBeforeCtrl = path.size();
+			// Sanity check
+			//system("pause");
 
-#ifdef DEBUG_SCANNING
-		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
-		q_scanMsg.push(true);
-		t_CollectScans(raster);
-		return 0;
-#endif // DEBUG_SCANNING
+			//start printing
+			t_control = std::thread{ t_controller, path, segsBeforeCtrl };
+			t_print = std::thread{ t_printQueue, path[0][0], true };
+			t_print.join();
+			t_control.join();
 
-		// start scanning
-		t_scan = std::thread{ t_CollectScans, raster };
-		t_control = std::thread{ t_controller, path, segsBeforeCtrl };
-		t_print = std::thread{ t_printQueue, path[0][0], false };
-		
-		t_scan.join();
-
-		// Make the actual rater path used in the print
-		segments.clear();
-		path.clear();
-		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
-		makeFGS(path, testTp[0], testTp[1], range);
-		t_GetMatlErrors(raster, path);
-
-		// Opening a file to save the results
-		std::ofstream outfile;
-		outfile.open(std::string(outDir + "pathData.txt").c_str());
-		outfile.precision(3);
-		
-		// loop through each long segment
-		for (int i = 0; i < path.size(); i += 2) {
-			// loop through all the waypoints
-			for (int j = 0; j < path[i].size(); j++) {
-				outfile << std::setw(7) << std::fixed << path[i][j].x << "\t";
-				outfile << std::setw(7) << std::fixed << path[i][j].y << "\t";
-				outfile << std::setw(6) << std::fixed << path[i][j].w << "\t";
-				outfile << std::setw(9) << std::fixed << segments[i].errWD()[j] << "\t";
-				outfile << std::setw(9) << std::fixed << segments[i].errCL()[j] << "\n";
+			std::cout << "Scan the print? (y/n) ";
+			std::cin >> resp;
+			if (resp.compare("y") != 0) 
+			{
+				resp = "p";
 			}
 		}
-		outfile.close();
 
-		t_print.join();
-		t_control.join();
+		if (resp.compare("s") == 0 || resp.compare("y") == 0)
+		{
+			segments.clear();
+			path.clear();
+			initVel = 1;
+			// make a raster pattern used for scanning
+			Raster rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
+			//initPos += cv::Point3d(0, 0, 1);
+			initPos += cv::Point3d(0, 2.5, 0);
+			rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
+			rasterScan.offset(cv::Point2d(-SCAN_OFFSET_X - raster.rodWidth()));
+			makePath(rasterScan, wayptSpc, 0, initPos, initVel, 0, segments, path);
+			segsBeforeCtrl = path.size();
+			// Sanity check
+			//system("pause");
+
+#ifdef DEBUG_SCANNING
+			makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+			q_scanMsg.push(true);
+			t_CollectScans(raster);
+			return 0;
+#endif // DEBUG_SCANNING
+
+			// start scanning
+			t_scan = std::thread{ t_CollectScans, raster };
+			t_control = std::thread{ t_controller, path, segsBeforeCtrl };
+			t_print = std::thread{ t_printQueue, path[0][0], false };
+			t_scan.join();
+
+			// Make the actual rater path used in the print
+			segments.clear();
+			path.clear();
+			makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+			makeFGS(path, testTp[0], testTp[1], range);
+			t_GetMatlErrors(raster, path);
+			while (!q_errsMsg.empty()) {
+				q_errsMsg.try_pop();
+			}
+
+			// Opening a file to save the results
+			std::ofstream outfile;
+			outfile.open(std::string(outDir + "pathData.txt").c_str());
+			outfile.precision(3);
+
+			// loop through each long segment
+			for (int i = 0; i < path.size(); i += 2) {
+				// loop through all the waypoints
+				for (int j = 0; j < path[i].size(); j++) {
+					outfile << std::setw(7) << std::fixed << path[i][j].x << "\t";
+					outfile << std::setw(7) << std::fixed << path[i][j].y << "\t";
+					outfile << std::setw(6) << std::fixed << path[i][j].f << "\t";
+					outfile << std::setw(6) << std::fixed << path[i][j].e << "\t";
+					outfile << std::setw(6) << std::fixed << path[i][j].w << "\t";
+					outfile << std::setw(9) << std::fixed << segments[i].errWD()[j] << "\t";
+					outfile << std::setw(9) << std::fixed << segments[i].errCL()[j] << "\n";
+				}
+			}
+			outfile.close();
+
+			t_print.join();
+			t_control.join();
+		}
+		lineNum[0]++;
+		segments.clear();
+		path.clear();
 	}
 	
 	drawSegments(raster.draw(), imSeg, segments, raster.origin(), 3);
