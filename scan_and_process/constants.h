@@ -19,4 +19,12 @@
 #define CVPLOT_HEADER_ONLY
 //#define DEBUG_SCANNING
 
+// Disable min and max macros to avoid build errors
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+
 #endif // CONSTANTS_H

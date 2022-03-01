@@ -2,7 +2,6 @@
 #include<vector>
 #include <string>
 #include<opencv2/core.hpp>
-#include <opencv2/imgproc.hpp> // TODO: get rid of this but 
 
 #ifndef MY_TYPES_H
 #define MY_TYPES_H
