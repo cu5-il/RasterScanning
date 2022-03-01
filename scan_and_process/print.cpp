@@ -11,17 +11,18 @@
 void prePrint(Path firstWpt) {
 	std::string cmd;
 
+	// End any programs already running
+	//if (!A3200ProgramStop(handle, TASKID_Library)) { A3200Error(); }
+	if (!A3200ProgramStop(handle, TASK_PRINT)) { A3200Error(); }
+
 	// Disabling the auger and air
-	if (!A3200IODigitalOutput(handle, TASKID_Library, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $WO[0].X = 0
+	if (!A3200IODigitalOutput(handle, TASK_PRINT, 0, AXISINDEX_00, 0)) { A3200Error(); } //equivalent to $WO[0].X = 0
 
 	// Homing the axes if not already done
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_03))) { A3200Error(); } // TH axis 
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_02))) { A3200Error(); } // Z axis 
-	if (!A3200MotionHomeConditional(handle, TASKID_Library, (AXISMASK)(AXISMASK_00 | AXISMASK_01))) { A3200Error(); } // X & Y axes 
+	if (!A3200MotionHomeConditional(handle, TASK_PRINT, (AXISMASK)(AXISMASK_03))) { A3200Error(); } // TH axis 
+	if (!A3200MotionHomeConditional(handle, TASK_PRINT, (AXISMASK)(AXISMASK_02))) { A3200Error(); } // Z axis 
+	if (!A3200MotionHomeConditional(handle, TASK_PRINT, (AXISMASK)(AXISMASK_00 | AXISMASK_01))) { A3200Error(); } // X & Y axes 
 	if (!A3200MotionWaitForMotionDone(handle, AXES_ALL, WAITOPTION_InPosition, -1, NULL)) { A3200Error(); }
-
-	// End any program already running
-	if (!A3200ProgramStop(handle, TASK_PRINT)) { A3200Error(); }
 
 	// Clear the messages and the indicators in the CNC interface
 	if (!A3200CommandExecute(handle, TASK_PRINT, (LPCSTR)"MSGCLEAR -1\n", NULL)) { A3200Error(); }
