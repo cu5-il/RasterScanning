@@ -35,6 +35,7 @@ void t_CollectScans(Raster raster) {
 	// wait for pre-print to complete before starting the scanner
 	q_scanMsg.wait_and_pop();
 
+	segNumScan = 0;
 	while (segNumScan < segments.size()){
 		if (collectData(handle, DCCHandle, &collectedData[0][0])) {
 			// Trigger the scanner and collect the scanner data
@@ -141,8 +142,9 @@ void t_controller(std::vector<std::vector<Path>> path, int segsBeforeCtrl) {
 void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 	pathMsg inMsg;
 	int segNum = -1;
-	double queueLineCount;
-	
+	double queueLineCount, queueSize;
+	bool programStarted = false;
+
 	// End any program already running
 	if (!A3200ProgramStop(handle, TASK_PRINT)) { A3200Error(); }
 	if (!A3200MotionEnable(handle, TASK_PRINT, AXES_ALL)) { A3200Error(); }
@@ -154,6 +156,7 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 	// notify scanner to start
 	q_scanMsg.push(true);
 
+	
 	// Put task into Queue mode and then pause the program while queue is loaded.
 	if (!A3200ProgramInitializeQueue(handle, TASK_PRINT)) { A3200Error(); }
 	if (!A3200ProgramPause(handle, TASK_PRINT)) { A3200Error(); }
@@ -167,6 +170,11 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 		extruder.enable();
 	}
 
+	// Get the size of the queue buffer
+	if (!A3200StatusGetItem(handle, TASK_PRINT, STATUSITEM_QueueLineCapacity, 0, &queueSize)) { A3200Error(); }
+	// Get the number of items that have been loaded in the queue
+	if (!A3200StatusGetItem(handle, TASK_PRINT, STATUSITEM_QueueLineCount, 0, &queueLineCount)) { A3200Error(); }
+
 	// Fill the command queue with the path
 	while (static_cast<__int64>(segNum) + 1 < segments.size()) {
 		// wait for the path coordinates to be pushed
@@ -179,7 +187,6 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 				// If the command failed to load into the queue
 				if (A3200GetLastError().Code == ErrorCode_QueueBufferFull) {
 					// Wait if the Queue is full.
-					std::cout << "Queue is full" << std::endl;
 					Sleep(10);
 				}
 				else {
@@ -187,14 +194,29 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 					break;
 				}
 			}
+			queueLineCount += 2;
+			// if the queue is almost full, start the program
+			if ((queueLineCount > (queueSize - 10)) && !programStarted) {
+				if (!A3200ProgramStart(handle, TASK_PRINT)) { A3200Error(); }
+				else { programStarted = true; }
+			}
 		}
 		std::cout << "Segment " << segNum << " loaded" << std::endl;
-		if (!A3200CommandExecute(handle, TASK_PRINT, std::string("MSGDISPLAY 0, \"Segment " + std::to_string(segNum) + " printed\" \n").c_str(), NULL)) { A3200Error(); }
-		if (!A3200CommandExecute(handle, TASK_PRINT, std::string("MSGLAMP 1, YELLOW,\"Segment " + std::to_string(segNum) + " printed\"\n").c_str(), NULL)) { A3200Error(); }
+		//if (!A3200CommandExecute(handle, TASK_PRINT, std::string("MSGDISPLAY 0, \"Segment " + std::to_string(segNum) + " printed\" \n").c_str(), NULL)) { A3200Error(); }
+		//if (!A3200CommandExecute(handle, TASK_PRINT, std::string("MSGLAMP 1, YELLOW,\"Segment " + std::to_string(segNum) + " printed\"\n").c_str(), NULL)) { A3200Error(); }
 
-		if (!A3200ProgramStart(handle,TASK_PRINT)) { A3200Error(); }
+		if (!programStarted){
+			if (!A3200ProgramStart(handle, TASK_PRINT)) { A3200Error(); }
+			else { programStarted = true; }
+		}
 	}
-	// Run post-print process
+	// wait until there is room in the queue to load the post print 
+	if (!A3200StatusGetItem(handle, TASK_PRINT, STATUSITEM_QueueLineCount, 0, &queueLineCount)) { A3200Error(); }
+	while (queueLineCount > (queueSize - 100)) {
+		Sleep(10);
+		if (!A3200StatusGetItem(handle, TASK_PRINT, STATUSITEM_QueueLineCount, 0, &queueLineCount)) { A3200Error(); }
+	}
+	// Load post-print process
 	postPrint(inMsg.path().back(), printOpts);
 	if (!A3200MotionDisable(handle, TASK_PRINT, AXES_ALL)) { A3200Error(); }
 
@@ -203,7 +225,7 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 	if (!A3200StatusGetItem(handle, TASK_PRINT, STATUSITEM_QueueLineCount, 0, &queueLineCount)) { A3200Error(); }
 	while (0 != (int)queueLineCount) {
 		Sleep(10);
-		if (!A3200StatusGetItem(handle, TASKID_01, STATUSITEM_QueueLineCount, 0, &queueLineCount)) { A3200Error(); }
+		if (!A3200StatusGetItem(handle, TASK_PRINT, STATUSITEM_QueueLineCount, 0, &queueLineCount)) { A3200Error(); }
 	}
 	// Stop using queue mode
 	if (!A3200ProgramStop(handle, TASK_PRINT)) { A3200Error(); }
