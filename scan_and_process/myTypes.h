@@ -168,7 +168,7 @@ public:
 	bool disposal; // flag determining whether or not move to the disposal zone at the end of a print 
 
 	PrintOptions();
-	PrintOptions(double _leadin, double _leadout = -1, bool _extrude = true, bool _disposal = false);
+	PrintOptions(double _leadin, double _leadout = -1, bool _extrude = true, bool _disposal = true);
 
 private:
 	
