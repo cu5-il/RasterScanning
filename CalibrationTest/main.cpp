@@ -63,7 +63,7 @@ int main() {
 	std::thread t_scan, t_process, t_control, t_print;
 
 	// Initialize parameters
-	double initVel;
+	double initVel, scanVel;
 	double initExt;
 	cv::Point3d initPos;
 	double wayptSpc = 1;
@@ -118,6 +118,7 @@ int main() {
 
 			//start printing
 			printOpts.extrude = true;
+			printOpts.disposal = true;
 			t_control = std::thread{ t_controller, path, segsBeforeCtrl };
 			t_print = std::thread{ t_printQueue, path[0][0], printOpts };
 			t_print.join();
@@ -136,14 +137,14 @@ int main() {
 		{
 			segments.clear();
 			path.clear();
-			initVel = 1;
+			scanVel = 1;
 			// make a raster pattern used for scanning
 			Raster rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
 			//initPos += cv::Point3d(0, 0, 1);
 			initPos += cv::Point3d(0, 2.5, 0);
 			rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
 			rasterScan.offset(cv::Point2d(-SCAN_OFFSET_X - raster.rodWidth()));
-			makePath(rasterScan, wayptSpc, 0, initPos, initVel, 0, segments, path);
+			makePath(rasterScan, wayptSpc, 0, initPos, scanVel, 0, segments, path);
 			segsBeforeCtrl = path.size();
 			// Sanity check
 			//system("pause");
@@ -157,6 +158,7 @@ int main() {
 
 			// start scanning
 			printOpts.extrude = false;
+			printOpts.disposal = false;
 			t_scan = std::thread{ t_CollectScans, raster };
 			t_control = std::thread{ t_controller, path, segsBeforeCtrl };
 			t_print = std::thread{ t_printQueue, path[0][0], printOpts };
