@@ -43,13 +43,16 @@ int main() {
 	std::thread t_scan, t_process, t_control, t_print;
 
 	// Defining the initial parameters
-	
 	double initVel = 3;
 	double initExt = 0.7;
 	//cv::Point3d initPos = cv::Point3d(0, 0, 0);
 	cv::Point3d initPos = cv::Point3d(45, 15, -8);
 	//initPos = cv::Point3d(95, 15, 0);
 	double targetWidth = 1;
+
+	// setting the print options
+	double leadin = 5;
+	PrintOptions printOpts(leadin);
 
 	//Load the raster path generated in Matlab
 	double rodLen, rodSpc, rodWidth, wayptSpc;
@@ -106,9 +109,9 @@ int main() {
 	//goto cleanup;
 
 	t_scan = std::thread{ t_CollectScans, raster };
-	t_process = std::thread{ t_GetMatlErrors, raster, targetWidth };
+	t_process = std::thread{ t_GetMatlErrors, raster, path };
 	t_control = std::thread{ t_controller, path, segsBeforeCtrl };
-	t_print = std::thread{ t_printQueue, path[0][0], true };
+	t_print = std::thread{ t_printQueue, path[0][0], printOpts };
 
 	t_print.join();
 	t_scan.join();
