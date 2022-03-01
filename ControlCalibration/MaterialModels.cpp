@@ -11,7 +11,7 @@ double augerModel(double width, double feedrate) {
 
 	a = 1;
 	b = 0.1;
-	c = -2.8;
+	c = -2.815;
 
 	if (feedrate == 2.0) {
 		a = 4.15; 
