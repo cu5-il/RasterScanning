@@ -137,7 +137,7 @@ void t_controller(std::vector<std::vector<Path>> path, int segsBeforeCtrl) {
 	std::cout << "Ending controller thread" << std::endl;
 }
 
-void t_printQueue(Path firstWpt, bool extrude) {
+void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 	pathMsg inMsg;
 	int segNum = -1;
 	double queueLineCount;
@@ -147,7 +147,7 @@ void t_printQueue(Path firstWpt, bool extrude) {
 	if (!A3200MotionEnable(handle, TASK_PRINT, AXES_ALL)) { A3200Error(); }
 
 	// Run pre-print process
-	prePrint(firstWpt);
+	prePrint(firstWpt, printOpts);
 	std::cout << "Pre-print complete" << std::endl;
 	
 	// notify scanner to start
@@ -161,7 +161,7 @@ void t_printQueue(Path firstWpt, bool extrude) {
 	if (!A3200CommandExecute(handle, TASK_PRINT, (LPCSTR)"VELOCITY ON\nG90\n", NULL)) { A3200Error(); }
 	if (!A3200MotionSetupAbsolute(handle, TASK_PRINT)) { A3200Error(); }
 
-	if (extrude) {
+	if (printOpts.extrude) {
 		// Enable the extruder
 		extruder.enable();
 	}
@@ -194,7 +194,7 @@ void t_printQueue(Path firstWpt, bool extrude) {
 		if (!A3200ProgramStart(handle,TASK_PRINT)) { A3200Error(); }
 	}
 	// Run post-print process
-	postPrint();
+	postPrint(inMsg.path().back(), printOpts);
 	if (!A3200MotionDisable(handle, TASK_PRINT, AXES_ALL)) { A3200Error(); }
 
 	// Periodically check to see if the queue is empty

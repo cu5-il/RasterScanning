@@ -158,4 +158,26 @@ public:
 	const std::vector<Path>& path() const { return _path; }
 	const int& segmentNum() const { return _segmentNum; }
 };
+
+///////////////////////////////////////  PrintOptions  ///////////////////////////////////////
+class PrintOptions
+{
+public:
+	double leadin; // length of lead in line. Negative values disable lead in
+	double leadout; // length of lead out line. Negative values disable lead out
+	bool extrude; // flag determining whether or not extrude 
+	bool disposal; // flag determining whether or not move to the disposal zone at the end of a print 
+
+	PrintOptions();
+	PrintOptions(double _leadin, double _leadout = -1, bool _extrude = true, bool _disposal = false);
+
+private:
+	
+};
+inline PrintOptions::PrintOptions()
+	: leadin(-1), leadout(-1), extrude(true), disposal(true) {}
+
+inline PrintOptions::PrintOptions(double _leadin, double _leadout, bool _extrude, bool _disposal)
+	: leadin(_leadin), leadout(_leadout), extrude(_extrude), disposal(_disposal) {}
+
 #endif // MY_TYPES_H

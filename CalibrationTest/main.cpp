@@ -73,6 +73,11 @@ int main() {
 	std::vector<std::vector<Path>> path;
 	int segsBeforeCtrl = 0;
 
+	// setting the print options
+	double leadin = 5;
+	double leadout = 5;
+	PrintOptions printOpts(leadin);
+
 	cv::Mat imSeg;
 
 	// Getting user input
@@ -102,7 +107,7 @@ int main() {
 		if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum[0])) { return 0; }
 		outDir.append(testTp + std::to_string(lineNum[0]) + "_" + datetime("%H.%M") + "_");
 
-		// Creating the path and segmets
+		// ====================== PRINTING ======================
 		if (resp.compare("p") == 0 || resp.compare("y") == 0) {
 			makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
 			// Modifying the inputs
@@ -112,8 +117,9 @@ int main() {
 			//system("pause");
 
 			//start printing
+			printOpts.extrude = true;
 			t_control = std::thread{ t_controller, path, segsBeforeCtrl };
-			t_print = std::thread{ t_printQueue, path[0][0], true };
+			t_print = std::thread{ t_printQueue, path[0][0], printOpts };
 			t_print.join();
 			t_control.join();
 
@@ -125,6 +131,7 @@ int main() {
 			}
 		}
 
+		// ====================== SCANNING ======================
 		if (resp.compare("s") == 0 || resp.compare("y") == 0)
 		{
 			segments.clear();
@@ -149,9 +156,10 @@ int main() {
 #endif // DEBUG_SCANNING
 
 			// start scanning
+			printOpts.extrude = false;
 			t_scan = std::thread{ t_CollectScans, raster };
 			t_control = std::thread{ t_controller, path, segsBeforeCtrl };
-			t_print = std::thread{ t_printQueue, path[0][0], false };
+			t_print = std::thread{ t_printQueue, path[0][0], printOpts };
 			t_scan.join();
 
 			// Make the actual rater path used in the print

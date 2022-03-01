@@ -60,6 +60,11 @@ int main() {
 	double range[2];
 	std::vector<std::vector<Path>> path;
 
+	// setting the print options
+	double leadin = 5;
+	double leadout = 5;
+	PrintOptions printOpts(leadin, -1, true);
+
 	// Getting user input
 	std::string resp, file;
 	int lineNum;
@@ -84,7 +89,7 @@ int main() {
 
 		// Analyzing the print
 		outDir = file + "_";
-		analyzePrint(raster, std::string(file + "_edgedata.png"));
+		//analyzePrint(raster, std::string(file + "_edgedata.png"));
 		return 0;
 	}
 	else if (resp.compare("p") != 0 && resp.compare("s") != 0 ) {
@@ -160,17 +165,19 @@ int main() {
 
 	// just printing, no scanning
 	if (resp.compare("p") == 0){
+		printOpts.extrude = true;
 		t_control = std::thread{ t_controller, path, segsBeforeCtrl };
-		t_print = std::thread{ t_printQueue, path[0][0], true };
+		t_print = std::thread{ t_printQueue, path[0][0], printOpts };
 		t_print.join();
 		t_control.join();
 		goto cleanup;
 	}
 	// Scanning, no error calculations
 	else if (resp.compare("s") == 0) {
+		printOpts.extrude = false;
 		t_scan = std::thread{ t_CollectScans, raster };
 		t_control = std::thread{ t_controller, path, segsBeforeCtrl };
-		t_print = std::thread{ t_printQueue, path[0][0], false};
+		t_print = std::thread{ t_printQueue, path[0][0], printOpts };
 		t_print.join();
 		t_scan.join();
 		t_control.join();
