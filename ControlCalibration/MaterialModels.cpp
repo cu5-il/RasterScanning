@@ -6,8 +6,7 @@
 #include <iostream>
 #include <cmath>
 
-double augerModel(double width, double feedrate) {
-	double voltage;
+double augerModel(double input, double feedrate, bool invert ) {
 	double a, b, c;
 
 	a = 1;
@@ -21,6 +20,7 @@ double augerModel(double width, double feedrate) {
 		a = 3.95;
 	}
 
-	voltage = pow(((width - c) / a), 1 / b);
-	return voltage;
+	if (invert) { return a * pow(input, b) + c; } // return width
+	else { return pow(((input - c) / a), 1 / b); } // return voltage
+
 }
