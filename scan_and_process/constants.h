@@ -14,7 +14,7 @@
 #define PI 3.14159265
 
 #define SCAN_OFFSET_X -13.0
-#define SCAN_OFFSET_Y 0.7
+#define SCAN_OFFSET_Y 0.4
 
 #define CVPLOT_HEADER_ONLY
 //#define DEBUG_SCANNING
