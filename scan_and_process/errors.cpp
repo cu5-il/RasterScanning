@@ -83,7 +83,7 @@ void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size ra
 		// maybe check if the dXform distance is greater than the boundary width
 		centerline.push_back(lnit.pos()); // add the points from the centerline
 		errCL.push_back((PIX2MM(static_cast<__int64>(rEdge.at<float>(lnit.pos())) - static_cast<__int64>(lEdge.at<float>(lnit.pos())))) / 2);
-		errWD.push_back(PIX2MM(static_cast<__int64>(lEdge.at<float>(lnit.pos())) + static_cast<__int64>(rEdge.at<float>(lnit.pos()))) - width);
+		errWD.push_back(PIX2MM(static_cast<__int64>(lEdge.at<float>(lnit.pos())) + static_cast<__int64>(width - rEdge.at<float>(lnit.pos()))));
 	}
 }
 
@@ -121,7 +121,7 @@ void getErrorsAt(std::vector<cv::Point>& waypoints, std::vector<double>targetWid
 		//if (cv::pointPolygonTest(edgeContour, *it, false) >= 0) { // UNUSED
 		if (edgeRoi.contains(*it)) {
 			errCL.push_back((PIX2MM(static_cast<__int64>(rEdge.at<float>(*it)) - static_cast<__int64>(lEdge.at<float>(*it)))) / 2);
-			errWD.push_back( PIX2MM(static_cast<__int64>(lEdge.at<float>(*it)) + static_cast<__int64>(rEdge.at<float>(*it))) - targetWidths[i]);
+			errWD.push_back(targetWidths[i] - PIX2MM(static_cast<__int64>(lEdge.at<float>(*it)) + static_cast<__int64>(rEdge.at<float>(*it))));
 		}
 		else {
 			// HACK: set invalid errors to NAN
