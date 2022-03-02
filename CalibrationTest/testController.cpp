@@ -17,7 +17,8 @@ void testController(Path prevPth, double errWd, Path& nextPth, double kp)
 	if (!isnan(errWd)) {
 		setpoint = augerModel(setWidth + errWd, nextPth.f);
 		// clamp output
-		if (fabs(setpoint) > 4) { setpoint = copysign(4.0, setpoint); } // Saturate output at +/-4
+		if (setpoint> 4) { setpoint = 4; } // Saturate output at +4/ +0.2V
+		else if (setpoint < 0.2) { setpoint = 0.2; }
 		nextPth.e = setpoint;
 	}
 }
