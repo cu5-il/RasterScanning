@@ -3,6 +3,7 @@
 #include <vector>
 #include <iterator>
 #include <fstream>
+#include <iomanip>      // std::setw
 
 #include "myTypes.h"
 #include "myGlobals.h"
@@ -48,6 +49,25 @@ void t_controllerTEST(std::vector<std::vector<Path>> path, int segsBeforeCtrl)
 		q_pathMsg.push(outMsg);
 		segNum++;
 	}
+
+	// Opening a file to save the results
+	std::ofstream outfile;
+	outfile.open(std::string(outDir + "modifiedPath.txt").c_str());
+	outfile.precision(3);
+
+	// loop through each long segment
+	for (int i = 0; i < path.size(); i += 2) {
+		// loop through all the waypoints
+		for (int j = 0; j < path[i].size(); j++) {
+			outfile << std::setw(7) << std::fixed << path[i][j].x << "\t";
+			outfile << std::setw(7) << std::fixed << path[i][j].y << "\t";
+			outfile << std::setw(6) << std::fixed << path[i][j].f << "\t";
+			outfile << std::setw(6) << std::fixed << path[i][j].e << "\t";
+			outfile << std::setw(6) << std::fixed << path[i][j].w << "\n";
+		}
+	}
+	outfile.close();
+
 	std::cout << "Ending controller thread" << std::endl;
 }
 
