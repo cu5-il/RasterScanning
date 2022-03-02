@@ -34,6 +34,7 @@
 #include "path.h"
 //#include "print.h"
 #include "controlCalib.h"
+#include "testController.h"
 
 std::string datetime(std::string format = "%Y.%m.%d-%H.%M.%S");
 
@@ -85,7 +86,7 @@ int main() {
 	int lineNum[2];
 	file = "plate1";
 
-	std::cout << "Select option: (p)rint, (s)can, or (m)ultiple? ";
+	std::cout << "Select option: (p)rint, (s)can, (m)ultiple print/scan, or test (c)ontrol? ";
 	std::cin >> resp;
 	if ( resp.compare("m") == 0) {
 		std::cout << "Select option: (p)rint or (s)can? ";
@@ -93,7 +94,7 @@ int main() {
 		std::cout << "Test # range: ";
 		std::cin >> lineNum[0] >> lineNum[1];
 	}
-	else if (resp.compare("p") == 0 || resp.compare("s") == 0) {
+	else if (resp.compare("p") == 0 || resp.compare("s") == 0 || resp.compare("c") == 0) {
 		std::cout << "Test #: ";
 		std::cin >> lineNum[0];
 		lineNum[1] = lineNum[0];
@@ -108,7 +109,7 @@ int main() {
 		outDir.append(testTp + std::to_string(lineNum[0]) + "_" + datetime("%H.%M") + "_");
 
 		// ====================== PRINTING ======================
-		if (resp.compare("p") == 0 || resp.compare("y") == 0) {
+		if (resp.compare("p") == 0 || resp.compare("y") == 0 || resp.compare("c") == 0) {
 			makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
 			// Modifying the inputs
 			makeFGS(path, testTp[0], testTp[1], range);
@@ -119,7 +120,26 @@ int main() {
 			//start printing
 			printOpts.extrude = true;
 			printOpts.disposal = true;
-			t_control = std::thread{ t_controller, path, segsBeforeCtrl };
+			
+			// ====================== CONTROL ======================
+			if (resp.compare("c") == 0) {
+				std::vector<double> errWd;
+				errsMsg errMsg;
+				
+				// load the errors
+				std::cout << "Enter file name containing errors: ";
+				std::cin >> file;
+				std::string("./Input/" + file + ".txt");
+				readErrors(std::string("./Input/" + file + ".txt"), errWd);
+				errMsg.addErrors(errWd, errWd, -3);
+				q_errsMsg.push(errMsg);
+				segsBeforeCtrl = 0;
+				t_control = std::thread{ t_controllerTEST, path, segsBeforeCtrl };
+				Sleep(50);
+			}
+			else {
+				t_control = std::thread{ t_controller, path, segsBeforeCtrl };
+			}
 			t_print = std::thread{ t_printQueue, path[0][0], printOpts };
 			t_print.join();
 			t_control.join();

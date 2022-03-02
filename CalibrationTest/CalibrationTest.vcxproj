@@ -167,6 +167,7 @@
     <ClInclude Include="..\scan_and_process\scanning.h" />
     <ClInclude Include="..\scan_and_process\threadsafeQueue.h" />
     <ClInclude Include="..\scan_and_process\thread_functions.h" />
+    <ClInclude Include="testController.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ControlCalibration\controlCalib.cpp" />
@@ -183,6 +184,7 @@
     <ClCompile Include="..\scan_and_process\scanning.cpp" />
     <ClCompile Include="..\scan_and_process\thread_functions.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="testController.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
