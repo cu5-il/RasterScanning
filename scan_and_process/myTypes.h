@@ -1,7 +1,10 @@
 #pragma once
-#include<vector>
+#include <iostream>
+#include <vector>
 #include <string>
-#include<opencv2/core.hpp>
+#include <cmath>
+#include <algorithm>
+#include <opencv2/core.hpp>
 
 #ifndef MY_TYPES_H
 #define MY_TYPES_H
@@ -178,5 +181,73 @@ inline PrintOptions::PrintOptions()
 
 inline PrintOptions::PrintOptions(double _leadin, double _leadout, bool _extrude, bool _disposal)
 	: leadin(_leadin), leadout(_leadout), extrude(_extrude), disposal(_disposal) {}
+
+
+///////////////////////////////////////  MaterialModel  ///////////////////////////////////////
+class MaterialModel
+{
+public:
+	MaterialModel();
+	MaterialModel(std::vector<double> fixedParam, std::vector<double> a, std::vector<double> b, std::vector<double> c);
+
+	double ctrl(double width, double fixedParam);
+	double width(double ctrl, double fixedParam);
+
+private:
+
+	std::vector <double> _a, _b, _c, _fixedParam;
+
+	double _interpolate(std::vector<double>& x, std::vector<double>& y, double xQ);
+
+};
+
+inline MaterialModel::MaterialModel()
+{
+}
+
+inline MaterialModel::MaterialModel(std::vector<double> fixedParam, std::vector<double> a, std::vector<double> b, std::vector<double> c)
+	:_a(a), _b(b), _c(c), _fixedParam(fixedParam) {}
+
+inline double MaterialModel::ctrl(double width, double fixedParam)
+{
+	double a, b, c;
+	a = _interpolate(_fixedParam, _a, fixedParam);
+	b = _interpolate(_fixedParam, _b, fixedParam);
+	c = _interpolate(_fixedParam, _c, fixedParam);
+	return pow(((width - c) / a), 1 / b);
+}
+
+inline double MaterialModel::width(double ctrl, double fixedParam)
+{
+	double a, b, c;
+	a = _interpolate(_fixedParam, _a, fixedParam);
+	b = _interpolate(_fixedParam, _b, fixedParam);
+	c = _interpolate(_fixedParam, _c, fixedParam);
+	return a * pow(ctrl, b) + c;
+}
+
+inline double MaterialModel::_interpolate(std::vector<double>& xV, std::vector<double>& yV, double xQ)
+{
+	// make sure vectors are the same size
+	if (xV.size() != yV.size()) {
+		std::cout << "ERROR: interpolate x.size() != y.size()\n";
+		return NAN;
+	}
+
+	// find the first value above xQ
+	auto it = std::lower_bound(xV.begin(), xV.end(), xQ);
+
+	// get the index of the iterator
+	auto j = it - xV.begin();
+	if (it == xV.end())
+		--j;  // extrapolating above
+	else if (*it == xQ)
+		return yV[j];
+
+	auto i = j ? j - 1 : 1; //nearest-below index, except when extrapolating downward
+
+	return std::lerp(yV[i], yV[j], (xQ - xV[i]) / (xV[j] - xV[i]));
+
+}
 
 #endif // MY_TYPES_H
