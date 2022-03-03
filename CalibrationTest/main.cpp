@@ -117,6 +117,14 @@ int main() {
 			// Sanity check
 			//system("pause");
 
+			//// manually introduce errors
+			//for (int i = 0; i < path.size(); i += 2) {
+			//	// loop through all the waypoints
+			//	for (int j = 0; j < path[i].size(); j++) {
+			//		path[i][j].e = 3;
+			//	}
+			//}
+
 			//start printing
 			printOpts.extrude = true;
 			printOpts.disposal = false;
