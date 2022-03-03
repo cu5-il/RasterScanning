@@ -21,19 +21,15 @@ struct sortDist {
 	cv::Point pt0;
 };
 
-void getMatlEdges(const cv::Rect& segmentROI, const cv::Mat& gblEdges, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, bool interp) {
+void getMatlEdges(const cv::Rect& segmentROI, const cv::Mat& gblEdges, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts) {
 	std::vector<cv::Point> unfiltLeft, unfiltRight;
-	cv::Mat interpPts;
+	cv::Mat edgePts = cv::Mat(gblEdges.size(), CV_8UC1, cv::Scalar(0));
+	cv::Mat mask = cv::Mat(gblEdges.size(), CV_8UC1, cv::Scalar(0));
+
 	// find the left and right edge points in the regions
-	//cv::Rect lRegion = segmentROI - cv::Size(segmentROI.width / 2, 0);
-	//cv::Rect rRegion = lRegion + cv::Point(segmentROI.width / 2, 0);
 	cv::Rect lRegion = segmentROI - cv::Size(0, segmentROI.height / 2);
 	cv::Rect rRegion = lRegion + cv::Point(0, segmentROI.height / 2);
 
-	cv::Mat temp = cv::Mat::zeros(gblEdges.size(), CV_8UC3);
-	cv::rectangle(temp, segmentROI, cv::Scalar(255, 0, 0), 8);
-	cv::rectangle(temp, lRegion, cv::Scalar(0,255, 0), 4);
-	cv::rectangle(temp, rRegion, cv::Scalar(0, 0, 255), 4);
 	// find the edges in the search regions
 	cv::findNonZero(gblEdges(lRegion), unfiltLeft);
 	cv::findNonZero(gblEdges(rRegion), unfiltRight);
@@ -43,22 +39,34 @@ void getMatlEdges(const cv::Rect& segmentROI, const cv::Mat& gblEdges, std::vect
 	// Sort the edges
 	std::sort(unfiltLeft.begin(), unfiltLeft.end(), sortX());
 	std::sort(unfiltRight.begin(), unfiltRight.end(), sortX());
-	//std::sort(unfiltLeft.begin(), unfiltLeft.end(), sortDist(cv::Point(0,0))); // TODO: change (0,0) to segment.centerline()[0]?
+
 	// Smoothing the edges
-	if(interp){ interpPts = cv::Mat(gblEdges.size(), CV_8UC1, cv::Scalar(0)); }
+	
 	// Left edge
-	gaussianSmoothX(unfiltLeft, lEdgePts, 7, 3);
-	if (interp) {
-		cv::polylines(interpPts, lEdgePts, false, cv::Scalar(255), 1);
-		cv::findNonZero(interpPts, lEdgePts);
-	}
+	// smooth out the raw points
+	gaussianSmoothX(unfiltLeft, lEdgePts, 7, 2); // 7, 3
+	// draw smoothed points as a line and then dialate the line to form a mask
+	cv::polylines(mask, lEdgePts, false, cv::Scalar(255), 1);
+	cv::morphologyEx(mask, mask, cv::MORPH_DILATE, cv::Mat::ones(5, 5, CV_8UC1), cv::Point(-1, -1), 1);
+	// copy raw points within the mask to remove outliers
+	gblEdges.copyTo(edgePts, mask);
+	cv::findNonZero(edgePts, unfiltLeft);
+	// smooth the points
+	std::sort(unfiltLeft.begin(), unfiltLeft.end(), sortX());
+	gaussianSmoothX(unfiltLeft, lEdgePts, 3, 1);
+
+	// reset all images
+	edgePts = cv::Scalar(0);
+	mask = cv::Scalar(0);
+	
 	// Right edge
-	gaussianSmoothX(unfiltRight, rEdgePts, 7, 3);
-	if (interp) {
-		interpPts = cv::Scalar(0); // remove the left edge points
-		cv::polylines(interpPts, rEdgePts, false, cv::Scalar(255), 1);
-		cv::findNonZero(interpPts, rEdgePts);
-	}
+	gaussianSmoothX(unfiltRight, rEdgePts, 7, 2);
+	cv::polylines(mask, rEdgePts, false, cv::Scalar(255), 1);
+	cv::morphologyEx(mask, mask, cv::MORPH_DILATE, cv::Mat::ones(5,5,CV_8UC1), cv::Point(-1, -1), 1);
+	gblEdges.copyTo(edgePts, mask);
+	cv::findNonZero(edgePts, unfiltRight);
+	std::sort(unfiltRight.begin(), unfiltRight.end(), sortX());
+	gaussianSmoothX(unfiltRight, rEdgePts, 3, 1);
 }
 
 void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size rasterSize, const std::vector<cv::Point>& lEdgePts, const std::vector<cv::Point>& rEdgePts, std::vector<double>& errCL, std::vector<double>& errWD) {

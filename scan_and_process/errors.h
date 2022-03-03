@@ -11,9 +11,8 @@
  * @param[in] gblEdges Image of edge points found by the scanner
  * @param[out] lEdgePts Filtered points that make up the edge in the left half of the ROI
  * @param[out] rEdgePts Filtered points that make up the edge in the right half of the ROI
- * @param[in] interp Flag indicating whether to interpolate the output edge points
 */
-void getMatlEdges(const cv::Rect& segmentROI, const cv::Mat& gblEdges, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts, bool interp = false);
+void getMatlEdges(const cv::Rect& segmentROI, const cv::Mat& gblEdges, std::vector<cv::Point>& lEdgePts, std::vector<cv::Point>& rEdgePts);
 
 /**
  * @brief Calculates the material centerline and width errors.
