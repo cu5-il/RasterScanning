@@ -13,7 +13,7 @@
 
 void testController(Path prevPth, double errWd, Path& nextPth, double kp)
 {
-	double setWidth = augerModel(prevPth.e, prevPth.f);
+	double setWidth = augerModel(prevPth.e, prevPth.f,true);
 	double setpoint;
 	if (!isnan(errWd)) {
 		setpoint = augerModel(setWidth + errWd, nextPth.f);
