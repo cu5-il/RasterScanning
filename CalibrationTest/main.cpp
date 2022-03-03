@@ -119,7 +119,7 @@ int main() {
 
 			//start printing
 			printOpts.extrude = true;
-			printOpts.disposal = true;
+			printOpts.disposal = false;
 			
 			// ====================== CONTROL ======================
 			if (resp.compare("c") == 0) {
