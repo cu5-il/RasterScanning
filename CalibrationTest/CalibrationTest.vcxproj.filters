@@ -72,6 +72,9 @@
     <ClInclude Include="testController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\scan_and_process\controller.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\scan_and_process\A3200_functions.cpp">

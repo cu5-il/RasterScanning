@@ -153,6 +153,7 @@
   <ItemGroup>
     <ClInclude Include="A3200_functions.h" />
     <ClInclude Include="constants.h" />
+    <ClInclude Include="controller.h" />
     <ClInclude Include="csvMat.h" />
     <ClInclude Include="cvPlot_functions.h" />
     <ClInclude Include="draw.h" />

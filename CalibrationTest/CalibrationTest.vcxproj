@@ -153,6 +153,7 @@
     <ClInclude Include="..\ControlCalibration\MaterialModels.h" />
     <ClInclude Include="..\scan_and_process\A3200_functions.h" />
     <ClInclude Include="..\scan_and_process\constants.h" />
+    <ClInclude Include="..\scan_and_process\controller.h" />
     <ClInclude Include="..\scan_and_process\csvMat.h" />
     <ClInclude Include="..\scan_and_process\cvPlot_functions.h" />
     <ClInclude Include="..\scan_and_process\draw.h" />
