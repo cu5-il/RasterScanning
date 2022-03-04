@@ -190,7 +190,7 @@ public:
 	MaterialModel();
 	MaterialModel(std::vector<double> fixedParam, std::vector<double> a, std::vector<double> b, std::vector<double> c);
 
-	double ctrl(double width, double fixedParam);
+	double output(double width, double fixedParam);
 	double width(double ctrl, double fixedParam);
 	const bool& empty() const { return _a.empty(); }
 
@@ -203,13 +203,12 @@ private:
 };
 
 inline MaterialModel::MaterialModel()
-{
-}
+{}
 
 inline MaterialModel::MaterialModel(std::vector<double> fixedParam, std::vector<double> a, std::vector<double> b, std::vector<double> c)
 	:_a(a), _b(b), _c(c), _fixedParam(fixedParam) {}
 
-inline double MaterialModel::ctrl(double width, double fixedParam)
+inline double MaterialModel::output(double width, double fixedParam)
 {
 	double a, b, c;
 	a = _interpolate(_fixedParam, _a, fixedParam);
