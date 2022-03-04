@@ -192,6 +192,7 @@ public:
 
 	double ctrl(double width, double fixedParam);
 	double width(double ctrl, double fixedParam);
+	const bool& empty() const { return _a.empty(); }
 
 private:
 
