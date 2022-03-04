@@ -110,7 +110,7 @@ int main() {
 
 	t_scan = std::thread{ t_CollectScans, raster };
 	t_process = std::thread{ t_GetMatlErrors, raster, path };
-	t_control = std::thread{ t_controller, path, segsBeforeCtrl };
+	t_control = std::thread{ t_noController, path };
 	t_print = std::thread{ t_printQueue, path[0][0], printOpts };
 
 	t_print.join();

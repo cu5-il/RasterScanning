@@ -18,6 +18,7 @@
 #include "csvMat.h"
 #include "raster.h"
 #include "print.h"
+#include "controller.h"
 
 void t_CollectScans(Raster raster) {
 	cv::Mat scan(1, NUM_DATA_SAMPLES, CV_64F);
@@ -115,26 +116,42 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 	std::cout << "All segments have been processed. Ending error processing thread." << std::endl;
 }
 
-void t_controller(std::vector<std::vector<Path>> path, int segsBeforeCtrl) {
+void t_noController(std::vector<std::vector<Path>> path) {
 	errsMsg inMsg;
 	pathMsg outMsg;
-	int segNum = 0;
+	int nextSeg = 0;
 
-	while (segNum < path.size()) {
+	while (nextSeg < path.size()) {
+		// Send path coords to queue
+		outMsg.addPath(path[nextSeg], nextSeg);
+		q_pathMsg.push(outMsg);
+		nextSeg++;
+	}
+	std::cout << "Ending controller thread" << std::endl;
+}
+
+void t_controller(std::vector<std::vector<Path>> path, int segStartCtrl, Controller& controller) {
+	errsMsg inMsg;
+	pathMsg outMsg;
+	int nextSeg = 0;
+
+	while (nextSeg < path.size()) {
 		// do not modify the initial segment inputs
-		if (segNum >= segsBeforeCtrl) {
+		if (nextSeg >= segStartCtrl) {
 			q_errsMsg.wait_and_pop(inMsg);
 			// Use the errors from the previous segment to calculate the control next segment 
-			segNum = inMsg.segmentNum() + 3;
-			// If no errors were calculated, do not modify the path
+			nextSeg = inMsg.segmentNum() + 3;
+			// If errors were calculated, modify the path
 			if (!inMsg.errCL().empty() && !inMsg.errWD().empty()) {
-				// MODIFY PATH INPUT HERE
+				for (int i = 0; i < inMsg.errWD().size(); i++) {
+					controller.nextPath(path[nextSeg][i], path[inMsg.segmentNum()][i], inMsg.errWD()[i], inMsg.errCL()[i]);
+				}
 			}
 		}
 		// Send path coords to queue
-		outMsg.addPath(path[segNum], segNum);
+		outMsg.addPath(path[nextSeg], nextSeg);
 		q_pathMsg.push(outMsg);
-		segNum++;
+		nextSeg++;
 	}
 	std::cout << "Ending controller thread" << std::endl;
 }
@@ -202,8 +219,8 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 			}
 		}
 		std::cout << "Segment " << segNum << " loaded" << std::endl;
-		//if (!A3200CommandExecute(handle, TASK_PRINT, std::string("MSGDISPLAY 0, \"Segment " + std::to_string(segNum) + " printed\" \n").c_str(), NULL)) { A3200Error(); }
-		//if (!A3200CommandExecute(handle, TASK_PRINT, std::string("MSGLAMP 1, YELLOW,\"Segment " + std::to_string(segNum) + " printed\"\n").c_str(), NULL)) { A3200Error(); }
+		//if (!A3200CommandExecute(handle, TASK_PRINT, std::string("MSGDISPLAY 0, \"Segment " + std::to_string(nextSeg) + " printed\" \n").c_str(), NULL)) { A3200Error(); }
+		//if (!A3200CommandExecute(handle, TASK_PRINT, std::string("MSGLAMP 1, YELLOW,\"Segment " + std::to_string(nextSeg) + " printed\"\n").c_str(), NULL)) { A3200Error(); }
 
 		if (!programStarted){
 			if (!A3200ProgramStart(handle, TASK_PRINT)) { A3200Error(); }

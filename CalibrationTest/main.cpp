@@ -152,7 +152,7 @@ int main() {
 				Sleep(50);
 			}
 			else {
-				t_control = std::thread{ t_controller, path, segsBeforeCtrl };
+				t_control = std::thread{ t_noController, path };
 			}
 			t_print = std::thread{ t_printQueue, path[0][0], printOpts };
 			t_print.join();
@@ -194,7 +194,7 @@ int main() {
 			printOpts.extrude = false;
 			printOpts.disposal = false;
 			t_scan = std::thread{ t_CollectScans, raster };
-			t_control = std::thread{ t_controller, path, segsBeforeCtrl };
+			t_control = std::thread{ t_noController, path };
 			t_print = std::thread{ t_printQueue, path[0][0], printOpts };
 			t_scan.join();
 
