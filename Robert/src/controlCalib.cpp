@@ -291,14 +291,14 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
 
 void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double range[2], MaterialModel model) {
 	int numPts;
-	double inc;
+	double delta;
 	double width = range[0];
 
 	if (/*param != 'f' &&*/ param != 'a') {
 		std::cout << "ERROR: unknown parameter type" << std::endl;
 		return;
 	}
-	if (type != 'b' && type != 'g') {
+	if (type != 'b' && type != 'g' && type != 'c') {
 		std::cout << "ERROR: unknown scaffold type" << std::endl;
 		return;
 	}
@@ -309,7 +309,7 @@ void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double
 		break;
 	case 'b': // bowtie scaffold
 		numPts = path[0].size() - 1;
-		inc = (range[1] - range[0]) / (numPts / 2.0);
+		delta = (range[1] - range[0]) / (numPts / 2.0);
 
 		for (auto it_seg = path.begin(); it_seg != path.end(); ++it_seg) {
 			for (auto it_rod = (*it_seg).begin(); it_rod != (*it_seg).end(); ++it_rod) {
@@ -320,10 +320,10 @@ void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double
 				if (std::distance(path.begin(), it_seg) % 2 == 0) {
 					// decrease for first half of rod then increase for second half
 					if (std::distance((*it_seg).begin(), it_rod) < (numPts / 2.0)) {
-						width += inc;
+						width += delta;
 					}
 					else {
-						width -= inc;
+						width -= delta;
 					}
 				}
 				else {
@@ -332,9 +332,36 @@ void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double
 			}
 		}
 		break;
-	case 'g': // continuous gradient scaffold
+	case 'g': // gradient scaffold
+		numPts = path[0].size() - 1;
+		delta = (range[1] - range[0]) / numPts;
+
+		for (auto it_seg = path.begin(); it_seg != path.end(); ++it_seg) {
+			for (auto it_rod = (*it_seg).begin(); it_rod != (*it_seg).end(); ++it_rod) {
+
+				// Modify the width
+				(*it_rod).w = width;
+				switch (std::distance(path.begin(), it_seg) % 4)
+				{
+				case 0: // positive x direction rods
+					width += delta;
+					break;
+				case 1: // y direction rods at max x
+					width = range[1];
+					break;
+				case 2: // negative x direction rods
+					width -= delta;
+					break;
+				case 3: // y direction rods at min x
+					width = range[0];
+					break;
+				}
+			}
+		}
+		break;
+	case 'c': // continuous gradient scaffold
 		numPts = ceil((path[0].size()-1) * ceil(path.size() / 2.0));
-		inc = (range[1] - range[0]) / numPts;
+		delta = (range[1] - range[0]) / numPts;
 
 		for (auto it_seg = path.begin(); it_seg != path.end(); ++it_seg) {
 			for (auto it_rod = (*it_seg).begin(); it_rod != (*it_seg).end(); ++it_rod) {
@@ -343,7 +370,7 @@ void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double
 				(*it_rod).w = width;
 				// if long rods
 				if (std::distance(path.begin(), it_seg) % 2 == 0) {
-					width += inc;
+					width += delta;
 				}
 			}
 		}
