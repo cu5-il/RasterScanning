@@ -107,7 +107,7 @@ int main() {
 	if (resp.compare("p") == 0) {
 		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
 		// Modifying the inputs
-		makeTestPath(path, testTp[0], range);
+		makeCalibPath(path, testTp[0], range);
 	}
 	else if (resp.compare("s") == 0) {
 		initVel = 2;

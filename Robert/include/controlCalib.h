@@ -7,6 +7,7 @@
 #include "myTypes.h"
 #include "myGlobals.h"
 #include "raster.h"
+#include "MaterialModel.h"
 
 #ifndef CONTROLCALIB_H
 #define CONTROLCALIB_H
@@ -17,7 +18,7 @@
  * @param test Parameter to modify. f (feedrate), a (auger voltage)
  * @param range starting and ending values of the parameter 
 */
-void makeTestPath(std::vector<std::vector<Path>>& path, char test, double range[2]);
+void makeCalibPath(std::vector<std::vector<Path>>& path, char test, double range[2]);
 
 //void analyzePrint(Raster raster, std::string filename);
 
@@ -34,6 +35,6 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
  * @param type Type of functionally graded scaffold. 'b' = Bowtie, 'g' = continuous gradient. (See Armstrong Dissertation pg 90)
  * @param range
 */
-void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double range[2]);
+void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double range[2], MaterialModel model);
 
 #endif // !CONTROLCALIB_H

@@ -118,7 +118,7 @@ int main() {
 		if (resp.compare("p") == 0 || resp.compare("y") == 0 || resp.compare("c") == 0) {
 			makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
 			// Modifying the inputs
-			makeFGS(path, testTp[0], testTp[1], range);
+			makeFGS(path, testTp[0], testTp[1], range, augerModel);
 			segsBeforeCtrl = path.size();
 			// Sanity check
 			//system("pause");
@@ -202,7 +202,7 @@ int main() {
 			segments.clear();
 			path.clear();
 			makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
-			makeFGS(path, testTp[0], testTp[1], range);
+			makeFGS(path, testTp[0], testTp[1], range, augerModel);
 			t_GetMatlErrors(raster, path);
 			while (!q_errsMsg.empty()) {
 				q_errsMsg.try_pop();

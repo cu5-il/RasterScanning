@@ -125,8 +125,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(CV_PLOT_DIR);$(SolutionDir)scan_and_process\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Robert\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,8 +141,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(CV_PLOT_DIR);$(A3200_DIR)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Robert\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -152,40 +152,40 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\scan_and_process\A3200_functions.cpp" />
-    <ClCompile Include="..\scan_and_process\csvMat.cpp" />
-    <ClCompile Include="..\scan_and_process\cvPlot_functions.cpp" />
-    <ClCompile Include="..\scan_and_process\draw.cpp" />
-    <ClCompile Include="..\scan_and_process\errors.cpp" />
-    <ClCompile Include="..\scan_and_process\gaussianSmooth.cpp" />
-    <ClCompile Include="..\scan_and_process\myGlobals.cpp" />
-    <ClCompile Include="..\scan_and_process\path.cpp" />
-    <ClCompile Include="..\scan_and_process\print.cpp" />
-    <ClCompile Include="..\scan_and_process\scanning.cpp" />
-    <ClCompile Include="..\scan_and_process\thread_functions.cpp" />
-    <ClCompile Include="controlCalib.cpp" />
+    <ClCompile Include="..\Robert\src\A3200_functions.cpp" />
+    <ClCompile Include="..\Robert\src\controlCalib.cpp" />
+    <ClCompile Include="..\Robert\src\csvMat.cpp" />
+    <ClCompile Include="..\Robert\src\cvPlot_functions.cpp" />
+    <ClCompile Include="..\Robert\src\draw.cpp" />
+    <ClCompile Include="..\Robert\src\errors.cpp" />
+    <ClCompile Include="..\Robert\src\gaussianSmooth.cpp" />
+    <ClCompile Include="..\Robert\src\myGlobals.cpp" />
+    <ClCompile Include="..\Robert\src\path.cpp" />
+    <ClCompile Include="..\Robert\src\print.cpp" />
+    <ClCompile Include="..\Robert\src\scanning.cpp" />
+    <ClCompile Include="..\Robert\src\thread_functions.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MaterialModels.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\scan_and_process\A3200_functions.h" />
-    <ClInclude Include="..\scan_and_process\constants.h" />
-    <ClInclude Include="..\scan_and_process\csvMat.h" />
-    <ClInclude Include="..\scan_and_process\cvPlot_functions.h" />
-    <ClInclude Include="..\scan_and_process\draw.h" />
-    <ClInclude Include="..\scan_and_process\errors.h" />
-    <ClInclude Include="..\scan_and_process\extrusion.h" />
-    <ClInclude Include="..\scan_and_process\gaussianSmooth.h" />
-    <ClInclude Include="..\scan_and_process\myGlobals.h" />
-    <ClInclude Include="..\scan_and_process\myTypes.h" />
-    <ClInclude Include="..\scan_and_process\path.h" />
-    <ClInclude Include="..\scan_and_process\print.h" />
-    <ClInclude Include="..\scan_and_process\raster.h" />
-    <ClInclude Include="..\scan_and_process\scanning.h" />
-    <ClInclude Include="..\scan_and_process\threadsafeQueue.h" />
-    <ClInclude Include="..\scan_and_process\thread_functions.h" />
-    <ClInclude Include="controlCalib.h" />
-    <ClInclude Include="MaterialModels.h" />
+    <ClInclude Include="..\Robert\include\A3200_functions.h" />
+    <ClInclude Include="..\Robert\include\constants.h" />
+    <ClInclude Include="..\Robert\include\controlCalib.h" />
+    <ClInclude Include="..\Robert\include\controller.h" />
+    <ClInclude Include="..\Robert\include\csvMat.h" />
+    <ClInclude Include="..\Robert\include\cvPlot_functions.h" />
+    <ClInclude Include="..\Robert\include\draw.h" />
+    <ClInclude Include="..\Robert\include\errors.h" />
+    <ClInclude Include="..\Robert\include\extrusion.h" />
+    <ClInclude Include="..\Robert\include\gaussianSmooth.h" />
+    <ClInclude Include="..\Robert\include\MaterialModel.h" />
+    <ClInclude Include="..\Robert\include\myGlobals.h" />
+    <ClInclude Include="..\Robert\include\myTypes.h" />
+    <ClInclude Include="..\Robert\include\path.h" />
+    <ClInclude Include="..\Robert\include\print.h" />
+    <ClInclude Include="..\Robert\include\raster.h" />
+    <ClInclude Include="..\Robert\include\scanning.h" />
+    <ClInclude Include="..\Robert\include\threadsafeQueue.h" />
+    <ClInclude Include="..\Robert\include\thread_functions.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

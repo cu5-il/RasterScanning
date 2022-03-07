@@ -13,10 +13,10 @@
 #include "thread_functions.h"
 #include "draw.h"
 #include <opencv2/imgcodecs.hpp>
-#include "MaterialModels.h"
+#include "MaterialModel.h"
 
 
-void makeTestPath( std::vector<std::vector<Path>>& path, char test, double range[2]) {
+void makeCalibPath( std::vector<std::vector<Path>>& path, char test, double range[2]) {
 	double inc = (range[1]-range[0]) / ceil(path.size() / 2.0);
 	double setVal = range[0];
 	int i = 1;
@@ -289,9 +289,9 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
 	return true;
 }
 
-void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double range[2]) {
+void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double range[2], MaterialModel model) {
 	int numPts;
-	double inc, fixedParam;
+	double inc;
 	double width = range[0];
 
 	if (/*param != 'f' &&*/ param != 'a') {
@@ -302,7 +302,6 @@ void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double
 		std::cout << "ERROR: unknown scaffold type" << std::endl;
 		return;
 	}
-	//fixedParam = path[0][0].f;
 
 	switch (type)
 	{
@@ -359,10 +358,10 @@ void makeFGS(std::vector<std::vector<Path>>& path, char param, char type, double
 			switch (param)
 			{
 			case 'f':
-				(*it_rod).f = (*it_rod).w;
+				(*it_rod).f = model.output((*it_rod).w, (*it_rod).e);
 				break;
 			case 'a':
-				(*it_rod).e = augerModel((*it_rod).w, (*it_rod).f);
+				(*it_rod).e = model.output((*it_rod).w, (*it_rod).f);
 				break;
 			}
 
