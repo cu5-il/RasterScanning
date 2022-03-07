@@ -55,66 +55,6 @@ void makeCalibPath( std::vector<std::vector<Path>>& path, char test, double rang
 	}
 }
 
-/*void analyzePrint(Raster raster, std::string filename) {
-	double targetWidth = 0;
-	double sum, mean, stdev;
-	int count;
-
-	edgeMsg msg;
-	// loading the data
-	cv::Mat edges = cv::Mat::zeros(raster.size(), CV_8UC1);
-	if (filename.substr(filename.find_last_of(".") + 1) == "csv") {
-		readCSV(filename, edges);
-	}
-	else if (filename.substr(filename.find_last_of(".") + 1) == "png") {
-		edges = cv::imread(filename);
-		cv::cvtColor(edges, edges, cv::COLOR_BGR2GRAY);
-	}
-	edges.convertTo(edges, CV_8UC1);
-
-	cv::Mat imSeg;
-	//drawSegments(raster.draw(), imSeg, segments, raster.origin(), 2);
-	//drawEdges(imSeg, imSeg, edges, cv::Scalar(0, 255, 0), MM2PIX(0.2));
-	
-	// calculating the errors
-	for (int i = 0; i < segments.size(); i++) {
-		msg.addEdges(edges, i, (i == segments.size() - 1));
-		q_edgeMsg.push(msg);
-	}
-	t_GetMatlErrors(raster, targetWidth);
-	//drawErrors(imSeg, imSeg, segments);
-
-	// Opening a file to write the results
-	std::ofstream outfile;
-	outfile.open(std::string(outDir+"widths.txt").c_str());
-	outfile.precision(5);
-
-	// calculating the average width for each segment
-	for (int i = 0; i < segments.size(); i+=2) {
-		sum = 0;
-		count = 0;
-		// calculate the mean
-		for (auto it = segments[i].errWD().begin(); it != segments[i].errWD().end(); ++it) {
-			if (!isnan(*it)) {
-				sum += *it;
-				count++;
-			}
-		}
-		mean = sum / count;
-		// calculate the standard deviation
-		sum = 0;
-		for (auto it = segments[i].errWD().begin(); it != segments[i].errWD().end(); ++it) {
-			if (!isnan(*it)) {
-				sum += pow((*it-mean),2);
-			}
-		}
-		stdev = sqrt((sum / count));
-		outfile << std::fixed << mean << ",\t" << stdev << std::endl;
-	}
-	outfile.close();
-	return;
-}*/
-
 void analyzePrint(Raster raster) {
 	double targetWidth = 0;
 	double sum, mean, stdev;
@@ -239,6 +179,7 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
 		return false;
 	}
 	std::cout << "Test selected: " << temp << " @ " << initPos << std::endl;
+	test = temp;
 
 	outDir.append(temp + "/");
 	if (CreateDirectoryA(outDir.c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {}
@@ -266,9 +207,8 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
 			else if (str.find("rod width") != std::string::npos) { rodWidth = value; }
 			else if (str.find("waypoint spacing") != std::string::npos) { wayptSpc = value; }
 			// Extracting the test parameters
-			else if (str.find("test type") != std::string::npos) { 
-				//test = str;
-				test = str.substr( 0, str.find_first_of('\t')); }
+			//else if (str.find("test type") != std::string::npos) { 
+			//	test = str.substr( 0, str.find_first_of('\t')); }
 			else if (str.find("feed rate") != std::string::npos) { initVel = value; }
 			else if (str.find("auger voltage") != std::string::npos) { initExt = value; }
 			else if (str.find("range start") != std::string::npos) { range[0] = value; }

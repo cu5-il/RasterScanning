@@ -20,8 +20,6 @@
 */
 void makeCalibPath(std::vector<std::vector<Path>>& path, char test, double range[2]);
 
-//void analyzePrint(Raster raster, std::string filename);
-
 void analyzePrint(Raster raster);
 
 bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::Point3d& initPos, double& initVel, double& initExt, char& test, double range[2]);
