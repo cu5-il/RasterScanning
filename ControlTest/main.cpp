@@ -46,27 +46,28 @@ int main() {
 
 	//=======================================
 	// Connecting to and setting up the A3200
-	std::cout << "Connecting to A3200. Initializing if necessary." << std::endl;
-	if (!A3200Connect(&handle)) { A3200Error(); }
-	// Creating a data collection handle and setting up the data collection
-	if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { A3200Error(); }
-	if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
-	// Initializing the extruder
-	extruder = Extruder(handle, TASK_PRINT);
+	//std::cout << "Connecting to A3200. Initializing if necessary." << std::endl;
+	//if (!A3200Connect(&handle)) { A3200Error(); }
+	//// Creating a data collection handle and setting up the data collection
+	//if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { A3200Error(); }
+	//if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
+	//// Initializing the extruder
+	//extruder = Extruder(handle, TASK_PRINT);
 	//=======================================
 
 	std::thread t_scan, t_process, t_control, t_print;
 
 	// Initialize parameters
-	double initVel, scanVel;
+	double initVel;
 	double initExt;
 	cv::Point3d initPos;
 	double wayptSpc = 1;
 	Raster raster;
 	std::string testTp;
 	double range[2];
-	std::vector<std::vector<Path>> path;
-	int segsBeforeCtrl = 0;
+	std::vector<std::vector<Path>> path, ctrlPath;
+	std::deque<double> theta;
+	int segStartCtrl = 3;
 
 	// defining the material models
 	MaterialModel augerModel = MaterialModel(std::vector<double>{2, 3},
@@ -74,11 +75,90 @@ int main() {
 		std::vector<double>{0.1, 0.1},
 		std::vector<double>{-2.815, -2.815});
 
+	// setting up the controller
+	AugerController controller(augerModel, 0.2, 3.5);
+
 	// setting the print options
 	double leadin = 5;
-	double leadout = 5;
 	PrintOptions printOpts(leadin);
+	printOpts.extrude = true;
+	printOpts.disposal = false;
 
+	// Getting user input
+	std::string resp, file;
+	int lineNum[2];
+	file = "plate1";
+
+	std::cout << "Select option: (p)rint, or print (m)ultiple? ";
+	std::cin >> resp;
+	if (resp.compare("m") == 0) {
+		std::cout << "Test # range: ";
+		std::cin >> lineNum[0] >> lineNum[1];
+	}
+	else if (resp.compare("p") == 0 ) {
+		std::cout << "Test #: ";
+		std::cin >> lineNum[0];
+		lineNum[1] = lineNum[0];
+	}
+	else { return 0; }
+
+	while (lineNum[0] <= lineNum[1]) {
+		std::cout << "Test #: " << lineNum[0] << std::endl;
+		outDir = "Output/" + datetime("%Y.%m.%d") + "/";
+		// read in test parameters and generate raster
+		if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum[0])) { return 0; }
+		outDir.append(testTp + std::to_string(lineNum[0]) + "_" + datetime("%H.%M") + "_");
+		// read in the theta coordinates
+		file = "./Input/path/pathCoords_" + std::to_string((int)raster.length()) + "x" + std::to_string((int)raster.width()) + "x" + std::to_string((int)raster.spacing()) + "_v" + std::to_string((int)initVel) + ".txt";
+		readTheta(file,theta);
+		// make the path
+		makePath(raster, wayptSpc, theta, initPos, initVel, initExt, segments, path);
+		makeFGS(path, testTp[0], testTp[1], range, augerModel);
+		// add a lead out line
+		printOpts.leadout = -SCAN_OFFSET_X + 1;
+		switch (segments.back().dir())
+		{
+		case 0: // positive x direction
+			segments.back().setScanDonePt(segments.back().scanDonePt() - cv::Point2d(SCAN_OFFSET_X, 0));
+			break;
+		case 2: // negative x direction
+			segments.back().setScanDonePt(segments.back().scanDonePt() + cv::Point2d(SCAN_OFFSET_X, 0));
+			break;
+		}
+		
+		ctrlPath = path;
+
+		t_scan = std::thread{ t_CollectScans, raster };
+		t_process = std::thread{ t_GetMatlErrors, raster, path };
+		t_print = std::thread{ t_printQueue, path[0][0], printOpts };
+		t_control = std::thread{ t_controller, ctrlPath, segStartCtrl, std::ref(controller) };
+		
+		t_scan.join();
+		t_process.join();
+		t_control.join();
+
+		// Opening a file to save the results
+		std::ofstream outfile;
+		outfile.open(std::string(outDir + "pathData.txt").c_str());
+		outfile.precision(3);
+		// loop through each long segment
+		for (int i = 0; i < path.size(); i += 2) {
+			// loop through all the waypoints
+			for (int j = 0; j < path[i].size(); j++) {
+				outfile << std::setw(7) << std::fixed << ctrlPath[i][j].x << "\t";
+				outfile << std::setw(7) << std::fixed << ctrlPath[i][j].y << "\t";
+				outfile << std::setw(6) << std::fixed << ctrlPath[i][j].f << "\t";
+				outfile << std::setw(6) << std::fixed << ctrlPath[i][j].e << "\t";
+				outfile << std::setw(6) << std::fixed << ctrlPath[i][j].w << "\t";
+				outfile << std::setw(9) << std::fixed << segments[i].errWD()[j] << "\t";
+				outfile << std::setw(9) << std::fixed << segments[i].errCL()[j] << "\n";
+			}
+		}
+		outfile.close();
+
+		t_print.join();
+
+	}
 
 cleanup:
 	//A3200 Cleanup
