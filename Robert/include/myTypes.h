@@ -86,6 +86,9 @@ public:
 	const std::vector<double>& errCL() const { return _errCL; }
 	const std::vector<double>& errWD() const { return _errWD; }
 
+	// Set values
+	void setScanDonePt(cv::Point2d point)  { _scanDonePt = point; }
+
 private:
 	cv::Rect _ROI; //bounding box around the segment which should contain the edges
 	std::vector<cv::Point> _waypoints; //centerline of the path in the segment
