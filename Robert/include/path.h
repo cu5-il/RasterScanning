@@ -22,4 +22,6 @@ void makePath(Raster raster, double wayptSpc, double theta, cv::Point3d initPos,
 
 void readPath(std::string filename, double& rodLen, double& rodSpc, double& wayptSpc, std::deque<std::vector<double>>& path, std::deque<double>& theta);
 
+void readTheta(std::string filename, std::deque<double>& theta);
+
 #endif // !PATH_H

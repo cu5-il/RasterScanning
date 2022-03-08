@@ -263,3 +263,9 @@ void readPath(std::string filename, double& rodLen, double& rodSpc, double& wayp
 
 	return;
 }
+
+void readTheta(std::string filename, std::deque<double>& theta) {
+	double rodLen, rodSpc, wayptSpc;
+	std::deque<std::vector<double>> path;
+	readPath(filename, rodLen, rodSpc, wayptSpc, path, theta);
+}
