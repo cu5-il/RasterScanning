@@ -46,13 +46,13 @@ int main() {
 
 	//=======================================
 	// Connecting to and setting up the A3200
-	//std::cout << "Connecting to A3200. Initializing if necessary." << std::endl;
-	//if (!A3200Connect(&handle)) { A3200Error(); }
-	//// Creating a data collection handle and setting up the data collection
-	//if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { A3200Error(); }
-	//if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
-	//// Initializing the extruder
-	//extruder = Extruder(handle, TASK_PRINT);
+	std::cout << "Connecting to A3200. Initializing if necessary." << std::endl;
+	if (!A3200Connect(&handle)) { A3200Error(); }
+	// Creating a data collection handle and setting up the data collection
+	if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { A3200Error(); }
+	if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
+	// Initializing the extruder
+	extruder = Extruder(handle, TASK_PRINT);
 	//=======================================
 
 	std::thread t_scan, t_process, t_control, t_print;
@@ -67,7 +67,6 @@ int main() {
 	double range[2];
 	std::vector<std::vector<Path>> path, ctrlPath;
 	std::deque<double> theta;
-	int segStartCtrl = 3;
 
 	// defining the material models
 	MaterialModel augerModel = MaterialModel(std::vector<double>{2, 3},
@@ -131,7 +130,7 @@ int main() {
 		t_scan = std::thread{ t_CollectScans, raster };
 		t_process = std::thread{ t_GetMatlErrors, raster, path };
 		t_print = std::thread{ t_printQueue, path[0][0], printOpts };
-		t_control = std::thread{ t_controller, ctrlPath, segStartCtrl, std::ref(controller) };
+		t_control = std::thread{ t_controller, std::ref(ctrlPath), std::ref(controller) };
 		
 		t_scan.join();
 		t_process.join();
@@ -157,7 +156,7 @@ int main() {
 		outfile.close();
 
 		t_print.join();
-
+		lineNum[0]++;
 	}
 
 cleanup:

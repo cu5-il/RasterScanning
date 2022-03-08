@@ -130,17 +130,18 @@ void t_noController(std::vector<std::vector<Path>> path) {
 	std::cout << "Ending controller thread" << std::endl;
 }
 
-void t_controller(std::vector<std::vector<Path>> path, int segStartCtrl, Controller& controller) {
+void t_controller(std::vector<std::vector<Path>>& path, Controller& controller) {
 	errsMsg inMsg;
 	pathMsg outMsg;
 	int nextSeg = 0;
+	int segStartCtrl = 4;
 
 	while (nextSeg < path.size()) {
 		// do not modify the initial segment inputs
 		if (nextSeg >= segStartCtrl) {
 			q_errsMsg.wait_and_pop(inMsg);
 			// Use the errors from the previous segment to calculate the control next segment 
-			nextSeg = inMsg.segmentNum() + 3;
+			nextSeg = inMsg.segmentNum() + segStartCtrl;
 			// If errors were calculated, modify the path
 			if (!inMsg.errCL().empty() && !inMsg.errWD().empty()) {
 				for (int i = 0; i < inMsg.errWD().size(); i++) {

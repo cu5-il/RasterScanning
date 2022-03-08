@@ -13,7 +13,7 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path);
 
 void t_noController(std::vector<std::vector<Path>> path);
 
-void t_controller(std::vector<std::vector<Path>> path, int segStartCtrl, Controller& controller);
+void t_controller(std::vector<std::vector<Path>>& path, Controller& controller);
 
 void t_printQueue(Path firstWpt, PrintOptions printOpts);
 
