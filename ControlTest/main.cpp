@@ -85,79 +85,153 @@ int main() {
 
 	// Getting user input
 	std::string resp, file;
-	int lineNum[2];
+	char option;
+	int lineNum;
 	file = "plate1";
 
-	std::cout << "Select option: (p)rint, or print (m)ultiple? ";
-	std::cin >> resp;
-	if (resp.compare("m") == 0) {
-		std::cout << "Test # range: ";
-		std::cin >> lineNum[0] >> lineNum[1];
-	}
-	else if (resp.compare("p") == 0 ) {
-		std::cout << "Test #: ";
-		std::cin >> lineNum[0];
-		lineNum[1] = lineNum[0];
-	}
-	else { return 0; }
+	std::cout << "Select option: (p)rint or (s)can? ";
+	std::cin >> option;
+	std::cout << "Test #: ";
+	std::cin >> lineNum;
 
-	while (lineNum[0] <= lineNum[1]) {
-		std::cout << "Test #: " << lineNum[0] << std::endl;
-		outDir = "Output/" + datetime("%Y.%m.%d") + "/";
-		// read in test parameters and generate raster
-		if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum[0])) { return 0; }
-		outDir.append(testTp + std::to_string(lineNum[0]) + "_" + datetime("%H.%M") + "_");
-		// read in the theta coordinates
-		file = "./Input/path/pathCoords_" + std::to_string((int)raster.length()) + "x" + std::to_string((int)raster.width()) + "x" + std::to_string((int)raster.spacing()) + "_v" + std::to_string((int)initVel) + ".txt";
-		readTheta(file,theta);
-		// make the path
-		makePath(raster, wayptSpc, theta, initPos, initVel, initExt, segments, path);
-		makeFGS(path, testTp[0], testTp[1], range, augerModel);
-		// add a lead out line
-		printOpts.leadout = -SCAN_OFFSET_X + 1;
-		switch (segments.back().dir())
-		{
-		case 0: // positive x direction
-			segments.back().setScanDonePt(segments.back().scanDonePt() - cv::Point2d(SCAN_OFFSET_X, 0));
-			break;
-		case 2: // negative x direction
-			segments.back().setScanDonePt(segments.back().scanDonePt() + cv::Point2d(SCAN_OFFSET_X, 0));
-			break;
-		}
-		
+	outDir = "Output/" + datetime("%Y.%m.%d") + "/";
+	// read in test parameters and generate raster
+	if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum)) { return 0; }
+	outDir.append(testTp + std::to_string(lineNum) + "_" + datetime("%H.%M") + "_");
+	// read in the theta coordinates
+	file = "./Input/path/pathCoords_" + std::to_string((int)raster.length()) + "x" + std::to_string((int)raster.width()) + "x" + std::to_string((int)raster.spacing()) + "_v" + std::to_string((int)initVel) + ".txt";
+	readTheta(file, theta);
+
+	// make the path
+	makePath(raster, wayptSpc, theta, initPos, initVel, initExt, segments, path);
+	makeFGS(path, testTp[0], testTp[1], range, augerModel);
+
+	// add a lead out line
+	printOpts.leadout = -SCAN_OFFSET_X + 1;
+	switch (segments.back().dir())
+	{
+	case 0: // positive x direction
+		segments.back().setScanDonePt(segments.back().scanDonePt() - cv::Point2d(SCAN_OFFSET_X, 0));
+		break;
+	case 2: // negative x direction
+		segments.back().setScanDonePt(segments.back().scanDonePt() + cv::Point2d(SCAN_OFFSET_X, 0));
+		break;
+	}
+
+	switch (option)
+	{
+	default:
+		return 0;
+	case 'p': // PRINTING
 		ctrlPath = path;
 
 		t_scan = std::thread{ t_CollectScans, raster };
 		t_process = std::thread{ t_GetMatlErrors, raster, path };
 		t_print = std::thread{ t_printQueue, path[0][0], printOpts };
 		t_control = std::thread{ t_controller, std::ref(ctrlPath), std::ref(controller) };
-		
+
 		t_scan.join();
 		t_process.join();
 		t_control.join();
 
-		// Opening a file to save the results
-		std::ofstream outfile;
-		outfile.open(std::string(outDir + "pathData.txt").c_str());
-		outfile.precision(3);
-		// loop through each long segment
-		for (int i = 0; i < path.size(); i += 2) {
-			// loop through all the waypoints
-			for (int j = 0; j < path[i].size(); j++) {
-				outfile << std::setw(7) << std::fixed << ctrlPath[i][j].x << "\t";
-				outfile << std::setw(7) << std::fixed << ctrlPath[i][j].y << "\t";
-				outfile << std::setw(6) << std::fixed << ctrlPath[i][j].f << "\t";
-				outfile << std::setw(6) << std::fixed << ctrlPath[i][j].e << "\t";
-				outfile << std::setw(6) << std::fixed << ctrlPath[i][j].w << "\t";
-				outfile << std::setw(9) << std::fixed << segments[i].errWD()[j] << "\t";
-				outfile << std::setw(9) << std::fixed << segments[i].errCL()[j] << "\n";
-			}
-		}
-		outfile.close();
+		break;
+	
+	case 's': // SCANNING
+		printOpts.extrude = false;
+		initPos += cv::Point3d(0, 0, 0.75);
+		std::cout << "(m)oving or (f)ixed scan: ";
+		std::cin >> option;
+		switch (option)
+		{
+		default:
+			return 0;
+		case 'm':
+			ctrlPath = path;
+			t_scan = std::thread{ t_CollectScans, raster };
+			t_process = std::thread{ t_GetMatlErrors, raster, path };
+			t_print = std::thread{ t_printQueue, path[0][0], printOpts };
+			t_control = std::thread{ t_controller, std::ref(ctrlPath), std::ref(controller) };
 
-		t_print.join();
-		lineNum[0]++;
+			t_scan.join();
+			t_process.join();
+			t_control.join();
+			break;
+		case 'f':
+			segments.clear();
+			path.clear();
+			Raster rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
+			rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
+
+			std::cout << "Scan at (1) 0 deg or (2) 180 deg: ";
+			std::cin >> option;
+			switch (option)
+			{
+			default:
+				return 0;
+			case '1':
+				rasterScan.offset(cv::Point2d(-SCAN_OFFSET_X - raster.rodWidth(), 0));
+				makePath(rasterScan, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+				break;
+			case '2':
+				rasterScan.offset(cv::Point2d(SCAN_OFFSET_X - raster.rodWidth(), 0));
+				makePath(rasterScan, wayptSpc, 180, initPos, initVel, initExt, segments, path);
+				break;
+			}
+
+			// lead out line
+			switch (segments.back().dir())
+			{
+			case 0: // positive x direction
+				segments.back().setScanDonePt(segments.back().scanDonePt() - cv::Point2d(SCAN_OFFSET_X, 0));
+				break;
+			case 2: // negative x direction
+				segments.back().setScanDonePt(segments.back().scanDonePt() + cv::Point2d(SCAN_OFFSET_X, 0));
+				break;
+			}
+			ctrlPath = path;
+			t_scan = std::thread{ t_CollectScans, raster };
+			t_print = std::thread{ t_printQueue, path[0][0], printOpts };
+			t_control = std::thread{ t_noController, ctrlPath };
+
+			t_scan.join();
+			t_control.join();
+
+			// Remake the actual rater path used in the print
+			segments.clear();
+			path.clear();
+			makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+			makeFGS(path, testTp[0], testTp[1], range, augerModel);
+			t_GetMatlErrors(raster, path);
+			break;
+		}
+
+		break;
 	}
+
+	// Opening a file to save the results
+	std::ofstream outfile;
+	outfile.open(std::string(outDir + "pathData.txt").c_str());
+	outfile.precision(3);
+	// loop through each long segment
+	for (int i = 0; i < path.size(); i += 2) {
+		// loop through all the waypoints
+		for (int j = 0; j < path[i].size(); j++) {
+			outfile << std::setw(7) << std::fixed << ctrlPath[i][j].x << "\t";
+			outfile << std::setw(7) << std::fixed << ctrlPath[i][j].y << "\t";
+			outfile << std::setw(6) << std::fixed << ctrlPath[i][j].f << "\t";
+			outfile << std::setw(6) << std::fixed << ctrlPath[i][j].e << "\t";
+			outfile << std::setw(6) << std::fixed << ctrlPath[i][j].w << "\t";
+			if (!segments[i].errWD().empty())
+				outfile << std::setw(9) << std::fixed << segments[i].errWD()[j] << "\t";
+			if (!segments[i].errCL().empty())
+				outfile << std::setw(9) << std::fixed << segments[i].errCL()[j];
+			outfile << "\n";
+		}
+	}
+	outfile.close();
+
+	t_print.join();
+
 
 cleanup:
 	//A3200 Cleanup
