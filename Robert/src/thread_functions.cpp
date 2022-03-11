@@ -79,6 +79,7 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 	std::vector<cv::Point> lEdgePts, rEdgePts;
 	std::vector<double> errCL, errWD, targetWidths;
 	bool doneScanning = false;
+	cv::Mat filteredEdges(raster.size(), CV_8U, cv::Scalar({ 0 }));;
 
 	while (!doneScanning){
 		// wait for the message to be pushed from the scanning thread
@@ -113,6 +114,13 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 	drawMaterial(image, image, segments, path);
 	addScale(image, 1, cv::Point(5, 15));
 	cv::imwrite(outDir + "errors.png", image);
+
+	// drawing the filtered edges
+	for (auto it = segments.begin(); it != segments.end(); ++it) {
+		for (auto it2 = (*it).lEdgePts().begin(); it2 != (*it).lEdgePts().end(); ++it2) { filteredEdges.at<uchar>((*it2)) = 255; }
+		for (auto it2 = (*it).rEdgePts().begin(); it2 != (*it).rEdgePts().end(); ++it2) { filteredEdges.at<uchar>((*it2)) = 255; }
+	}
+	cv::imwrite(outDir + "edgefiltered.png", filteredEdges);
 	std::cout << "All segments have been processed. Ending error processing thread." << std::endl;
 }
 
