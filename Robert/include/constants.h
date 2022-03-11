@@ -13,8 +13,8 @@
 #define MM2PIX(mm)  std::lround( (mm) / RESOLUTION)
 #define PI 3.14159265
 
-#define SCAN_OFFSET_X -13.6
-#define SCAN_OFFSET_Y -0.1
+#define SCAN_OFFSET_X -15.21
+#define SCAN_OFFSET_Y 1.55
 
 #define CVPLOT_HEADER_ONLY
 //#define DEBUG_SCANNING
