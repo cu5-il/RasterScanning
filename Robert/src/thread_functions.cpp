@@ -113,6 +113,7 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 		// clear the errors
 		errCL.clear(); 
 		errWD.clear();
+		targetWidths.clear();
 	}
 	cv::Mat image = cv::Mat::zeros(raster.size(), CV_8UC3);
 	raster.draw(image, image);
