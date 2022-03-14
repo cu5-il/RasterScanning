@@ -29,7 +29,6 @@
 #include "path.h"
 #include "controlCalib.h"
 
-
 std::string datetime(std::string format = "%Y.%m.%d-%H.%M.%S");
 
 int main() {
@@ -157,6 +156,8 @@ int main() {
 			t_control.join();
 			break;
 		case 'f':
+			printOpts.leadin = 0;
+			printOpts.leadout = 0;
 			segments.clear();
 			path.clear();
 			Raster rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
@@ -178,16 +179,6 @@ int main() {
 				break;
 			}
 
-			// lead out line
-			switch (segments.back().dir())
-			{
-			case 0: // positive x direction
-				segments.back().setScanDonePt(segments.back().scanDonePt() - cv::Point2d(SCAN_OFFSET_X, 0));
-				break;
-			case 2: // negative x direction
-				segments.back().setScanDonePt(segments.back().scanDonePt() + cv::Point2d(SCAN_OFFSET_X, 0));
-				break;
-			}
 			ctrlPath = path;
 			t_scan = std::thread{ t_CollectScans, raster };
 			t_print = std::thread{ t_printQueue, path[0][0], printOpts };
