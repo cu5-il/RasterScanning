@@ -80,7 +80,7 @@ void postPrint(Path lastWpt, PrintOptions printOpts) {
 	std::string cmd;
 
 	// retract the auger 
-	extruder.set(-3);
+	extruder.set(-0.7);
 
 	// make the lead out line
 	if (printOpts.leadout > 0)
@@ -100,6 +100,7 @@ void postPrint(Path lastWpt, PrintOptions printOpts) {
 			lastWpt.y -= printOpts.leadout;
 			break;
 		}
+		lastWpt.z += 1;
 		cmd = "G1 X " + std::to_string(lastWpt.x) + " Y " + std::to_string(lastWpt.y) + " Z " + std::to_string(lastWpt.z) + " TH " + std::to_string(lastWpt.T) + " F " + std::to_string(lastWpt.f);
 		if (!A3200CommandExecute(handle, TASK_PRINT, cmd.c_str(), NULL)) { A3200Error(); }
 	}
