@@ -100,7 +100,14 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 		outMsg.addErrors(errCL, errWD, segNumError);
 		q_errsMsg.push(outMsg);
 
-		//TODO: store the errors someplace else?
+		// replace the NAN values with the closest error
+		for (auto it = errWD.begin(); it != errWD.end(); ++it) {
+			if (std::isnan(*it)) {
+				*it = it - errWD.begin() < errWD.end() - it ?
+					*std::find_if(errWD.begin(), errWD.end(), [](double& a) {return !std::isnan(a); }) : *std::find_if(errWD.rbegin(), errWD.rend(), [](double& a) {return !std::isnan(a); });
+			}
+		}
+		
 		segments[segNumError].addEdges(lEdgePts, rEdgePts);
 		segments[segNumError].addErrors(errCL, errWD);
 		// clear the errors
