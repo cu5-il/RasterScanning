@@ -178,6 +178,8 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 	int segNum = -1;
 	double queueLineCount, queueSize;
 	bool programStarted = false;
+	double asyncThetaPos = 90*segments.front().dir();
+	if (printOpts.asyncTheta > 0) { firstWpt.T = asyncThetaPos; }
 
 	// End any program already running
 	if (!A3200ProgramStop(handle, TASK_PRINT)) { A3200Error(); }
@@ -189,7 +191,6 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 	
 	// notify scanner to start
 	q_scanMsg.push(true);
-
 	
 	// Put task into Queue mode and then pause the program while queue is loaded.
 	if (!A3200ProgramInitializeQueue(handle, TASK_PRINT)) { A3200Error(); }
@@ -199,10 +200,8 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 	if (!A3200CommandExecute(handle, TASK_PRINT, (LPCSTR)"VELOCITY ON\nG90\n", NULL)) { A3200Error(); }
 	if (!A3200MotionSetupAbsolute(handle, TASK_PRINT)) { A3200Error(); }
 
-	if (printOpts.extrude) {
-		// Enable the extruder
-		extruder.enable();
-	}
+	// Enable the extruder
+	if (printOpts.extrude) { extruder.enable(); }
 
 	// Get the size of the queue buffer
 	if (!A3200StatusGetItem(handle, TASK_PRINT, STATUSITEM_QueueLineCapacity, 0, &queueSize)) { A3200Error(); }
@@ -214,10 +213,20 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 		// wait for the path coordinates to be pushed
 		q_pathMsg.wait_and_pop(inMsg);
 		segNum = inMsg.segmentNum();
+		// if printing with asynchronous theta movement, check if it's an odd segment 
+		if (printOpts.asyncTheta > 0 && (segNum % 2 == 1)) {
+			asyncThetaPos *= -1;
+			asyncThetaPos += 180;
+			while (!A3200MotionMoveAbs(handle, TASK_PRINT, (AXISINDEX)(AXISINDEX_03), asyncThetaPos, printOpts.asyncTheta)) {
+				if (A3200GetLastError().Code == ErrorCode_QueueBufferFull) { Sleep(10); }
+				else { A3200Error(); break; }
+			}
+			queueLineCount += 1;
+		}
 
 		for (auto it = inMsg.path().begin(); it != inMsg.path().end(); ++it) {
 			auto path = *(it);
-			while (!A3200CommandExecute(handle, TASK_PRINT, path.cmd(), NULL)) {
+			while (!A3200CommandExecute(handle, TASK_PRINT, path.cmd(printOpts.asyncTheta == 0), NULL)) {
 				// If the command failed to load into the queue
 				if (A3200GetLastError().Code == ErrorCode_QueueBufferFull) {
 					// Wait if the Queue is full.

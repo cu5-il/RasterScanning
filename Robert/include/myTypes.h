@@ -34,6 +34,7 @@ public:
 	Path(const cv::Point2d& pt, double _z, double _T, double _f, double _e, double _w);
 
 	const char* cmd();
+	const char* cmd(bool cmdTheta);
 
 private:
 	std::string _cmd;
@@ -54,6 +55,14 @@ inline Path::Path(const cv::Point2d& pt, double _z, double _T, double _f, double
 inline const char* Path::cmd(){
 	_cmd = "$AO[1].X =" + std::to_string(e) + "\n";
 	_cmd += "G1 X " + std::to_string(x) + " Y " + std::to_string(y) + " Z " + std::to_string(z) + " TH " + std::to_string(T) + " F " + std::to_string(f);
+	return _cmd.c_str();
+}
+
+inline const char* Path::cmd(bool cmdTheta) {
+	_cmd = "$AO[1].X =" + std::to_string(e) + "\n";
+	_cmd += "G1 X " + std::to_string(x) + " Y " + std::to_string(y) + " Z " + std::to_string(z);
+	if (cmdTheta) { _cmd += " TH " + std::to_string(T); }
+	_cmd += " F " + std::to_string(f);
 	return _cmd.c_str();
 }
 
@@ -172,6 +181,7 @@ public:
 	double leadout; // length of lead out line. Negative values disable lead out
 	bool extrude; // flag determining whether or not extrude 
 	bool disposal; // flag determining whether or not move to the disposal zone at the end of a print 
+	double asyncTheta; // if set greater than 0, moves the theta axis asynchronously at the start of each corner at the set rate
 
 	PrintOptions();
 	PrintOptions(double _leadin, double _leadout = -1, bool _extrude = true, bool _disposal = true);
@@ -180,7 +190,7 @@ private:
 	
 };
 inline PrintOptions::PrintOptions()
-	: leadin(-1), leadout(-1), extrude(true), disposal(true) {}
+	: leadin(-1), leadout(-1), extrude(true), disposal(true), asyncTheta(0){}
 
 inline PrintOptions::PrintOptions(double _leadin, double _leadout, bool _extrude, bool _disposal)
 	: leadin(_leadin), leadout(_leadout), extrude(_extrude), disposal(_disposal) {}

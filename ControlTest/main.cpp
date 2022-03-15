@@ -81,6 +81,7 @@ int main() {
 	PrintOptions printOpts(leadin);
 	printOpts.extrude = true;
 	printOpts.disposal = false;
+	printOpts.asyncTheta = 32;
 
 	// Getting user input
 	std::string resp, file;
@@ -97,12 +98,19 @@ int main() {
 	// read in test parameters and generate raster
 	if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum)) { return 0; }
 	outDir.append(testTp + std::to_string(lineNum) + "_" + datetime("%H.%M") + "_");
-	// read in the theta coordinates
-	file = "./Input/path/pathCoords_" + std::to_string((int)raster.length()) + "x" + std::to_string((int)raster.width()) + "x" + std::to_string((int)raster.spacing()) + "_v" + std::to_string((int)initVel) + ".txt";
-	readTheta(file, theta);
 
+	// read in the theta path or use the asynchronous theta path
+	if (printOpts.asyncTheta == 0) {
+		// read in the theta coordinates
+		file = "./Input/path/pathCoords_" + std::to_string((int)raster.length()) + "x" + std::to_string((int)raster.width()) + "x" + std::to_string((int)raster.spacing()) + "_v" + std::to_string((int)initVel) + ".txt";
+		readTheta(file, theta);
+		makePath(raster, wayptSpc, theta, initPos, initVel, initExt, segments, path);
+	}
+	else {
+		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+	}
+	
 	// make the path
-	makePath(raster, wayptSpc, theta, initPos, initVel, initExt, segments, path);
 	makeFGS(path, testTp[0], testTp[1], range, augerModel);
 
 	// add a lead out line
@@ -158,6 +166,7 @@ int main() {
 		case 'f':
 			printOpts.leadin = 0;
 			printOpts.leadout = 0;
+			printOpts.asyncTheta = 0;
 			segments.clear();
 			path.clear();
 			Raster rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
