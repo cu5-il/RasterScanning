@@ -3,6 +3,7 @@
 #include <iomanip>      // std::setw
 #include <vector> 
 #include <string>
+#include <numeric> // std::accumulate
 
 #include <deque>
 #include <Windows.h>
@@ -229,6 +230,24 @@ int main() {
 		}
 	}
 	outfile.close();
+
+	// calculate the error norms
+	double E2d;
+	auto sumsq = [](double a, double b) {
+		if (!std::isnan(b)) return a + b * b;
+		else return a; };
+	outfile.open(std::string(outDir + "errors.txt").c_str());
+	outfile.precision(3);
+	// loop through each long segment
+	for (int i = 0; i < path.size(); i += 2) {
+		E2d = sqrt(std::accumulate(segments[i].errWD().begin(), segments[i].errWD().end(), 0.0, sumsq));
+		E2d /= wayptSpc * (std::count_if(segments[i].errWD().begin(), segments[i].errWD().end(), [](double a) {return !std::isnan(a); }) - 1);
+		outfile << std::setw(6) << std::fixed << E2d;
+		if (i % 4 == 0 ) outfile << "\t";
+		else outfile << "\n";
+	}
+	outfile.close();
+
 
 	t_print.join();
 
