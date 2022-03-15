@@ -95,21 +95,24 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 			waypoints = segments[segNumError].waypoints();
 			getErrorsAt(waypoints, targetWidths, raster.size(), lEdgePts, rEdgePts, errCL, errWD);
 		}
-		// Push the errors to the controller
-		std::cout << "Segment " << segNumError << " errors processed. Sending data to controller." << std::endl;
-		outMsg.addErrors(errCL, errWD, segNumError);
-		q_errsMsg.push(outMsg);
 
-		// replace the NAN values with the closest error
+		// Store the errors in the segment class
+		segments[segNumError].addEdges(lEdgePts, rEdgePts);
+		segments[segNumError].addErrors(errCL, errWD);
+
+		// replace the NAN error values with the error at the adjacent point
 		for (auto it = errWD.begin(); it != errWD.end(); ++it) {
 			if (std::isnan(*it)) {
 				*it = it - errWD.begin() < errWD.end() - it ?
 					*std::find_if(errWD.begin(), errWD.end(), [](double& a) {return !std::isnan(a); }) : *std::find_if(errWD.rbegin(), errWD.rend(), [](double& a) {return !std::isnan(a); });
 			}
 		}
-		
-		segments[segNumError].addEdges(lEdgePts, rEdgePts);
-		segments[segNumError].addErrors(errCL, errWD);
+
+		// Push the errors to the controller
+		std::cout << "Segment " << segNumError << " errors processed. Sending data to controller." << std::endl;
+		outMsg.addErrors(errCL, errWD, segNumError);
+		q_errsMsg.push(outMsg);
+
 		// clear the errors
 		errCL.clear(); 
 		errWD.clear();
