@@ -179,7 +179,7 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
 		return false;
 	}
 	std::cout << "Test selected: " << temp << " @ " << initPos << std::endl;
-	test = temp;
+	//test = temp;
 
 	outDir.append(temp + "/");
 	if (CreateDirectoryA(outDir.c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {}
@@ -207,8 +207,8 @@ bool readTestParams(std::string filename, Raster& raster, double& wayptSpc, cv::
 			else if (str.find("rod width") != std::string::npos) { rodWidth = value; }
 			else if (str.find("waypoint spacing") != std::string::npos) { wayptSpc = value; }
 			// Extracting the test parameters
-			//else if (str.find("test type") != std::string::npos) { 
-			//	test = str.substr( 0, str.find_first_of('\t')); }
+			else if (str.find("test type") != std::string::npos) { 
+				test = str.substr( 0, str.find_first_of('\t')); }
 			else if (str.find("feed rate") != std::string::npos) { initVel = value; }
 			else if (str.find("auger voltage") != std::string::npos) { initExt = value; }
 			else if (str.find("range start") != std::string::npos) { range[0] = value; }
