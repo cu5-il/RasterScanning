@@ -88,7 +88,7 @@ int main() {
 	std::string resp, file;
 	char option;
 	int lineNum;
-	file = "plate1";
+	file = "plate";
 
 	std::cout << "Select option: (p)rint or (s)can? ";
 	std::cin >> option;
@@ -97,8 +97,8 @@ int main() {
 
 	outDir = "Output/" + datetime("%Y.%m.%d") + "/";
 	// read in test parameters and generate raster
-	if (!readTestParams(std::string("./Input/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum)) { return 0; }
-	outDir.append(testTp + std::to_string(lineNum) + "_" + datetime("%H.%M") + "_");
+	if (!readTestParams(std::string("./Input/" + datetime("%Y.%m.%d") + "/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum)) { return 0; }
+	outDir.append(testTp + "_" + std::to_string(lineNum) + "_" + datetime("%H.%M") + "_");
 
 	// read in the theta path or use the asynchronous theta path
 	if (printOpts.asyncTheta == 0) {
@@ -111,6 +111,9 @@ int main() {
 		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
 	}
 	
+	cv::Mat imSeg;
+	drawSegments(raster.draw(), imSeg, segments, raster.origin(), 3);
+
 	// make the path
 	makeFGS(path, testTp[0], testTp[1], range, augerModel);
 
@@ -145,8 +148,11 @@ int main() {
 		break;
 	
 	case 's': // SCANNING
+		Raster rasterScan;
+		segments.clear();
+		path.clear();
 		printOpts.extrude = false;
-		initPos += cv::Point3d(0, 0, 0.75);
+		initPos += cv::Point3d(0, 0, 1); // raise path
 		std::cout << "(m)oving or (f)ixed scan: ";
 		std::cin >> option;
 		switch (option)
@@ -154,6 +160,10 @@ int main() {
 		default:
 			return 0;
 		case 'm':
+			rasterScan = raster;
+			rasterScan.offset(cv::Point2d(0, 1.5)); // offset path in y direction
+			makePath(rasterScan, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+			makeFGS(path, testTp[0], testTp[1], range, augerModel);
 			ctrlPath = path;
 			t_scan = std::thread{ t_CollectScans, raster };
 			t_process = std::thread{ t_GetMatlErrors, raster, path };
@@ -168,9 +178,7 @@ int main() {
 			printOpts.leadin = 0;
 			printOpts.leadout = 0;
 			printOpts.asyncTheta = 0;
-			segments.clear();
-			path.clear();
-			Raster rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
+			rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
 			rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
 
 			std::cout << "Scan at (1) 0 deg or (2) 180 deg: ";
