@@ -180,6 +180,7 @@ int main() {
 			printOpts.asyncTheta = 0;
 			rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
 			rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
+			rasterScan.offset(cv::Point2d(0, 1.5));
 
 			std::cout << "Scan at (1) 0 deg or (2) 180 deg: ";
 			std::cin >> option;
