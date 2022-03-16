@@ -101,7 +101,7 @@ void postPrint(Path lastWpt, PrintOptions printOpts) {
 			break;
 		}
 		lastWpt.z += 1;
-		cmd = "G1 X " + std::to_string(lastWpt.x) + " Y " + std::to_string(lastWpt.y) + " Z " + std::to_string(lastWpt.z) + " TH " + std::to_string(lastWpt.T) + " F " + std::to_string(lastWpt.f);
+		cmd = "G1 X " + std::to_string(lastWpt.x) + " Y " + std::to_string(lastWpt.y) + " Z " + std::to_string(lastWpt.z) + " F " + std::to_string(lastWpt.f);
 		if (!A3200CommandExecute(handle, TASK_PRINT, cmd.c_str(), NULL)) { A3200Error(); }
 	}
 
