@@ -25,6 +25,11 @@ private:
     std::vector<cv::Point> _boundaryPoints;
     std::vector<cv::Point> _cornersPix;
     std::vector<cv::Point2d> _cornersMM;
+    // variables for the rotated versions of the base variables - used when making a multi-layer raster
+    cv::Mat _Rmat;
+    cv::Mat _RboundaryMask;
+    std::vector<cv::Point> _RcornersPix;
+    std::vector<cv::Point2d> _RcornersMM;
     double _rodWidth;
     double _length;
     double _width;
@@ -54,9 +59,11 @@ public:
     Raster(double length, double width, double rodSpacing, double rodWidthMax);
 
     const cv::Rect2d& roi() { return _roi; }
-    const cv::Mat& boundaryMask() { return _boundaryMask; }
+    const cv::Mat& boundaryMask(int layer = 0);
     const std::vector<cv::Point>& px() { return _cornersPix; }
+    const std::vector<cv::Point>& px(int layer);
     const std::vector<cv::Point2d>& mm() { return _cornersMM; }
+    const std::vector<cv::Point2d>& mm(int layer);
     const cv::Size& size() { return _sz; }
     const double& rodWidth() { return _rodWidth; }
     const double& length() { return _length; }
@@ -65,13 +72,13 @@ public:
     const cv::Point2d& origin() { return _roi.tl(); }
     
     void offset(cv::Point2d);
-    const cv::Mat& draw() { return _mat; }
+    const cv::Mat& draw(int layer = 0);
     void draw(cv::Mat src, cv::Mat& dst, const cv::Scalar& color = cv::Scalar(255, 255, 255), int thickness = 1);
     void drawBdry(cv::Mat src, cv::Mat& dst, const cv::Scalar& color, int thickness = 1);
 };
 
 inline Raster::Raster()
-    : _rodWidth(0), _length(0), _spacing(0) {}
+    : _rodWidth(0), _length(0), _width(0), _spacing(0) {}
 
 inline Raster::Raster(double length, double rodSpacing, double rodWidthMax) {
     _makeRaster(length, length, rodSpacing, rodWidthMax);
@@ -79,6 +86,23 @@ inline Raster::Raster(double length, double rodSpacing, double rodWidthMax) {
 
 inline Raster::Raster(double length, double width, double rodSpacing, double rodWidthMax) {
     _makeRaster(length, width, rodSpacing, rodWidthMax);
+}
+
+inline const cv::Mat& Raster::boundaryMask(int layer){
+    _boundaryMask = cv::Mat::zeros(_sz, CV_8UC1);
+    cv::polylines(_boundaryMask, px(layer), false, cv::Scalar(255), MM2PIX(_rodWidth), 8);
+    return _boundaryMask;
+}
+
+inline const std::vector<cv::Point>& Raster::px(int layer){
+    cv::transform(_cornersPix, _RcornersPix, cv::getRotationMatrix2D(cv::Point2f(_sz / 2), static_cast<__int64>(layer) * 90, 1));
+    return _RcornersPix;
+}
+
+inline const std::vector<cv::Point2d>& Raster::mm(int layer)
+{
+    cv::transform(_cornersMM, _RcornersMM, cv::getRotationMatrix2D(cv::Point2f((_roi.tl() + _roi.br()) * 0.5), static_cast<__int64>(layer) * 90, 1));
+    return _RcornersMM;
 }
 
 inline void Raster::_makeRaster(double length, double width, double rodSpacing, double rodWidthMax) {
@@ -148,6 +172,12 @@ inline void Raster::_makeRaster(double length, double width, double rodSpacing, 
 inline void Raster::offset(cv::Point2d offset) {
     for (auto it = _cornersMM.begin(); it != _cornersMM.end(); ++it) { *it += offset; }
     _roi += offset;
+}
+
+inline const cv::Mat& Raster::draw(int layer){
+    _mat = cv::Mat::zeros(_sz, CV_8UC1);
+    cv::polylines(_mat, px(layer), false, cv::Scalar(255), 1, 4);
+    return _mat;
 }
 
 inline void Raster::draw(cv::Mat src, cv::Mat& dst, const cv::Scalar& color, int thickness ) {
