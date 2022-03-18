@@ -70,12 +70,10 @@ inline const char* Path::cmd(bool cmdTheta) {
 class Segment {
 
 public:
-	Segment(cv::Rect ROI, std::vector<cv::Point> waypoints, cv::Point2d scanDonePt, int direction) {
-		_ROI = ROI;
-		_waypoints = waypoints;
-		_scanDonePt = scanDonePt;
-		_dir = direction;
-	}
+	Segment() :_dir(0), _layer(0) {}
+
+	Segment(cv::Rect ROI, std::vector<cv::Point> waypoints, cv::Point2d scanDonePt, int direction, int layer = 0) 
+	: _ROI(ROI), _waypoints(waypoints), _scanDonePt(scanDonePt), _dir(direction), _layer(layer){}
 	
 	void addEdges(std::vector<cv::Point> lEdgePts, std::vector<cv::Point> rEdgePts) {
 		_lEdgePts = lEdgePts;
@@ -107,6 +105,7 @@ private:
 	std::vector<cv::Point> _rEdgePts; //right edge points in the region
 	std::vector<double> _errCL; //centerline error
 	std::vector<double> _errWD; //width error
+	int _layer;
 };
 
 ///////////////////////////////////////  edgeMsg  ///////////////////////////////////////
