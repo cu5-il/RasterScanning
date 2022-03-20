@@ -60,10 +60,8 @@ public:
 
     const cv::Rect2d& roi() { return _roi; }
     const cv::Mat& boundaryMask(int layer = 0);
-    const std::vector<cv::Point>& px() { return _cornersPix; }
-    const std::vector<cv::Point>& px(int layer);
-    const std::vector<cv::Point2d>& mm() { return _cornersMM; }
-    const std::vector<cv::Point2d>& mm(int layer);
+    const std::vector<cv::Point>& px(int layer = 0);
+    const std::vector<cv::Point2d>& mm(int layer = 0);
     const cv::Size& size() { return _sz; }
     const double& rodWidth() { return _rodWidth; }
     const double& length() { return _length; }
@@ -99,8 +97,7 @@ inline const std::vector<cv::Point>& Raster::px(int layer){
     return _RcornersPix;
 }
 
-inline const std::vector<cv::Point2d>& Raster::mm(int layer)
-{
+inline const std::vector<cv::Point2d>& Raster::mm(int layer){
     cv::transform(_cornersMM, _RcornersMM, cv::getRotationMatrix2D(cv::Point2f((_roi.tl() + _roi.br()) * 0.5), static_cast<__int64>(layer) * 90, 1));
     return _RcornersMM;
 }
