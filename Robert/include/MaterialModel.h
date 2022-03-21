@@ -12,25 +12,26 @@ class MaterialModel
 {
 public:
 	MaterialModel();
-	MaterialModel(std::vector<double> fixedParam, std::vector<double> a, std::vector<double> b, std::vector<double> c);
+	MaterialModel(char type, std::vector<double> fixedParam, std::vector<double> a, std::vector<double> b, std::vector<double> c);
 
 	double output(double width, double fixedParam);
 	double width(double ctrl, double fixedParam);
 	const bool& empty() const { return _a.empty(); }
+	const char& type() const { return _type; }
 
 private:
 
 	std::vector <double> _a, _b, _c, _fixedParam;
-
+	char _type;
 	double _interpolate(std::vector<double>& x, std::vector<double>& y, double xQ);
 
 };
 
 inline MaterialModel::MaterialModel()
-{}
+	: _type(0){}
 
-inline MaterialModel::MaterialModel(std::vector<double> fixedParam, std::vector<double> a, std::vector<double> b, std::vector<double> c)
-	:_a(a), _b(b), _c(c), _fixedParam(fixedParam) {}
+inline MaterialModel::MaterialModel(char type, std::vector<double> fixedParam, std::vector<double> a, std::vector<double> b, std::vector<double> c)
+	: _type(type), _a(a), _b(b), _c(c), _fixedParam(fixedParam) {}
 
 inline double MaterialModel::output(double width, double fixedParam)
 {

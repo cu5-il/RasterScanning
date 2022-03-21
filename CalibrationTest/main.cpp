@@ -75,7 +75,8 @@ int main() {
 	int segsBeforeCtrl = 0;
 
 	// defining the material models
-	MaterialModel augerModel = MaterialModel(std::vector<double>{2, 3},
+	MaterialModel augerModel = MaterialModel('a',
+		std::vector<double>{2, 3},
 		std::vector<double>{4.15, 3.95},
 		std::vector<double>{0.1, 0.1},
 		std::vector<double>{-2.815, -2.815});
