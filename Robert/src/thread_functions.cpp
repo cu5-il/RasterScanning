@@ -32,19 +32,27 @@ void t_CollectScans(Raster raster) {
 	double posErrThr = 2.5; // position error threshold for how close the current position is to the target
 	cv::Point2d curPos;
 	int locXoffset = 0;
+	int layer = 0;
+	std::vector<cv::Mat> pastEdges;
 
 	// wait for pre-print to complete before starting the scanner
 	q_scanMsg.wait_and_pop();
 
 	segNumScan = 0;
 	while (segNumScan < segments.size()){
+		// if there was a layer change, clear all the edges
+		if (segments[segNumScan].layer() != layer) {
+			layer = segments[segNumScan].layer();
+			pastEdges.push_back(edges);
+			edges = cv::Mat::zeros(raster.size(), CV_8UC1);
+		}
 		if (collectData(handle, DCCHandle, &collectedData[0][0])) {
 			// Trigger the scanner and collect the scanner data
 			if (getScan(collectedData, &scanPosFbk, scan, locXoffset)){
 				// Find the part of the scan that is within the ROI of the print
 				if (scan2ROI(scan, scanPosFbk, locXoffset, raster.roi(), raster.size(), scanROI, scanStart, scanEnd)) {
 					// Finding the edges
-					findEdges2(raster.boundaryMask(), scanStart, scanEnd, scanROI, edges);
+					findEdges2(raster.boundaryMask(layer), scanStart, scanEnd, scanROI, edges);
 				}
 			}
 			// compare the current position to the scanDonePt of the segment
@@ -58,7 +66,6 @@ void t_CollectScans(Raster raster) {
 				// move to next segment
 				segNumScan++;
 			}
-			
 		}
 		else { A3200Error(); }
 	}
@@ -88,7 +95,7 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 		segNumError = inMsg.segmentNum();
 		
 		// find and smooth the right and left edges
-		getMatlEdges(segments[segNumError].ROI(), inMsg.edges(), lEdgePts, rEdgePts);
+		getMatlEdges(segments[segNumError].ROI(), segments[segNumError].dir(), inMsg.edges(), lEdgePts, rEdgePts);
 		// If there are edge points, calculate errors
 		if (!lEdgePts.empty() && !rEdgePts.empty()) {
 			std::for_each(path[segNumError].begin(), path[segNumError].end(), [&targetWidths](Path& pth) {targetWidths.push_back(pth.w); });
@@ -181,7 +188,7 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 	int segNum = -1;
 	double queueLineCount, queueSize;
 	bool programStarted = false;
-	double asyncThetaPos = 90*segments.front().dir();
+	double asyncThetaPos = 90.0 * (double)segments.front().dir();
 	if (printOpts.asyncTheta > 0) { firstWpt.T = asyncThetaPos; }
 
 	// End any program already running
@@ -217,7 +224,7 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 		q_pathMsg.wait_and_pop(inMsg);
 		segNum = inMsg.segmentNum();
 		// if printing with asynchronous theta movement, check if it's an odd segment 
-		if (printOpts.asyncTheta > 0 && (segNum % 2 == 1)) {
+		if (printOpts.asyncTheta > 0 && ((segNum + segments[segNum].layer()) % 2 == 1)) {
 			asyncThetaPos *= -1;
 			asyncThetaPos += 180;
 			while (!A3200MotionMoveAbs(handle, TASK_PRINT, (AXISINDEX)(AXISINDEX_03), asyncThetaPos, printOpts.asyncTheta)) {
