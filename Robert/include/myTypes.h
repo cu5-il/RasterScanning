@@ -208,10 +208,13 @@ public:
 		Y_POS = 1, // positive y direction
 		X_NEG = 2, // negative x direction
 		Y_NEG = 3, // negative y direction
+		Z_POS = 4, // positive z direction
+		Z_NEG = 5, // negative z direction
 	};
 
-	static bool horizontal(int dir) { return (dir % 2 == 0); }
-	static bool vertical(int dir) { return (dir % 2 == 1); }
+	static bool X(int dir) { return (dir == X_POS || dir == X_NEG); }
+	static bool Y(int dir) { return (dir == Y_POS || dir == Y_NEG); }
+	static bool Z(int dir) { return (dir == Z_POS || dir == Z_NEG); }
 
 private:
 };
