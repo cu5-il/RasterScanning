@@ -88,6 +88,7 @@ public:
 	const std::vector<cv::Point>& waypoints() const { return _waypoints; }
 	const cv::Point2d& scanDonePt() const { return _scanDonePt; }
 	const int& dir() const { return _dir; }
+	const int& layer() const { return _layer; }
 	const std::vector<cv::Point>& lEdgePts() const { return _lEdgePts; }
 	const std::vector<cv::Point>& rEdgePts() const { return _rEdgePts; }
 	const std::vector<double>& errCL() const { return _errCL; }
