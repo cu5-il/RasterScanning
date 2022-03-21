@@ -194,4 +194,25 @@ inline PrintOptions::PrintOptions()
 inline PrintOptions::PrintOptions(double _leadin, double _leadout, bool _extrude, bool _disposal)
 	: leadin(_leadin), leadout(_leadout), extrude(_extrude), disposal(_disposal) {}
 
+
+///////////////////////////////////////  PrintDir  ///////////////////////////////////////
+class printDir
+{
+public:
+	printDir() {}
+
+	enum dir : int
+	{
+		X_POS = 0, // positive x direction
+		Y_POS = 1, // positive y direction
+		X_NEG = 2, // negative x direction
+		Y_NEG = 3, // negative y direction
+	};
+
+	static bool horizontal(int dir) { return (dir % 2 == 0); }
+	static bool vertical(int dir) { return (dir % 2 == 1); }
+
+private:
+};
+
 #endif // MY_TYPES_H
