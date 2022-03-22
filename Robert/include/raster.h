@@ -71,8 +71,8 @@ public:
     
     void offset(cv::Point2d);
     const cv::Mat& draw(int layer = 0);
-    void draw(cv::Mat src, cv::Mat& dst, const cv::Scalar& color = cv::Scalar(255, 255, 255), int thickness = 1);
-    void drawBdry(cv::Mat src, cv::Mat& dst, const cv::Scalar& color, int thickness = 1);
+    void draw(cv::Mat src, cv::Mat& dst, int layer = 0, const cv::Scalar& color = cv::Scalar(255, 255, 255), int thickness = 1);
+    void drawBdry(cv::Mat src, cv::Mat& dst, int layer = 0, const cv::Scalar& color = cv::Scalar(255, 255, 255), int thickness = 1);
 };
 
 inline Raster::Raster()
@@ -158,7 +158,6 @@ inline void Raster::_makeRaster(double length, double width, double rodSpacing, 
     cv::findContours(_boundaryMask, contour, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
     _boundaryPoints = contour[0];
 
-
     // define the roi of the raster
     _roi = cv::Rect2d(0, 0, 2 * border + length, 2 * border + width);
 
@@ -177,7 +176,7 @@ inline const cv::Mat& Raster::draw(int layer){
     return _mat;
 }
 
-inline void Raster::draw(cv::Mat src, cv::Mat& dst, const cv::Scalar& color, int thickness ) {
+inline void Raster::draw(cv::Mat src, cv::Mat& dst, int layer, const cv::Scalar& color, int thickness ) {
     // copy the source to the destination
     src.copyTo(dst);
     if (dst.channels() < 3) {
@@ -185,18 +184,22 @@ inline void Raster::draw(cv::Mat src, cv::Mat& dst, const cv::Scalar& color, int
     }
 
     // draw the raster on the image
-    cv::polylines(dst, _cornersPix, false, color, thickness, 4);
+    cv::polylines(dst, px(layer), false, color, thickness, 4);
 }
 
-inline void Raster::drawBdry(cv::Mat src, cv::Mat& dst, const cv::Scalar& color, int thickness) {
+inline void Raster::drawBdry(cv::Mat src, cv::Mat& dst, int layer, const cv::Scalar& color, int thickness) {
     // copy the source to the destination
     src.copyTo(dst);
     if (dst.channels() < 3) {
         cv::cvtColor(dst, dst, cv::COLOR_GRAY2BGR);
     }
 
+    // Get the boundary points
+    std::vector<std::vector<cv::Point> > contour;
+    cv::findContours(boundaryMask(layer), contour, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
     // draw the boundary on the image
-    cv::polylines(dst, _boundaryPoints, true, color, thickness, 4);
+    cv::polylines(dst, contour[0], true, color, thickness, 4);
 }
 
 #endif // RASTER_H

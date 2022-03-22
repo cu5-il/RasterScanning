@@ -50,7 +50,7 @@ void drawEdges(cv::Mat src, cv::Mat&  dst, cv::Mat edges, const cv::Scalar& colo
 	}
 }
 
-void drawErrors(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg) {
+void drawErrors(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, int layer) {
 	std::vector<cv::Point> allEdgePts, actCenterline, lEdgeErr, rEdgeErr;
 	cv::Mat tempLines= cv::Mat::zeros(src.size(), CV_8UC3);
 	cv::Mat matlAct = cv::Mat::zeros(src.size(), CV_8UC3);
@@ -58,34 +58,37 @@ void drawErrors(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg) {
 
 	// getting the values from each segment
 	for (auto it = seg.begin(); it != seg.end(); ++it) {
-		// check if there are edge points
-		if (!(*it).lEdgePts().empty() && !(*it).rEdgePts().empty() ) {
-			// Draw material edges
-			cv::polylines(tempLines, (*it).lEdgePts(), false, cv::Scalar(255, 255, 0), 1);
-			cv::polylines(tempLines, (*it).rEdgePts(), false, cv::Scalar(255, 255, 0), 1);
-			// Fill the region between the edges
-			allEdgePts.reserve((*it).lEdgePts().size() + (*it).rEdgePts().size()); // preallocate memory
-			allEdgePts.insert(allEdgePts.end(), (*it).lEdgePts().begin(), (*it).lEdgePts().end());
-			allEdgePts.insert(allEdgePts.end(), (*it).rEdgePts().rbegin(), (*it).rEdgePts().rend());
-			cv::fillPoly(matlAct, allEdgePts, cv::Scalar(255, 255, 0));
-			allEdgePts.clear();
-		}
-		// check if the errors have been calculated
-		if (!(*it).errCL().empty() && !(*it).errWD().empty() ) {
-			for (int i = 0; i < (*it).errCL().size(); i++) {
-				if (!isnan((*it).errCL()[i]) && !isnan((*it).errWD()[i])) {
-					actCenterline.push_back((*it).waypoints()[i] + cv::Point(0, MM2PIX((*it).errCL()[i])));
-					lEdgeErr.push_back(actCenterline.back() - cv::Point(0, MM2PIX((*it).errWD()[i] / 2)));
-					rEdgeErr.push_back(actCenterline.back() + cv::Point(0, MM2PIX((*it).errWD()[i] / 2)));
-				}
+		if ((*it).layer() == layer)
+		{
+			// check if there are edge points
+			if (!(*it).lEdgePts().empty() && !(*it).rEdgePts().empty()) {
+				// Draw material edges
+				cv::polylines(tempLines, (*it).lEdgePts(), false, cv::Scalar(255, 255, 0), 1);
+				cv::polylines(tempLines, (*it).rEdgePts(), false, cv::Scalar(255, 255, 0), 1);
+				// Fill the region between the edges
+				allEdgePts.reserve((*it).lEdgePts().size() + (*it).rEdgePts().size()); // preallocate memory
+				allEdgePts.insert(allEdgePts.end(), (*it).lEdgePts().begin(), (*it).lEdgePts().end());
+				allEdgePts.insert(allEdgePts.end(), (*it).rEdgePts().rbegin(), (*it).rEdgePts().rend());
+				cv::fillPoly(matlAct, allEdgePts, cv::Scalar(255, 255, 0));
+				allEdgePts.clear();
 			}
-			// Draw the errors
-			cv::polylines(tempLines, lEdgeErr, false, cv::Scalar(0, 255, 255), 1);
-			cv::polylines(tempLines, rEdgeErr, false, cv::Scalar(0, 255, 255), 1);
-			cv::polylines(tempLines, actCenterline, false, cv::Scalar(0, 0, 255), 1);
-			lEdgeErr.clear();
-			rEdgeErr.clear();
-			actCenterline.clear();
+			// check if the errors have been calculated
+			if (!(*it).errCL().empty() && !(*it).errWD().empty()) {
+				for (int i = 0; i < (*it).errCL().size(); i++) {
+					if (!isnan((*it).errCL()[i]) && !isnan((*it).errWD()[i])) {
+						actCenterline.push_back((*it).waypoints()[i] + cv::Point(0, MM2PIX((*it).errCL()[i])));
+						lEdgeErr.push_back(actCenterline.back() - cv::Point(0, MM2PIX((*it).errWD()[i] / 2)));
+						rEdgeErr.push_back(actCenterline.back() + cv::Point(0, MM2PIX((*it).errWD()[i] / 2)));
+					}
+				}
+				// Draw the errors
+				cv::polylines(tempLines, lEdgeErr, false, cv::Scalar(0, 255, 255), 1);
+				cv::polylines(tempLines, rEdgeErr, false, cv::Scalar(0, 255, 255), 1);
+				cv::polylines(tempLines, actCenterline, false, cv::Scalar(0, 0, 255), 1);
+				lEdgeErr.clear();
+				rEdgeErr.clear();
+				actCenterline.clear();
+			}
 		}
 	}
 	// copy the source to the destination
@@ -101,7 +104,7 @@ void drawErrors(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg) {
 	tempLines.copyTo(dst, mask);
 }
 
-void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vector<std::vector<Path>> path) {
+void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vector<std::vector<Path>> path, int layer) {
 	std::vector<cv::Point> allEdgePts, actCenterline, lEdge, rEdge;
 	cv::Mat tempLines = cv::Mat::zeros(src.size(), CV_8UC3);
 	cv::Mat matlAct = cv::Mat::zeros(src.size(), CV_8UC3);
@@ -113,30 +116,33 @@ void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vec
 
 	// getting the values from each segment
 	for (auto it = seg.begin(); it != seg.end(); ++it) {
-		// check if there are edge points
-		if (!(*it).lEdgePts().empty() && !(*it).rEdgePts().empty()) {
-			// Draw material edges
-			//cv::polylines(tempLines, (*it).lEdgePts(), false, cv::Scalar(255, 255, 0), 1);
-			//cv::polylines(tempLines, (*it).rEdgePts(), false, cv::Scalar(255, 255, 0), 1);
-			// Fill the region between the edges
-			allEdgePts.reserve((*it).lEdgePts().size() + (*it).rEdgePts().size()); // preallocate memory
-			allEdgePts.insert(allEdgePts.end(), (*it).lEdgePts().begin(), (*it).lEdgePts().end());
-			allEdgePts.insert(allEdgePts.end(), (*it).rEdgePts().rbegin(), (*it).rEdgePts().rend());
-			cv::fillPoly(matlAct, allEdgePts, colorMatlAct);
-			allEdgePts.clear();
-		}
-		// check if the errors have been calculated
-		if (!(*it).errCL().empty() && !(*it).errWD().empty()) {
-			for (int i = 0; i < (*it).errCL().size(); i++) {
-				if (!isnan((*it).errCL()[i]) && !isnan((*it).errWD()[i])) {
-					actCenterline.push_back((*it).waypoints()[i] + cv::Point(0, MM2PIX((*it).errCL()[i])));
-					
-				}
+		if ((*it).layer() == layer)
+		{
+			// check if there are edge points
+			if (!(*it).lEdgePts().empty() && !(*it).rEdgePts().empty()) {
+				// Draw material edges
+				//cv::polylines(tempLines, (*it).lEdgePts(), false, cv::Scalar(255, 255, 0), 1);
+				//cv::polylines(tempLines, (*it).rEdgePts(), false, cv::Scalar(255, 255, 0), 1);
+				// Fill the region between the edges
+				allEdgePts.reserve((*it).lEdgePts().size() + (*it).rEdgePts().size()); // preallocate memory
+				allEdgePts.insert(allEdgePts.end(), (*it).lEdgePts().begin(), (*it).lEdgePts().end());
+				allEdgePts.insert(allEdgePts.end(), (*it).rEdgePts().rbegin(), (*it).rEdgePts().rend());
+				cv::fillPoly(matlAct, allEdgePts, colorMatlAct);
+				allEdgePts.clear();
 			}
-			// Draw the centerline error
-			cv::polylines(tempLines, actCenterline, false, cv::Scalar(0, 0, 255), 1);
+			// check if the errors have been calculated
+			if (!(*it).errCL().empty() && !(*it).errWD().empty()) {
+				for (int i = 0; i < (*it).errCL().size(); i++) {
+					if (!isnan((*it).errCL()[i]) && !isnan((*it).errWD()[i])) {
+						actCenterline.push_back((*it).waypoints()[i] + cv::Point(0, MM2PIX((*it).errCL()[i])));
 
-			actCenterline.clear();
+					}
+				}
+				// Draw the centerline error
+				cv::polylines(tempLines, actCenterline, false, cv::Scalar(0, 0, 255), 1);
+
+				actCenterline.clear();
+			}
 		}
 	}
 
@@ -172,7 +178,7 @@ void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vec
 	return;
 }
 
-void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, cv::Point2d origin, const int pointSz) {
+void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, cv::Point2d origin, int layer, const int pointSz) {
 	//cv::Point origin = seg[0].waypoints()[0];
 	cv::Point ScanDonePt(0,0);
 	cv::Scalar color = cv::Scalar(255, 255, 0);
@@ -191,26 +197,29 @@ void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, cv::Poin
 
 	// getting the values from each segment
 	for (auto it = seg.begin(); it != seg.end(); ++it, segNum++) {
-		// Randomize the color
-		color = randomColor(rng);
-		// Draw the segment boundaries
-		cv::rectangle(dst, (*it).ROI(), color);
-		// Draw the waypoints
-		for (auto it2 = (*it).waypoints().begin(); it2 != (*it).waypoints().end(); ++it2) {
-			cv::circle(dst, *it2, pointSz, color, -1, cv::LINE_AA);
+		if ((*it).layer() == layer)
+		{
+			// Randomize the color
+			color = randomColor(rng);
+			// Draw the segment boundaries
+			cv::rectangle(dst, (*it).ROI(), color);
+			// Draw the waypoints
+			for (auto it2 = (*it).waypoints().begin(); it2 != (*it).waypoints().end(); ++it2) {
+				cv::circle(dst, *it2, pointSz, color, -1, cv::LINE_AA);
+			}
+			// Draw and label the scan done point
+			snprintf(buff, sizeof(buff), "%u", segNum);
+			ScanDonePt = cv::Point(MM2PIX((*it).scanDonePt().x - origin.x), MM2PIX((*it).scanDonePt().y - origin.y));
+			if (it != seg.begin() && ScanDonePt == cv::Point(MM2PIX((*std::prev(it)).scanDonePt().x - origin.x), MM2PIX((*std::prev(it)).scanDonePt().y - origin.y))) {
+				samePtCnt++;
+				textSz = cv::getTextSize(buff, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
+				cv::putText(dst, buff, ScanDonePt + cv::Point(pointSz + samePtCnt * textSz.width, -2), cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv::LINE_8);
+			}
+			else {
+				cv::putText(dst, buff, ScanDonePt + cv::Point(pointSz, -2), cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv::LINE_8);
+				samePtCnt = 0;
+			}
+			cv::drawMarker(dst, ScanDonePt, color, cv::MARKER_TILTED_CROSS, 10, 1);
 		}
-		// Draw and label the scan done point
-		snprintf(buff, sizeof(buff), "%u", segNum);
-		ScanDonePt = cv::Point(MM2PIX((*it).scanDonePt().x - origin.x ), MM2PIX((*it).scanDonePt().y - origin.y ));
-		if (it != seg.begin() && ScanDonePt == cv::Point(MM2PIX((*std::prev(it)).scanDonePt().x - origin.x), MM2PIX((*std::prev(it)).scanDonePt().y - origin.y))) {
-			samePtCnt++;
-			textSz = cv::getTextSize(buff, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
-			cv::putText(dst, buff, ScanDonePt + cv::Point(pointSz + samePtCnt * textSz.width, -2), cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv::LINE_8);
-		}
-		else {
-			cv::putText(dst, buff, ScanDonePt + cv::Point(pointSz, -2), cv::FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv::LINE_8);
-			samePtCnt = 0;
-		}
-		cv::drawMarker(dst, ScanDonePt, color, cv::MARKER_TILTED_CROSS, 10,1);
 	}
 }
