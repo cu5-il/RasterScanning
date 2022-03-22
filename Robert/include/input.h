@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <opencv2/core.hpp>
+#include "myTypes.h"
 
 #ifndef INPUT_H
 #define INPUT_H
@@ -14,7 +15,7 @@ public:
 	TableInput();
 	TableInput(std::string filename, int printNumber);
 
-	int printNum, layers;
+	int printNum, layers, startLayer;
 	double length, width, height, rodSpc, wayptSpc, F, E;
 	double range[2];
 	char type, method;
@@ -26,7 +27,7 @@ private:
 };
 
 TableInput::TableInput()
-	: printNum(0), layers(0), length(0), width(0), height(0), rodSpc(0), wayptSpc(0), F(0), E(0), range{ 0, 0 }, type(0), method(0) {}
+	: printNum(0), layers(0), length(0), width(0), height(0), rodSpc(0), wayptSpc(0), startLayer(0), F(0), E(0), range{ 0, 0 }, type(0), method(0) {}
 
 inline TableInput::TableInput(std::string filename, int printNumber)
 {
@@ -66,19 +67,21 @@ inline void TableInput::_readTable(std::string filename)
 						else if (str.compare("Y") == 0) { initPos.y = std::stod(value); }
 						else if (str.compare("Z") == 0) { initPos.z = std::stod(value); }
 						// raster parameters
-						else if (str.find("length") != std::string::npos) { length = std::stod(value); }
-						else if (str.find("width") != std::string::npos) { width = std::stod(value); }
-						else if (str.find("layers") != std::string::npos) { layers = std::stoi(value); }
-						else if (str.find("height") != std::string::npos) { height = std::stod(value); }
-						else if (str.find("rodspc") != std::string::npos) { rodSpc = std::stod(value); }
-						else if (str.find("wptspc") != std::string::npos) { wayptSpc = std::stod(value); }
+						else if (str.compare("length") == 0) { length = std::stod(value); }
+						else if (str.compare("width") == 0) { width = std::stod(value); }
+						else if (str.compare("layers") == 0) { layers = std::stoi(value); }
+						else if (str.compare("height") == 0) { height = std::stod(value); }
+						else if (str.compare("rodspc") == 0) { rodSpc = std::stod(value); }
+						else if (str.compare("wptspc") == 0) { wayptSpc = std::stod(value); }
+						else if (str.compare("layer0") == 0) { startLayer = std::stoi(value); }
+							
 						// Functionally generated scaffold parameters
-						else if (str.find("type") != std::string::npos) { type = value[0]; }
-						else if (str.find("method") != std::string::npos) { method = value[0]; }					
-						else if (str.find("W1") != std::string::npos) { range[0] = std::stod(value); }
-						else if (str.find("W2") != std::string::npos) { range[1] = std::stod(value); }
-						else if (str.find("F") != std::string::npos) { F = std::stod(value); }
-						else if (str.find("E") != std::string::npos) { E = std::stod(value); }
+						else if (str.compare("type") == 0) { type = value[0]; }
+						else if (str.compare("method") == 0) { method = value[0]; }
+						else if (str.compare("W1") == 0) { range[0] = std::stod(value); }
+						else if (str.compare("W2") == 0) { range[1] = std::stod(value); }
+						else if (str.compare("F") == 0) { F = std::stod(value); }
+						else if (str.compare("E") == 0) { E = std::stod(value); }
 					}
 					col++;
 				}

@@ -75,8 +75,8 @@ void t_CollectScans(Raster raster) {
 	for (int i = 0; i < pastEdges.size(); i++) 
 	{
 		image = cv::Mat::zeros(raster.size(), CV_8UC3);
-		raster.draw(image, image, i);
-		raster.drawBdry(image, image, i, cv::Scalar(255, 0, 0), MM2PIX(0.05)); 
+		raster.draw(image, image, i + segments.front().layer());
+		raster.drawBdry(image, image, i + segments.front().layer(), cv::Scalar(255, 0, 0), MM2PIX(0.05));
 		drawEdges(image, image, pastEdges[i], cv::Scalar(0, 0, 255), MM2PIX(0.1));
 		cv::imwrite(outDir + "edges_" + std::to_string(i) + ".png", image);
 		cv::imwrite(outDir + "edgedata_" + std::to_string(i) + ".png", pastEdges[i]);
@@ -134,15 +134,15 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 	// drawing the filtered edges
 	cv::Mat filteredEdges = cv::Mat::zeros(raster.size(), CV_8UC1);
 	cv::Mat image = cv::Mat::zeros(raster.size(), CV_8UC3);
-	int layer = 0;
+	int layer = segments.front().layer();
 	for (auto it = segments.begin(); it != segments.end(); ++it) {
 		if ((*it).layer() != layer) {
-			cv::imwrite(outDir + "edgedata_filt_" + std::to_string(layer) + ".png", filteredEdges);
+			cv::imwrite(outDir + "edgedata_filt_" + std::to_string(layer - segments.front().layer()) + ".png", filteredEdges);
 			filteredEdges = cv::Mat::zeros(raster.size(), CV_8UC1);
 			raster.draw(image, image, layer);
 			raster.drawBdry(image, image, layer, cv::Scalar(255, 0, 0), MM2PIX(0.05));
 			drawEdges(image, image, filteredEdges, cv::Scalar(0, 0, 255), MM2PIX(0.1));
-			cv::imwrite(outDir + "edges_filt_" + std::to_string(layer) + ".png", image);
+			cv::imwrite(outDir + "edges_filt_" + std::to_string(layer - segments.front().layer()) + ".png", image);
 			filteredEdges = cv::Mat::zeros(raster.size(), CV_8UC1);
 			image = cv::Mat::zeros(raster.size(), CV_8UC3);
 			layer = (*it).layer();
@@ -150,21 +150,21 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 		for (auto it2 = (*it).lEdgePts().begin(); it2 != (*it).lEdgePts().end(); ++it2) { filteredEdges.at<uchar>((*it2)) = 255; }
 		for (auto it2 = (*it).rEdgePts().begin(); it2 != (*it).rEdgePts().end(); ++it2) { filteredEdges.at<uchar>((*it2)) = 255; }
 	}
-	cv::imwrite(outDir + "edgedata_filt_" + std::to_string(layer) + ".png", filteredEdges);
+	cv::imwrite(outDir + "edgedata_filt_" + std::to_string(layer - segments.front().layer()) + ".png", filteredEdges);
 	filteredEdges = cv::Mat::zeros(raster.size(), CV_8UC1);
 	raster.draw(image, image, layer);
 	raster.drawBdry(image, image, layer, cv::Scalar(255, 0, 0), MM2PIX(0.05));
 	drawEdges(image, image, filteredEdges, cv::Scalar(0, 0, 255), MM2PIX(0.1));
-	cv::imwrite(outDir + "edges_filt_" + std::to_string(layer) + ".png", image);
+	cv::imwrite(outDir + "edges_filt_" + std::to_string(layer - segments.front().layer()) + ".png", image);
 
 	// drawing the material
-	for (int i = 0; i <= layer; i++)
+	for (int i = segments.front().layer(); i <= layer ; i++)
 	{
 		image = cv::Mat::zeros(raster.size(), CV_8UC3);
 		raster.draw(image, image, i);
 		drawMaterial(image, image, segments, path, i);
 		addScale(image, 1, cv::Point(5, 15));
-		cv::imwrite(outDir + "matl_" + std::to_string(i) + ".png", image);
+		cv::imwrite(outDir + "matl_" + std::to_string(i - segments.front().layer()) + ".png", image);
 	}
 
 	std::cout << "All segments have been processed. Ending error processing thread." << std::endl;
