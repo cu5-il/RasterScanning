@@ -29,6 +29,8 @@
 #include <ctime>
 #include "path.h"
 #include "controlCalib.h"
+#include "input.h"
+#include "multiLayer.h"
 
 std::string datetime(std::string format = "%Y.%m.%d-%H.%M.%S");
 
@@ -96,45 +98,33 @@ int main() {
 	std::cout << "Test #: ";
 	std::cin >> lineNum;
 
-	outDir = "Output/" + datetime("%Y.%m.%d") + "/";
-	// read in test parameters and generate raster
-	if (!readTestParams(std::string("./Input/" + datetime("%Y.%m.%d") + "/" + file + ".txt"), raster, wayptSpc, initPos, initVel, initExt, testTp, range, lineNum)) { return 0; }
-	outDir.append(testTp + "_" + std::to_string(lineNum) + "_" + datetime("%H.%M") + "_");
+	TableInput input("./Input/printTable.md", lineNum);
+	
 
-	// read in the theta path or use the asynchronous theta path
-	if (printOpts.asyncTheta == 0) {
-		// read in the theta coordinates
-		file = "./Input/path/pathCoords_" + std::to_string((int)raster.length()) + "x" + std::to_string((int)raster.width()) + "x" + std::to_string((int)raster.spacing()) + "_v" + std::to_string((int)initVel) + ".txt";
-		readTheta(file, theta);
-		makePath(raster, wayptSpc, theta, initPos, initVel, initExt, segments, path);
-	}
+	// create the output directory
+	outDir = "Output/" + datetime("%Y.%m.%d") + "/print" + std::to_string(lineNum) + "/";
+	if (CreateDirectoryA(outDir.c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {}
 	else {
-		makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
+		std::cout << "Error creating output directory" << std::endl;
+		return false;
 	}
 	
-	cv::Mat imSeg;
-	drawSegments(raster.draw(), imSeg, segments, raster.origin(), 3);
-
-	// make the path
-	makeFGS(path, testTp[0], testTp[1], range, augerModel);
-
+	// make the scaffold
+	raster = Raster(input.length, input.width, input.rodSpc, input.rodSpc - .1);
+	MultiLayerScaffold scaffold(input, raster);
 	// add a lead out line
 	printOpts.leadout = -SCAN_OFFSET_X + 1;
-	switch (segments.back().dir())
-	{
-	case 0: // positive x direction
-		segments.back().setScanDonePt(segments.back().scanDonePt() - cv::Point2d(SCAN_OFFSET_X, 0));
-		break;
-	case 2: // negative x direction
-		segments.back().setScanDonePt(segments.back().scanDonePt() + cv::Point2d(SCAN_OFFSET_X, 0));
-		break;
-	}
+	scaffold.leadout(-SCAN_OFFSET_X);
+
+	path = scaffold.path;
+	segments = scaffold.segments;
 
 	switch (option)
 	{
 	default:
 		return 0;
 	case 'p': // PRINTING
+		outDir.append("print_");
 		ctrlPath = path;
 
 		t_scan = std::thread{ t_CollectScans, raster };
@@ -149,6 +139,7 @@ int main() {
 		break;
 	
 	case 's': // SCANNING
+		outDir.append("scan_");
 		Raster rasterScan;
 		segments.clear();
 		path.clear();
