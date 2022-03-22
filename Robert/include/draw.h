@@ -28,6 +28,6 @@ void drawErrors(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, int layer 
 
 void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vector<std::vector<Path>> path, int layer = 0);
 
-void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, cv::Point2d, int layer = 0, const int pointSz = 1);
+void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, cv::Point2d origin, int layer = 0, const int pointSz = 1);
 
 #endif // !DRAW_H
