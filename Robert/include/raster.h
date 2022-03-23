@@ -35,7 +35,7 @@ private:
     double _width;
     double _spacing;
 
-    void _makeRaster(double length, double width, double rodSpacing, double rodWidthMax);
+    void _makeRaster(double length, double width, double rodSpacing, double rodWidthMax, double border);
 
 public:
     // default constructor
@@ -47,7 +47,7 @@ public:
      * @param rodSpacing spacing between the rods of a raster
      * @param rodWidthMax maximum width of the raster rods (for finding edges)
     */
-    Raster(double length, double rodSpacing, double rodWidthMax);
+    Raster(double length, double rodSpacing, double rodWidthMax, double border);
 
     /**
      * @brief Constructor for a non-square raster
@@ -56,7 +56,7 @@ public:
      * @param rodSpacing spacing between the rods of a raster
      * @param rodWidthMax maximum width of the raster rods (for finding edges)
     */
-    Raster(double length, double width, double rodSpacing, double rodWidthMax);
+    Raster(double length, double width, double rodSpacing, double rodWidthMax, double border );
 
     const cv::Rect2d& roi(int layer = 0);
     const cv::Mat& boundaryMask(int layer = 0);
@@ -78,12 +78,12 @@ public:
 inline Raster::Raster()
     : _rodWidth(0), _length(0), _width(0), _spacing(0) {}
 
-inline Raster::Raster(double length, double rodSpacing, double rodWidthMax) {
-    _makeRaster(length, length, rodSpacing, rodWidthMax);
+inline Raster::Raster(double length, double rodSpacing, double rodWidthMax, double border) {
+    _makeRaster(length, length, rodSpacing, rodWidthMax, border);
 }
 
-inline Raster::Raster(double length, double width, double rodSpacing, double rodWidthMax) {
-    _makeRaster(length, width, rodSpacing, rodWidthMax);
+inline Raster::Raster(double length, double width, double rodSpacing, double rodWidthMax, double border) {
+    _makeRaster(length, width, rodSpacing, rodWidthMax, border);
 }
 
 inline const cv::Rect2d& Raster::roi(int layer) {
@@ -118,14 +118,14 @@ inline const cv::Size& Raster::size(int layer) {
     else { return cv::Size(_sz.height, _sz.width); }
 }
 
-inline void Raster::_makeRaster(double length, double width, double rodSpacing, double rodWidthMax) {
+inline void Raster::_makeRaster(double length, double width, double rodSpacing, double rodWidthMax, double border) {
 
     int i = 0;
-    double border = rodWidthMax / 2 + 1;
+    double mmBord = rodWidthMax / 2 + border;
     int pixLen = MM2PIX(length);
     int pixWth = MM2PIX(width);
     int pixSpac = MM2PIX(rodSpacing);
-    int pixBord = MM2PIX(border);
+    int pixBord = MM2PIX(mmBord);
     int pixRodWth = MM2PIX(rodWidthMax);
 
     _rodWidth = rodWidthMax;
@@ -175,7 +175,7 @@ inline void Raster::_makeRaster(double length, double width, double rodSpacing, 
     _boundaryPoints = contour[0];
 
     // define the roi of the raster
-    _roi = cv::Rect2d(0, 0, 2 * border + length, 2 * border + width);
+    _roi = cv::Rect2d(0, 0, 2 * mmBord + length, 2 * mmBord + width);
 
     // offset the coordinates
     offset(-_cornersMM.front());
