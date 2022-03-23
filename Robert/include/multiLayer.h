@@ -26,6 +26,7 @@ public:
 	
 	void leadout(double length);
 
+	//TODO: set theta for entire path
 	//void theta(double angle);
 	//void theta(std::vector<double> angle);
 
@@ -150,7 +151,7 @@ inline void MultiLayerScaffold::_makePath(TableInput input)
 					else {
 						scanDonePt += (layer % 4 == 0) ? cv::Point2d(raster.length(), raster.spacing()) : cv::Point2d(raster.length(), -raster.spacing());
 					}
-					if (!raster.roi().contains(scanDonePt)) {
+					if (!raster.roi(layer).contains(scanDonePt)) {
 						scanDonePt -= cv::Point2d(raster.length() * 2, 0);
 					}
 					break;
@@ -171,7 +172,7 @@ inline void MultiLayerScaffold::_makePath(TableInput input)
 					else {
 						scanDonePt += (layer % 4 == 1) ? cv::Point2d(raster.spacing(), raster.length()) : cv::Point2d(-raster.spacing(), raster.length());
 					}
-					if (!raster.roi().contains(scanDonePt)) {
+					if (!raster.roi(layer).contains(scanDonePt)) {
 						scanDonePt -= cv::Point2d(0, raster.length() * 2);
 					}
 					break;

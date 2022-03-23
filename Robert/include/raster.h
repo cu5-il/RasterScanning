@@ -58,11 +58,11 @@ public:
     */
     Raster(double length, double width, double rodSpacing, double rodWidthMax);
 
-    const cv::Rect2d& roi() { return _roi; }
+    const cv::Rect2d& roi(int layer = 0);
     const cv::Mat& boundaryMask(int layer = 0);
     const std::vector<cv::Point>& px(int layer = 0);
     const std::vector<cv::Point2d>& mm(int layer = 0);
-    const cv::Size& size() { return _sz; }
+    const cv::Size& size(int layer = 0);
     const double& rodWidth() { return _rodWidth; }
     const double& length() { return _length; }
     const double& width() { return _width; }
@@ -86,20 +86,36 @@ inline Raster::Raster(double length, double width, double rodSpacing, double rod
     _makeRaster(length, width, rodSpacing, rodWidthMax);
 }
 
+inline const cv::Rect2d& Raster::roi(int layer) {
+    if (layer % 2 == 0) { return _roi; }
+    else { return cv::Rect2d(_roi.tl().x, _roi.tl().y, _roi.height, _roi.width); }
+}
+
 inline const cv::Mat& Raster::boundaryMask(int layer){
-    _boundaryMask = cv::Mat::zeros(_sz, CV_8UC1);
+    _boundaryMask = cv::Mat::zeros(size(layer), CV_8UC1);
     cv::polylines(_boundaryMask, px(layer), false, cv::Scalar(255), MM2PIX(_rodWidth), 8);
     return _boundaryMask;
 }
 
 inline const std::vector<cv::Point>& Raster::px(int layer){
-    cv::transform(_cornersPix, _RcornersPix, cv::getRotationMatrix2D(cv::Point2f(_sz / 2), static_cast<__int64>(layer) * 90, 1));
+    cv::Point2d offset = -cv::Point2d(_sz) / 2 + cv::Point2d(size(layer)) / 2;
+    cv::Mat T = (cv::Mat_<double>(2, 3) << 1, 0, offset.x, 0, 1, offset.y);
+    cv::Mat R = cv::getRotationMatrix2D(cv::Point2f(_sz)/2, static_cast<__int64>(layer) * 90, 1);
+
+    cv::transform(_cornersPix, _RcornersPix, R); 
+    cv::transform(_RcornersPix, _RcornersPix, T);
+
     return _RcornersPix;
 }
 
 inline const std::vector<cv::Point2d>& Raster::mm(int layer){
     cv::transform(_cornersMM, _RcornersMM, cv::getRotationMatrix2D(cv::Point2f((_roi.tl() + _roi.br()) * 0.5), static_cast<__int64>(layer) * 90, 1));
     return _RcornersMM;
+}
+
+inline const cv::Size& Raster::size(int layer) {
+    if (layer % 2 == 0) { return _sz; }
+    else { return cv::Size(_sz.height, _sz.width); }
 }
 
 inline void Raster::_makeRaster(double length, double width, double rodSpacing, double rodWidthMax) {
@@ -171,7 +187,7 @@ inline void Raster::offset(cv::Point2d offset) {
 }
 
 inline const cv::Mat& Raster::draw(int layer){
-    _mat = cv::Mat::zeros(_sz, CV_8UC1);
+    _mat = cv::Mat::zeros(size(layer), CV_8UC1);
     cv::polylines(_mat, px(layer), false, cv::Scalar(255), 1, 4);
     return _mat;
 }
