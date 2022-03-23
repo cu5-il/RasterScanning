@@ -214,6 +214,8 @@ void t_controller(std::vector<std::vector<Path>>& path, Controller& controller) 
 void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 	pathMsg inMsg;
 	int segNum = -1;
+	int layer = segments.front().layer();
+	int layerCt = 0;
 	double queueLineCount, queueSize;
 	bool programStarted = false;
 	double asyncThetaPos = 90.0 * (double)segments.front().dir();
@@ -251,10 +253,21 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 		// wait for the path coordinates to be pushed
 		q_pathMsg.wait_and_pop(inMsg);
 		segNum = inMsg.segmentNum();
+		// Check if new layer
+		if (segments[segNum].layer() != layer) {
+			layer = segments[segNum].layer();
+			layerCt++;
+			asyncThetaPos = 90.0 * (double)segments[static_cast<__int64>(segNum)].dir();
+			while (!A3200MotionMoveAbs(handle, TASK_PRINT, (AXISINDEX)(AXISINDEX_03), asyncThetaPos, printOpts.asyncTheta)) {
+				if (A3200GetLastError().Code == ErrorCode_QueueBufferFull) { Sleep(10); }
+				else { A3200Error(); break; }
+			}
+			//TODO: add rotation for layer change
+		}
 		// if printing with asynchronous theta movement, check if it's an odd segment 
-		if (printOpts.asyncTheta > 0 && ((segNum + segments[segNum].layer()) % 2 == 1)) {
-			asyncThetaPos *= -1;
-			asyncThetaPos += 180;
+		if (printOpts.asyncTheta > 0 && ((segNum + layerCt) % 2 == 1)) {
+			// Set the new angle based on the direction of the segment before
+			asyncThetaPos = 90.0 * (double)((segments[static_cast<__int64>(segNum) - 1].dir() + 2) % 4);
 			while (!A3200MotionMoveAbs(handle, TASK_PRINT, (AXISINDEX)(AXISINDEX_03), asyncThetaPos, printOpts.asyncTheta)) {
 				if (A3200GetLastError().Code == ErrorCode_QueueBufferFull) { Sleep(10); }
 				else { A3200Error(); break; }
