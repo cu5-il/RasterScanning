@@ -105,7 +105,7 @@ void drawErrors(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, int layer)
 }
 
 void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vector<std::vector<Path>> path, int layer) {
-	std::vector<cv::Point> allEdgePts, actCenterline, lEdge, rEdge;
+	std::vector<cv::Point> allEdgePts, actCenterline, lEdge, rEdge, desCenterline;
 	cv::Mat tempLines = cv::Mat::zeros(src.size(), CV_8UC3);
 	cv::Mat matlAct = cv::Mat::zeros(src.size(), CV_8UC3);
 	cv::Mat matlDes = cv::Mat::zeros(src.size(), CV_8UC3);
@@ -114,11 +114,14 @@ void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vec
 	cv::Scalar colorMatlAct(255, 255, 0);
 	cv::Scalar colorMatlDes(255, 255, 255);
 
+	int segNum = 0;
+	int minW = INT16_MAX;
+
 	// getting the values from each segment
-	for (auto it = seg.begin(); it != seg.end(); ++it) {
+	for (auto it = seg.begin(); it != seg.end(); ++it, segNum++) {
 		if ((*it).layer() == layer)
 		{
-			// check if there are edge points
+			// Draw the actual material
 			if (!(*it).lEdgePts().empty() && !(*it).rEdgePts().empty()) {
 				// Draw material edges
 				//cv::polylines(tempLines, (*it).lEdgePts(), false, cv::Scalar(255, 255, 0), 1);
@@ -130,7 +133,7 @@ void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vec
 				cv::fillPoly(matlAct, allEdgePts, colorMatlAct);
 				allEdgePts.clear();
 			}
-			// check if the errors have been calculated
+			// Draw the centerline error
 			if (!(*it).errCL().empty() && !(*it).errWD().empty()) {
 				for (int i = 0; i < (*it).errCL().size(); i++) {
 					if (!isnan((*it).errCL()[i]) && !isnan((*it).errWD()[i])) {
@@ -138,30 +141,39 @@ void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vec
 
 					}
 				}
-				// Draw the centerline error
 				cv::polylines(tempLines, actCenterline, false, cv::Scalar(0, 0, 255), 1);
-
 				actCenterline.clear();
 			}
+			// Draw the desired material
+			// Draw circle at the both ends of the segment
+			cv::circle(matlDes, (*it).waypoints().front(), MM2PIX(path[segNum].front().w / 2), colorMatlDes, -1);
+			cv::circle(matlDes, (*it).waypoints().back(), MM2PIX(path[segNum].back().w / 2), colorMatlDes, -1);
+			// loop through all the waypoints
+			for (int j = 0; j < path[segNum].size(); j++) {
+				if (printDir::X((*it).dir())) {
+					lEdge.push_back((*it).waypoints()[j] - cv::Point(0, MM2PIX(path[segNum][j].w / 2)));
+					rEdge.push_back((*it).waypoints()[j] + cv::Point(0, MM2PIX(path[segNum][j].w / 2)));
+				}
+				else if (printDir::Y((*it).dir())) {
+					lEdge.push_back((*it).waypoints()[j] - cv::Point(MM2PIX(path[segNum][j].w / 2), 0));
+					rEdge.push_back((*it).waypoints()[j] + cv::Point(MM2PIX(path[segNum][j].w / 2), 0));
+				}
+				minW = (MM2PIX(path[segNum][j].w) < minW) ? MM2PIX(path[segNum][j].w) : minW;
+			}
+			allEdgePts.reserve(lEdge.size() + rEdge.size()); // preallocate memory
+			allEdgePts.insert(allEdgePts.end(), lEdge.begin(), lEdge.end());
+			allEdgePts.insert(allEdgePts.end(), rEdge.rbegin(), rEdge.rend());
+			cv::fillPoly(matlDes, allEdgePts, colorMatlDes);
+			allEdgePts.clear();
+			lEdge.clear();
+			rEdge.clear();
+
+			//HACK: for drawing the centerline
+			desCenterline.insert(desCenterline.end(), (*it).waypoints().begin(), (*it).waypoints().end());
 		}
 	}
 
-	// drawing the desired material
-	for (int i = 0; i < path.size(); i += 2) {
-		// loop through all the waypoints
-		for (int j = 0; j < path[i].size(); j++) {
-			lEdge.push_back(seg[i].waypoints()[j] - cv::Point(0, MM2PIX(path[i][j].w / 2)));
-			rEdge.push_back(seg[i].waypoints()[j] + cv::Point(0, MM2PIX(path[i][j].w / 2)));
-			
-		}
-	}
-	// Fill the region between the edges
-	allEdgePts.reserve(lEdge.size() + rEdge.size()); // preallocate memory
-	allEdgePts.insert(allEdgePts.end(), lEdge.begin(), lEdge.end());
-	allEdgePts.insert(allEdgePts.end(), rEdge.rbegin(), rEdge.rend());
-	cv::fillPoly(matlDes, allEdgePts, colorMatlDes);
-	//cv::polylines(tempLines, lEdge, false, cv::Scalar(0, 255, 255), 1);
-	//cv::polylines(tempLines, rEdge, false, cv::Scalar(0, 255, 255), 1);
+	cv::polylines(matlDes, desCenterline, false, colorMatlDes, minW, 8);
 
 	// copy the source to the destination
 	src.copyTo(dst);
