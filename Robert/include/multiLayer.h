@@ -20,9 +20,9 @@ public:
 	MultiLayerScaffold() {}
 	MultiLayerScaffold(TableInput input, Raster raster_);
 
-	std::vector<std::vector<Path>> path;
+	std::vector<std::vector<Path>> path, pathScan;
 	Raster raster;
-	std::vector<Segment> segments;
+	std::vector<Segment> segments, segmentsScan;
 	
 	void leadout(double length);
 
@@ -32,14 +32,40 @@ public:
 
 private:
 	void _interpPathPoints(std::vector<cv::Point2i> inPts, double wayptSpc, std::vector<cv::Point2i>& outPts);
-	void _makePath(TableInput input);
+	void _makePath(TableInput input, Raster _raster, std::vector<Segment>& _segments, std::vector<std::vector<Path>>& _path);
 	
 };
 
 inline MultiLayerScaffold::MultiLayerScaffold(TableInput input, Raster raster_)
 {
 	raster = raster_;
-	_makePath(input);
+	_makePath(input, raster, segments, path);
+	// make the scanning path 
+	if (input.layers == 1)
+	{
+		
+		Raster rasterScan(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth(), raster.border());
+		rasterScan.offset(cv::Point2d(input.initPos.x, input.initPos.y));
+		input.initPos+=cv::Point3d(0, 0, 1); // raise path
+		switch (input.startLayer)
+		{
+		default:
+			break;
+		case 0:
+			rasterScan.offset(cv::Point2d(-SCAN_OFFSET_X - raster.rodWidth(), raster.spacing() / 2));
+			break;
+		case 1:
+			rasterScan.offset(cv::Point2d(raster.spacing() / 2, -SCAN_OFFSET_X - raster.rodWidth()));
+			break;
+		case 2:
+			rasterScan.offset(cv::Point2d(SCAN_OFFSET_X - raster.rodWidth(), raster.spacing() / 2));
+			break;
+		case 3:
+			rasterScan.offset(cv::Point2d(raster.spacing() / 2, SCAN_OFFSET_X - raster.rodWidth()));
+			break;
+		}
+		_makePath(input, rasterScan, segmentsScan, pathScan);
+	}
 }
 
 inline void MultiLayerScaffold::leadout(double length)
@@ -77,19 +103,19 @@ inline void MultiLayerScaffold::_interpPathPoints(std::vector<cv::Point2i> inPts
 	}
 }
 
-inline void MultiLayerScaffold::_makePath(TableInput input)
+inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, std::vector<Segment>& _segments, std::vector<std::vector<Path>>& _path)
 {
 	cv::Rect roi;
 	std::vector<cv::Point2i> wp_px;
 	std::vector<cv::Point2d> wp_mm;
 	cv::Point2d scanDonePt;
-	int pixRodWth = MM2PIX(raster.rodWidth());
+	int pixRodWth = MM2PIX(_raster.rodWidth());
 	int direction = 1;
-	cv::Point2d origin = raster.origin();
+	cv::Point2d origin = _raster.origin();
 	std::vector<Path> tmp;
 
 	double z = input.initPos.z;
-	double T = 0;
+	double T = 90.0 * input.startLayer;
 	double e = input.E;
 	double f = input.F;
 	double w = 0;
@@ -97,13 +123,13 @@ inline void MultiLayerScaffold::_makePath(TableInput input)
 	// Rods
 	for (int layer = input.startLayer; layer < input.layers + input.startLayer; layer++)
 	{
-		for (auto it = raster.px(layer).begin(); it != std::prev(raster.px(layer).end()); ++it) 
+		for (auto it = _raster.px(layer).begin(); it != std::prev(_raster.px(layer).end()); ++it)
 		{
 			// Generate the pixel waypoints
 			_interpPathPoints(std::vector<cv::Point2i> {*it, * std::next(it)}, input.wayptSpc, wp_px);
 
 			// add the final point of the pattern
-			if (std::next(it) == std::prev(raster.px(layer).end())) {
+			if (std::next(it) == std::prev(_raster.px(layer).end())) {
 				wp_px.push_back(*std::next(it));
 			}
 
@@ -113,7 +139,7 @@ inline void MultiLayerScaffold::_makePath(TableInput input)
 			for (auto it2 = wp_mm.begin(); it2 != wp_mm.end(); ++it2) {
 				tmp.push_back(Path(*it2, z, T, f, e, w));
 			}
-			path.push_back(tmp);
+			_path.push_back(tmp);
 
 			// Determine the direction 
 			if (((*std::next(it)).x - (*it).x) > 0) { direction = printDir::X_POS; }	// positive x direction
@@ -133,9 +159,9 @@ inline void MultiLayerScaffold::_makePath(TableInput input)
 					roi -= cv::Point(pixRodWth / 4, 0);
 					roi += cv::Size(pixRodWth / 2, 0);
 					// defining the point when the region has been completely scanned as the end of the next horizontal line
-					scanDonePt += (layer % 4 == 0) ? cv::Point2d(0, raster.spacing()) : cv::Point2d(0, -raster.spacing());
+					scanDonePt += (layer % 4 == 0) ? cv::Point2d(0, _raster.spacing()) : cv::Point2d(0, -_raster.spacing());
 					// if it is the final segment
-					if (std::next(it) == std::prev(raster.px(layer).end())) {
+					if (std::next(it) == std::prev(_raster.px(layer).end())) {
 						scanDonePt = wp_mm.back();
 					}
 					break;
@@ -145,14 +171,14 @@ inline void MultiLayerScaffold::_makePath(TableInput input)
 					// defining the point when the region has been completely scanned as the midpoint of the next vertical line
 
 					// if it's not the last vertical rod
-					if (std::next(it, 2) != std::prev(raster.px(layer).end())) {
-						scanDonePt += (layer % 4 == 0) ? cv::Point2d(raster.length(), 1.5 * raster.spacing()) : cv::Point2d(raster.length(), -1.5 * raster.spacing());
+					if (std::next(it, 2) != std::prev(_raster.px(layer).end())) {
+						scanDonePt += (layer % 4 == 0) ? cv::Point2d(_raster.length(), 1.5 * _raster.spacing()) : cv::Point2d(_raster.length(), -1.5 * _raster.spacing());
 					}
 					else {
-						scanDonePt += (layer % 4 == 0) ? cv::Point2d(raster.length(), raster.spacing()) : cv::Point2d(raster.length(), -raster.spacing());
+						scanDonePt += (layer % 4 == 0) ? cv::Point2d(_raster.length(), _raster.spacing()) : cv::Point2d(_raster.length(), -_raster.spacing());
 					}
-					if (!raster.roi(layer).contains(scanDonePt)) {
-						scanDonePt -= cv::Point2d(raster.length() * 2, 0);
+					if (!_raster.roi(layer).contains(scanDonePt)) {
+						scanDonePt -= cv::Point2d(_raster.length() * 2, 0);
 					}
 					break;
 				}
@@ -166,14 +192,14 @@ inline void MultiLayerScaffold::_makePath(TableInput input)
 					
 					// defining the point when the region has been completely scanned as the midpoint of the next horizontal line
 					// if it's not the last horizontal rod
-					if (std::next(it, 2) != std::prev(raster.px(layer).end())) {
-						scanDonePt += (layer % 4 == 1) ? cv::Point2d(1.5 * raster.spacing(), raster.length()) : cv::Point2d(-1.5 * raster.spacing(), raster.length());
+					if (std::next(it, 2) != std::prev(_raster.px(layer).end())) {
+						scanDonePt += (layer % 4 == 1) ? cv::Point2d(1.5 * _raster.spacing(), _raster.length()) : cv::Point2d(-1.5 * _raster.spacing(), _raster.length());
 					}
 					else {
-						scanDonePt += (layer % 4 == 1) ? cv::Point2d(raster.spacing(), raster.length()) : cv::Point2d(-raster.spacing(), raster.length());
+						scanDonePt += (layer % 4 == 1) ? cv::Point2d(_raster.spacing(), _raster.length()) : cv::Point2d(-_raster.spacing(), _raster.length());
 					}
-					if (!raster.roi(layer).contains(scanDonePt)) {
-						scanDonePt -= cv::Point2d(0, raster.length() * 2);
+					if (!_raster.roi(layer).contains(scanDonePt)) {
+						scanDonePt -= cv::Point2d(0, _raster.length() * 2);
 					}
 					break;
 				case 1: // vertical lines
@@ -182,15 +208,15 @@ inline void MultiLayerScaffold::_makePath(TableInput input)
 					roi -= cv::Point(0, pixRodWth / 4);
 					roi += cv::Size(0, pixRodWth / 2);
 					// defining the point when the region has been completely scanned as the end of the next vertical line
-					scanDonePt += (layer % 4 == 1) ? cv::Point2d(raster.spacing(), 0) : cv::Point2d(-raster.spacing(), 0);
+					scanDonePt += (layer % 4 == 1) ? cv::Point2d(_raster.spacing(), 0) : cv::Point2d(-_raster.spacing(), 0);
 					// if it is the final segment
-					if (std::next(it) == std::prev(raster.px(layer).end())) {
+					if (std::next(it) == std::prev(_raster.px(layer).end())) {
 						scanDonePt = wp_mm.back();
 					}
 					break;
 				}
 			}
-			segments.push_back(Segment(roi, wp_px, scanDonePt, direction, layer));
+			_segments.push_back(Segment(roi, wp_px, scanDonePt, direction, layer));
 			wp_px.clear();
 			wp_mm.clear();
 			tmp.clear();
