@@ -24,7 +24,7 @@ void addScale(cv::Mat& image, double length, cv::Point offset, double fontScale)
 	char buff[50];
 	snprintf(buff, sizeof(buff), "%gmm", length);
 	cv::putText(image, buff, location, cv::FONT_HERSHEY_SIMPLEX, fontScale, cv::Scalar(255, 255, 255), 1, cv::LINE_8);
-	cv::rectangle(image, cv::Rect(location.x + 6, location.y + 5, MM2PIX(length), 5), cv::Scalar(255, 255, 255), -1);
+	cv::rectangle(image, cv::Rect(location.x + 6, location.y + 5, MM2PIX(length), MM2PIX(0.5)), cv::Scalar(255, 255, 255), -1);
 }
 
 void drawEdges(cv::Mat src, cv::Mat&  dst, cv::Mat edges, const cv::Scalar& color, const int pointSz) {
@@ -137,7 +137,13 @@ void drawMaterial(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vec
 			if (!(*it).errCL().empty() && !(*it).errWD().empty()) {
 				for (int i = 0; i < (*it).errCL().size(); i++) {
 					if (!isnan((*it).errCL()[i]) && !isnan((*it).errWD()[i])) {
-						actCenterline.push_back((*it).waypoints()[i] + cv::Point(0, MM2PIX((*it).errCL()[i])));
+						if (printDir::X((*it).dir())) {
+							actCenterline.push_back((*it).waypoints()[i] + cv::Point(0, MM2PIX((*it).errCL()[i])));
+						}
+						else if (printDir::Y((*it).dir())) {
+							actCenterline.push_back((*it).waypoints()[i] + cv::Point(MM2PIX((*it).errCL()[i]), 0));
+						}
+						
 
 					}
 				}
