@@ -124,8 +124,8 @@ void getErrorsAt(std::vector<cv::Point>& waypoints, std::vector<double>targetWid
 	int i = 0;
 
 	// Create rectangle containing area with material on both sides of the rater
-	int minX = (std::max)(lEdgePts.front().x, rEdgePts.front().x);
-	int maxX = (std::min)(lEdgePts.back().x, rEdgePts.back().x);
+	int minX = (*std::min_element(lEdgePts.begin(), lEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.x < pt2.x; })).x;
+	int maxX = (*std::max_element(rEdgePts.begin(), rEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.x < pt2.x; })).x;
 	int minY = (*std::min_element(lEdgePts.begin(), lEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.y < pt2.y; })).y;
 	int maxY = (*std::max_element(rEdgePts.begin(), rEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.y < pt2.y; })).y;
 	cv::Rect edgeRoi = cv::Rect(minX, minY, maxX-minX, maxY-minY);
