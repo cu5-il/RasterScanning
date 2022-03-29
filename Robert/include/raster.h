@@ -34,6 +34,7 @@ private:
     double _length;
     double _width;
     double _spacing;
+    double _border;
 
     void _makeRaster(double length, double width, double rodSpacing, double rodWidthMax, double border);
 
@@ -67,6 +68,7 @@ public:
     const double& length() { return _length; }
     const double& width() { return _width; }
     const double& spacing() { return _spacing; }
+    const double& border() { return _border; }
     const cv::Point2d& origin() { return _roi.tl(); }
     
     void offset(cv::Point2d);
@@ -76,7 +78,7 @@ public:
 };
 
 inline Raster::Raster()
-    : _rodWidth(0), _length(0), _width(0), _spacing(0) {}
+    : _rodWidth(0), _length(0), _width(0), _spacing(0), _border(0) {}
 
 inline Raster::Raster(double length, double rodSpacing, double rodWidthMax, double border) {
     _makeRaster(length, length, rodSpacing, rodWidthMax, border);
@@ -132,6 +134,7 @@ inline void Raster::_makeRaster(double length, double width, double rodSpacing, 
     _length = length;
     _width = width;
     _spacing = rodSpacing;
+    _border = border;
 
     // initialize matrix to store raster with border
     _sz = cv::Size(pixLen + 2 * pixBord, pixWth + 2 * pixBord);
