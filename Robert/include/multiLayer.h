@@ -209,7 +209,7 @@ public:
 	FunGenScaf(TableInput input, Raster raster_, MaterialModel matModel);
 
 private:
-	void _makeFGS(char scafType, double range[2]);
+	bool _makeFGS(char scafType, double range[2]);
 	void _setInput(MaterialModel matModel);
 
 
@@ -218,11 +218,10 @@ private:
 FunGenScaf::FunGenScaf(TableInput input, Raster raster_, MaterialModel matModel)
 	: MultiLayerScaffold(input, raster_)
 {
-	_makeFGS(input.type, input.range);
-	_setInput(matModel);
+	if (_makeFGS(input.type, input.range)) { _setInput(matModel); }
 }
 
-inline void FunGenScaf::_makeFGS(char scafType, double range[2])
+inline bool FunGenScaf::_makeFGS(char scafType, double range[2])
 {
 	int numPts;
 	double delta;
@@ -230,7 +229,7 @@ inline void FunGenScaf::_makeFGS(char scafType, double range[2])
 
 	if (scafType != 'b' && scafType != 'g' && scafType != 'c') {
 		std::cout << "ERROR: unknown scaffold type" << std::endl;
-		return;
+		return false;
 	}
 
 	switch (scafType)
@@ -312,6 +311,7 @@ inline void FunGenScaf::_makeFGS(char scafType, double range[2])
 		break;
 	}
 	}
+	return true;
 }
 
 inline void FunGenScaf::_setInput(MaterialModel matModel)
