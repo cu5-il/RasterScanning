@@ -6,7 +6,8 @@
 #include <numeric> // std::accumulate
 
 #include <deque>
-#include <Windows.h>
+#include <filesystem> // std::filesystem::copy, std::filesystem::create_directories
+namespace fs = std::filesystem;
 
 #include <opencv2/core.hpp>
 #include "opencv2/core/utility.hpp"
@@ -37,14 +38,10 @@ std::string datetime(std::string format = "%Y.%m.%d-%H.%M.%S");
 int main() {
 	// Disable openCV warning in console
 	cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_SILENT);
-	// Set the output path with and prepend all file names with the time
+	// Create and set the output path
 	outDir.append(datetime("%Y.%m.%d") + "/");
-	if (CreateDirectoryA(outDir.c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {}
-	else {
-		std::cout << "Error creating output directory" << std::endl;
-		system("pause");
-		return 0;
-	}
+	try { fs::create_directories(outDir); }
+	catch (std::exception& e) { std::cout << e.what(); }
 
 	//=======================================
 	// Connecting to and setting up the A3200
@@ -60,15 +57,9 @@ int main() {
 	std::thread t_scan, t_process, t_control, t_print;
 
 	// Initialize parameters
-	double initVel;
-	double initExt;
-	cv::Point3d initPos;
-	double wayptSpc = 1;
 	Raster raster;
-	std::string testTp;
-	double range[2];
+	double rasterBorder = 2;
 	std::vector<std::vector<Path>> path, ctrlPath;
-	std::deque<double> theta;
 
 	// defining the material models
 	MaterialModel augerModel = MaterialModel('a',
@@ -88,36 +79,48 @@ int main() {
 	printOpts.asyncTheta = 32;
 
 	// Getting user input
-	std::string resp, file;
+	std::string resp, infile;
 	char option;
 	int lineNum;
-	file = "plate";
+	infile = "./Input/printTable.md";
 
-	std::cout << "Select option: (p)rint or (s)can? ";
+	std::cout << "Select option: (p)rint, (s)can, or print (w)ithout control? ";
 	std::cin >> option;
 	std::cout << "Test #: ";
 	std::cin >> lineNum;
 
-	TableInput input("./Input/printTable.md", lineNum);
-	
+	TableInput input(infile, lineNum);
+	// copy the table to the output folder
+	try { fs::copy(infile, outDir, fs::copy_options::overwrite_existing); }
+	catch (std::exception& e) { std::cout << e.what(); }
 
-	// create the output directory
-	outDir = "Output/" + datetime("%Y.%m.%d") + "/print" + std::to_string(lineNum) + "/";
-	if (CreateDirectoryA(outDir.c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {}
-	else {
-		std::cout << "Error creating output directory" << std::endl;
-		return false;
-	}
+	// Append the output directory with the print number and create the directory
+	outDir.append("/print" + std::to_string(lineNum) + "/");
+	try { fs::create_directories(outDir); }
+	catch (std::exception& e) { std::cout << e.what(); }
 	
 	// make the scaffold
-	raster = Raster(input.length, input.width, input.rodSpc, input.rodSpc - .1);
-	MultiLayerScaffold scaffold(input, raster);
+	raster = Raster(input.length, input.width, input.rodSpc, input.rodSpc - .1, rasterBorder);
+	raster.offset(cv::Point2d(input.initPos.x, input.initPos.y));
+	//MultiLayerScaffold scaffold(input, raster);
+	FunGenScaf scaffold(input, raster, augerModel);
 	// add a lead out line
 	printOpts.leadout = -SCAN_OFFSET_X + 1;
 	scaffold.leadout(-SCAN_OFFSET_X);
 
 	path = scaffold.path;
 	segments = scaffold.segments;
+
+#ifdef DEBUG_SCANNING
+	q_scanMsg.push(true);
+	t_CollectScans(raster);
+	return 0;
+#endif // DEBUG_SCANNING
+
+	cv::Mat imseg = raster.draw(input.startLayer);
+	drawSegments(raster.draw(input.startLayer), imseg, segments, raster.origin(), input.startLayer, 3);
+	cv::Mat image = cv::Mat::zeros(raster.size(segments.back().layer()), CV_8UC3);
+	drawMaterial(image, image, scaffold.segments, scaffold.path, scaffold.segments.back().layer());
 
 	switch (option)
 	{
@@ -137,26 +140,44 @@ int main() {
 		t_control.join();
 
 		break;
-	
+	case 'w': // PRINTING WITHOUT CONTROL
+		outDir.append("print_");
+		ctrlPath = path;
+
+		t_scan = std::thread{ t_CollectScans, raster };
+		t_process = std::thread{ t_GetMatlErrors, raster, path };
+		t_print = std::thread{ t_printQueue, path[0][0], printOpts };
+		t_control = std::thread{ t_noController, ctrlPath };
+
+		t_scan.join();
+		t_process.join();
+		t_control.join();
+
+		break;
+
 	case 's': // SCANNING
-		outDir.append("scan_");
 		Raster rasterScan;
 		segments.clear();
 		path.clear();
 		printOpts.extrude = false;
-		initPos += cv::Point3d(0, 0, 1); // raise path
-		std::cout << "(m)oving or (f)ixed scan: ";
+		std::cout << "(r)otating or (f)ixed scan: ";
 		std::cin >> option;
 		switch (option)
 		{
 		default:
 			return 0;
-		case 'm':
+		case 'r':
+			outDir.append("scanR_");
 			rasterScan = raster;
-			rasterScan.offset(cv::Point2d(0, 1.5)); // offset path in y direction
-			makePath(rasterScan, wayptSpc, 0, initPos, initVel, initExt, segments, path);
-			makeFGS(path, testTp[0], testTp[1], range, augerModel);
-			ctrlPath = path;
+			if (input.startLayer % 2 == 0) { rasterScan.offset(cv::Point2d(0, 1.5)); } // offset path in y direction
+			else { rasterScan.offset(cv::Point2d(1.5, 0)); } // offset path in x direction
+			input.initPos += cv::Point3d(0, 0, 1); // raise path
+			scaffold = FunGenScaf (input, rasterScan, augerModel);
+			scaffold.leadout(-SCAN_OFFSET_X);
+			segments = scaffold.segments;
+			path = scaffold.path;
+			ctrlPath = scaffold.path;
+
 			t_scan = std::thread{ t_CollectScans, raster };
 			t_process = std::thread{ t_GetMatlErrors, raster, path };
 			t_print = std::thread{ t_printQueue, path[0][0], printOpts };
@@ -167,30 +188,14 @@ int main() {
 			t_control.join();
 			break;
 		case 'f':
+			outDir.append("scanF_");
 			printOpts.leadin = 0;
 			printOpts.leadout = 0;
 			printOpts.asyncTheta = 0;
-			rasterScan = Raster(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth());
-			rasterScan.offset(cv::Point2d(initPos.x, initPos.y));
-			rasterScan.offset(cv::Point2d(0, 1.5));
-
-			std::cout << "Scan at (1) 0 deg or (2) 180 deg: ";
-			std::cin >> option;
-			switch (option)
-			{
-			default:
-				return 0;
-			case '1':
-				rasterScan.offset(cv::Point2d(-SCAN_OFFSET_X - raster.rodWidth(), 0));
-				makePath(rasterScan, wayptSpc, 0, initPos, initVel, initExt, segments, path);
-				break;
-			case '2':
-				rasterScan.offset(cv::Point2d(SCAN_OFFSET_X - raster.rodWidth(), 0));
-				makePath(rasterScan, wayptSpc, 180, initPos, initVel, initExt, segments, path);
-				break;
-			}
-
-			ctrlPath = path;
+			
+			segments = scaffold.segmentsScan;
+			path = scaffold.pathScan;
+			ctrlPath = scaffold.pathScan;
 			t_scan = std::thread{ t_CollectScans, raster };
 			t_print = std::thread{ t_printQueue, path[0][0], printOpts };
 			t_control = std::thread{ t_noController, ctrlPath };
@@ -198,11 +203,13 @@ int main() {
 			t_scan.join();
 			t_control.join();
 
-			// Remake the actual rater path used in the print
+			// Calculate the errors using the actual rater path used in the print
 			segments.clear();
 			path.clear();
-			makePath(raster, wayptSpc, 0, initPos, initVel, initExt, segments, path);
-			makeFGS(path, testTp[0], testTp[1], range, augerModel);
+			path = scaffold.path;
+			ctrlPath = scaffold.path;
+			segments = scaffold.segments;
+
 			t_GetMatlErrors(raster, path);
 			break;
 		}
@@ -242,7 +249,7 @@ int main() {
 	// loop through each long segment
 	for (int i = 0; i < path.size(); i += 2) {
 		E2d = sqrt(std::accumulate(segments[i].errWD().begin(), segments[i].errWD().end(), 0.0, sumsq));
-		E2d /= wayptSpc * (std::count_if(segments[i].errWD().begin(), segments[i].errWD().end(), [](double a) {return !std::isnan(a); }) - 1);
+		E2d /= input.wayptSpc * (std::count_if(segments[i].errWD().begin(), segments[i].errWD().end(), [](double a) {return !std::isnan(a); }) - 1);
 		outfile << std::setw(6) << std::fixed << E2d;
 		if (i % 4 == 0 ) outfile << "\t";
 		else outfile << "\n";
