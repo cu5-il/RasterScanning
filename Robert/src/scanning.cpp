@@ -267,65 +267,75 @@ void findEdges2(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv
 		cv::LineIterator lineit(edgeBoundary, scanStart, scanEnd, 8);
 		cv::Point2d edgeCoord, slope;
 
-		cv::Mat ROIblur, morph, pkMask, mask, median, baseline, kern;
+		cv::Mat ROIblur, ROInorm, threshMask, pkMask, profile, edgeMask, kern, mask;
 		cv::Scalar mean, stddev;
 		int sigma, sz;
+		double thresh, floorVal;
 
 		// Blur the scan
 		sigma = 61;
 		sz = 9;
 		cv::GaussianBlur(scanROI, ROIblur, cv::Size(sz, sz), (double)sigma / 10);
 
-
 		cv::meanStdDev(ROIblur, mean, stddev);
 		if (stddev.val[0] > 0.015){
-			// find the meadian height value of the scan and use the median mask to average only the heights below the median
-			cv::normalize(ROIblur, median, 0, 255, cv::NORM_MINMAX, CV_8U);
-			cv::threshold(median, median, 2, 255, cv::THRESH_BINARY_INV + cv::THRESH_OTSU);
-			median.convertTo(median, CV_8U);
-			kern = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
-			cv::morphologyEx(median, median, cv::MORPH_CLOSE, kern, cv::Point(-1, -1), 1);
-			cv::meanStdDev(scanROI, mean, stddev, median);
+			// Convert and normalize the ROI profile to use the thresholding operation
+			cv::normalize(ROIblur, ROInorm, 0, 255, cv::NORM_MINMAX, CV_8U);
 
-			// truncate all values above the mean baseline value and set as the baseline then smooth the baseline
-			cv::threshold(ROIblur, baseline, mean.val[0], 255, cv::THRESH_TRUNC);
-			cv::morphologyEx(baseline, baseline, cv::MORPH_OPEN, kern, cv::Point(-1, -1), 2);
-			cv::blur(baseline, baseline, cv::Size(scanROI.cols / 8, scanROI.cols / 8));
-
-			// merge the baseline and the scan
-			ROIblur.copyTo(morph);
-			baseline.copyTo(morph, median);
+			// Recursive Otsu thresholding
+			pkMask = cv::Mat::zeros(ROInorm.size(), CV_8U);
 			kern = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
-			cv::morphologyEx(morph, morph, cv::MORPH_CLOSE, kern, cv::Point(-1, -1), 2);
-			sigma = 19;
-			cv::GaussianBlur(morph, morph, cv::Size(sz, sz), (double)sigma / 10);
+			for (int i = 0; i < 7; i++) 
+			{
+				// threshold the image
+				thresh = cv::threshold(ROInorm, threshMask, 2, 255, cv::THRESH_BINARY_INV + cv::THRESH_OTSU);
+				// set all values in the normed profile below the threshod to the floor value
+				floorVal = (thresh) / ((double)i + 1);
+				if (floorVal < 1) { break; }
+				cv::Mat(ROInorm.size(), ROInorm.type(), cv::Scalar(floorVal)).copyTo(ROInorm, threshMask);
+				// Cumulatively add the thresh masks to form the 
+				cv::bitwise_or(threshMask, pkMask, pkMask);
 
-			// offset the baseline
-			baseline += 0.005;
-			// find the parts of the scan that are above the baseline
-			cv::compare(morph, baseline, pkMask, cv::CMP_GT);
-			cv::Sobel(pkMask, pkMask, -1, 2, 0, 3, 1, 0, cv::BORDER_REPLICATE);
+				/*auto ax2 = CvPlot::makePlotAxes();
+				ax2.create<CvPlot::Series>(edgePlot, "-k"); // put "ROInorm.copyTo(edgePlot);" before for loop
+				ax2.create<CvPlot::Series>(ROInorm, "-b");
+				cv::Mat ax_2 = ax2.render();*/
+			}
+
+			cv::meanStdDev(scanROI, mean, stddev, pkMask);
+			ROIblur.copyTo(profile);
+			cv::Mat(mean.val[0] * cv::Mat::ones(ROIblur.size(), ROIblur.type())).copyTo(profile, pkMask);
+			kern = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+			cv::morphologyEx(profile, profile, cv::MORPH_CLOSE, kern, cv::Point(-1, -1), 2);
+			//cv::morphologyEx(profile, profile, cv::MORPH_DILATE, kern, cv::Point(-1, -1), 1);
+			sigma = 19;
+			cv::GaussianBlur(profile, profile, cv::Size(sz, sz), (double)sigma / 10);
+			edgeMask = profile > (mean.val[0] + 0.005);
+
+			cv::Sobel(edgeMask, edgeMask, -1, 2, 0, 3, 1, 0, cv::BORDER_REPLICATE);
 
 			// filter out any peaks near the edges of the scan
 			mask = cv::Mat::zeros(pkMask.size(), CV_8U);
 			mask(cv::Range(0, 1), cv::Range(MM2PIX(0.5), mask.cols - MM2PIX(0.5))) = 255;
-			cv::bitwise_and(pkMask, mask, pkMask);
+			cv::bitwise_and(edgeMask, mask, edgeMask);
 			
-			std::vector<cv::Point> peaks;
-			cv::findNonZero(pkMask, peaks);
+			std::vector<cv::Point> edgePts;
+			cv::findNonZero(edgeMask, edgePts);
 
 #ifdef DEBUG_SCANNING
+			cv::Mat edgePlot = NAN*cv::Mat::ones(ROIblur.size(), ROIblur.type());
+			scanROI.copyTo(edgePlot, edgeMask);
 			auto ax1 = CvPlot::makePlotAxes();
 			ax1.create<CvPlot::Series>(scanROI, "-k");
 			ax1.create<CvPlot::Series>(ROIblur, "-b");
-			ax1.create<CvPlot::Series>(morph, "-m");
-			ax1.create<CvPlot::Series>(baseline, "-c");
+			ax1.create<CvPlot::Series>(profile, "-m");
+			ax1.create<CvPlot::Series>(edgePlot, "ro");
 			cv::Mat ax_1 = ax1.render();
 #endif // DEBUG_SCANNING
 
 			// mark edges on global ROI
 			slope = cv::Point2d(scanEnd - scanStart) / lineit.count;
-			for (auto it = peaks.begin(); it != peaks.end(); ++it) {
+			for (auto it = edgePts.begin(); it != edgePts.end(); ++it) {
 				edgeCoord = cv::Point2d(scanStart) + (*it).x * slope;
 				edges.at<uchar>(cv::Point2i(edgeCoord)) = 255;
 			}
