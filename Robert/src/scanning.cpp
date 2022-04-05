@@ -312,7 +312,8 @@ void findEdges2(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv
 			cv::GaussianBlur(profile, profile, cv::Size(sz, sz), (double)sigma / 10);
 			edgeMask = profile > (mean.val[0] + 0.005);
 
-			cv::Sobel(edgeMask, edgeMask, -1, 2, 0, 3, 1, 0, cv::BORDER_REPLICATE);
+			cv::Sobel(edgeMask, edgeMask, -1, 2, 0, 1, 1, 0, cv::BORDER_REPLICATE); 
+			// ksize = 3 gives the inner edge, ksize = 1 gives the outer edge
 
 			// filter out any peaks near the edges of the scan
 			mask = cv::Mat::zeros(pkMask.size(), CV_8U);
