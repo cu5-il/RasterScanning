@@ -75,10 +75,7 @@ int main() {
 
 	std::cout << "Enter Test #: ";
 	std::cin >> lineNum;
-	std::cout << "Enter file to load ";
-	std::cin >> datafile;
 
-	cv::Mat edges = cv::imread("./Input/" + datafile, cv::IMREAD_GRAYSCALE);
 
 	TableInput input(infile, lineNum);
 	// copy the table to the output folder
@@ -103,7 +100,12 @@ int main() {
 	cv::Mat imseg = raster.draw(input.startLayer);
 	drawSegments(raster.draw(input.startLayer), imseg, segments, raster.origin(), input.startLayer, 3);
 	cv::Mat image = cv::Mat::zeros(raster.size(segments.back().layer()), CV_8UC3);
-	drawMaterial(image, image, scaffold.segments, scaffold.path, scaffold.segments.back().layer());
+	drawMaterialSegments(image, image, scaffold.segments, scaffold.path, scaffold.segments.back().layer());
+
+	std::cout << "Enter file to load ";
+	std::cin >> datafile;
+
+	cv::Mat edges = cv::imread("./Input/" + datafile, cv::IMREAD_GRAYSCALE);
 
 	// draw the material
 	edgeMsg edgemsg;

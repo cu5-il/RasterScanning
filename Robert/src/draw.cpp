@@ -241,3 +241,90 @@ void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, cv::Poin
 		}
 	}
 }
+
+void drawMaterialSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vector<std::vector<Path>> path, int layer) {
+	std::vector<cv::Point> allEdgePts, lEdge, rEdge;
+	cv::Mat matlPath = cv::Mat(src.size(), CV_8UC3, cv::Scalar(255, 255, 255)); //cv::Mat::zeros(src.size(), CV_8UC3);
+	cv::Mat matlSeg= cv::Mat(src.size(), CV_8UC3, cv::Scalar(255, 255, 255));
+	cv::RNG rng(1);
+	cv::Scalar color(255, 255, 255);
+	int segNum = 0;
+	int minW = INT16_MAX;
+
+	cv::Scalar red(102, 85, 187);
+	cv::Scalar blue(136, 68, 0);
+	cv::Scalar yel(51, 170, 221);
+
+	uint64 i = 0;
+	//while (true) {
+		//cv::RNG rng(0xFFFFFFFF);
+		rng = cv::RNG(i);
+
+		// getting the values from each segment
+		for (auto it = seg.begin(); it != seg.end(); ++it, segNum++) {
+			if ((*it).layer() == layer)
+			{
+				color = randomColor(rng);
+
+				switch (segNum%4)
+				{
+				case 0:
+					color = blue;
+					break;
+				case 1:
+					color = yel;
+					break;
+				case 2:
+					color = red;
+					break;
+				case 3:
+					color = yel;
+					break;
+				}
+
+
+				// Draw the desired material
+				// Draw circle at the both ends of the segment
+				cv::circle(matlSeg, (*it).waypoints().front(), MM2PIX(path[segNum].front().w / 2), color, -1);
+				cv::circle(matlSeg, (*it).waypoints().back(), MM2PIX(path[segNum].back().w / 2), color, -1);
+				// loop through all the waypoints
+				for (int j = 0; j < path[segNum].size(); j++) {
+					if (printDir::X((*it).dir())) {
+						lEdge.push_back((*it).waypoints()[j] - cv::Point(0, MM2PIX(path[segNum][j].w / 2)));
+						rEdge.push_back((*it).waypoints()[j] + cv::Point(0, MM2PIX(path[segNum][j].w / 2)));
+					}
+					else if (printDir::Y((*it).dir())) {
+						lEdge.push_back((*it).waypoints()[j] - cv::Point(MM2PIX(path[segNum][j].w / 2), 0));
+						rEdge.push_back((*it).waypoints()[j] + cv::Point(MM2PIX(path[segNum][j].w / 2), 0));
+					}
+					minW = (MM2PIX(path[segNum][j].w) < minW) ? MM2PIX(path[segNum][j].w) : minW;
+
+				}
+
+				allEdgePts.reserve(lEdge.size() + rEdge.size()); // preallocate memory
+				allEdgePts.insert(allEdgePts.end(), lEdge.begin(), lEdge.end());
+				allEdgePts.insert(allEdgePts.end(), rEdge.rbegin(), rEdge.rend());
+				cv::fillPoly(matlSeg, allEdgePts, color);
+				allEdgePts.clear();
+				lEdge.clear();
+				rEdge.clear();
+
+			}
+		}
+	//	i++;
+	//	segNum = 0;
+	//}
+	cv::cvtColor(matlSeg,matlPath,cv::COLOR_BGR2GRAY);
+	matlPath = matlPath < 255;
+	cv::bitwise_not(matlPath, matlPath);
+	//cv::Mat(matlPath.size(), CV_8UC1, cv::Scalar(0)).copyTo(matlP)
+
+	matlSeg.copyTo(dst);
+	// copy the source to the destination
+	src.copyTo(dst);
+	if (dst.channels() < 3) {
+		cv::cvtColor(dst, dst, cv::COLOR_GRAY2BGR);
+	}
+
+	return;
+}
