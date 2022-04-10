@@ -103,9 +103,16 @@ int main() {
 	drawMaterialSegments(image, image, scaffold.segments, scaffold.path, scaffold.segments.back().layer());
 
 	std::cout << "Enter file to load ";
-	std::cin >> datafile;
+	//std::cin >> datafile;
+	datafile = "scan5_edgedata.png";
 
 	cv::Mat edges = cv::imread("./Input/" + datafile, cv::IMREAD_GRAYSCALE);
+
+	image = cv::Mat::zeros(raster.size(segments.back().layer()), CV_8UC3);
+	raster.draw(image, image, segments.back().layer());
+	raster.drawBdry(image, image, segments.back().layer(), cv::Scalar(255, 0, 0), MM2PIX(0.05));
+	drawEdges(image, image, edges, cv::Scalar(0, 0, 255), MM2PIX(0.1));
+	cv::imwrite(outDir + "edges_" + ".png", image);
 
 	// draw the material
 	edgeMsg edgemsg;
@@ -117,46 +124,31 @@ int main() {
 
 	t_GetMatlErrors(raster, path);
 
-	/*
-	// Opening a file to save the results
-	std::ofstream outfile;
-	outfile.open(std::string(outDir + "pathData.txt").c_str());
-	outfile.precision(3);
-	// loop through each long segment
-	for (int i = 0; i < path.size(); i += 2) {
-		// loop through all the waypoints
-		for (int j = 0; j < path[i].size(); j++) {
-			outfile << std::setw(7) << std::fixed << ctrlPath[i][j].x << "\t";
-			outfile << std::setw(7) << std::fixed << ctrlPath[i][j].y << "\t";
-			outfile << std::setw(6) << std::fixed << ctrlPath[i][j].f << "\t";
-			outfile << std::setw(6) << std::fixed << ctrlPath[i][j].e << "\t";
-			outfile << std::setw(6) << std::fixed << ctrlPath[i][j].w << "\t";
-			if (!segments[i].errWD().empty())
-				outfile << std::setw(9) << std::fixed << segments[i].errWD()[j] << "\t";
-			if (!segments[i].errCL().empty())
-				outfile << std::setw(9) << std::fixed << segments[i].errCL()[j];
-			outfile << "\n";
+	
+	// draw inner and outer edges
+	cv::Mat lredges = 255 * cv::Mat::ones(raster.size(), CV_8UC1);
+	cv::cvtColor(lredges, lredges, cv::COLOR_GRAY2BGR);
+	int thick = MM2PIX(0.1);
+	//raster.draw(lredges, lredges, 0, cv::Scalar(0, 0, 0), thick);
+
+	cv::Scalar red(102, 85, 187);
+	cv::Scalar blue(136, 68, 0);
+	cv::Scalar yel(51, 170, 221);
+	cv::Scalar lcolor, rcolor, wpcolor;
+	lcolor = cv::Scalar(255,0,0);
+	rcolor = cv::Scalar(0, 0, 255);
+	wpcolor = cv::Scalar(0, 0, 0);
+
+	for (auto it = segments.begin(); it != segments.end(); ++it) {
+		cv::polylines(lredges, (*it).lEdgePts(), false, lcolor, thick);
+		cv::polylines(lredges, (*it).rEdgePts(), false, rcolor, thick);
+		// draw the waypoints
+		for (auto it2 = (*it).waypoints().begin(); it2 != (*it).waypoints().end(); ++it2) {
+			cv::circle(lredges, *it2, thick, wpcolor, -1, cv::LINE_AA);
 		}
 	}
-	outfile.close();
-
-	// calculate the error norms
-	double E2d;
-	auto sumsq = [](double a, double b) {
-		if (!std::isnan(b)) return a + b * b;
-		else return a; };
-	outfile.open(std::string(outDir + "errors.txt").c_str());
-	outfile.precision(3);
-	// loop through each long segment
-	for (int i = 0; i < path.size(); i += 2) {
-		E2d = sqrt(std::accumulate(segments[i].errWD().begin(), segments[i].errWD().end(), 0.0, sumsq));
-		E2d /= input.wayptSpc * (std::count_if(segments[i].errWD().begin(), segments[i].errWD().end(), [](double a) {return !std::isnan(a); }) - 1);
-		outfile << std::setw(6) << std::fixed << E2d;
-		if (i % 4 == 0) outfile << "\t";
-		else outfile << "\n";
-	}
-	outfile.close();
-	*/
+	cv::imwrite(outDir + "LRedges" + ".png", lredges);
+	
 
 cleanup:
 	//A3200 Cleanup
