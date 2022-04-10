@@ -80,7 +80,7 @@ void postPrint(Path lastWpt, PrintOptions printOpts) {
 	std::string cmd;
 
 	// retract the auger 
-	extruder.set(-0.7);
+	extruder.set(-0.4);
 
 	// make the lead out line
 	if (printOpts.leadout > 0)
@@ -109,8 +109,6 @@ void postPrint(Path lastWpt, PrintOptions printOpts) {
 	// raise the z axis
 	cmd = "G1 Z " + std::to_string(SAFE_Z) + " F10";
 	if (!A3200CommandExecute(handle, TASK_PRINT, cmd.c_str(), NULL)) { A3200Error(); }
-	// reduce auger retraction
-	extruder.set(-0.7);
 	
 	if (printOpts.disposal)
 	{
