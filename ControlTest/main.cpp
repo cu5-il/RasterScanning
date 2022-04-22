@@ -225,6 +225,7 @@ int main() {
 	for (int i = 0; i < path.size(); i += 2) {
 		// loop through all the waypoints
 		for (int j = 0; j < path[i].size(); j++) {
+			outfile << std::setw(3) << std::fixed << i << "\t";
 			outfile << std::setw(7) << std::fixed << ctrlPath[i][j].x << "\t";
 			outfile << std::setw(7) << std::fixed << ctrlPath[i][j].y << "\t";
 			outfile << std::setw(6) << std::fixed << ctrlPath[i][j].f << "\t";
