@@ -56,6 +56,7 @@ int main() {
 
 	std::thread t_scan, t_process, t_control, t_print;
 
+	// ---------------------------- LOADING INPUTS ----------------------------
 	// Initialize parameters
 	Raster raster;
 	double rasterBorder = 2;
@@ -111,6 +112,43 @@ int main() {
 	path = scaffold.path;
 	segments = scaffold.segments;
 
+	// Load the inputs for the initial segments
+	if (option == 'p')
+	{
+		std::string filename, line;
+		std::cout << "Enter file name containg initial segment inputs or press ENTER to continue\n";
+		std::getline(std::cin, filename);
+		if (!filename.empty())
+		{
+			std::ifstream inFile("./Input/" + filename + ".txt");
+			std::vector<double> f, e;
+			if (inFile.is_open())
+			{
+				for (int i = 0; i < 3; i += 2)
+				{
+					// read the segment inputs
+					std::getline(inFile, line);
+					std::stringstream ss(line);
+					f = std::vector<double>(std::istream_iterator<double>(ss), std::istream_iterator<double>());
+					std::getline(inFile, line);
+					ss = std::stringstream(line);
+					e = std::vector<double>(std::istream_iterator<double>(ss), std::istream_iterator<double>());
+					// assign the segment inputs
+					for (int j = 0; j < path[i].size(); j++) {
+						path[i][j].f = f[j];
+						path[i][j].e = e[j];
+					}
+				}
+				inFile.close();
+			}
+			else {
+				std::cout << "Unable to open: " << filename << std::endl;
+				system("pause");
+				return 0;
+			}
+		}
+	}
+
 #ifdef DEBUG_SCANNING
 	q_scanMsg.push(true);
 	t_CollectScans(raster);
@@ -121,6 +159,8 @@ int main() {
 	drawSegments(raster.draw(input.startLayer), imseg, segments, raster.origin(), input.startLayer, 3);
 	cv::Mat image = cv::Mat::zeros(raster.size(segments.back().layer()), CV_8UC3);
 	drawMaterial(image, image, scaffold.segments, scaffold.path, scaffold.segments.back().layer());
+
+	// ---------------------------- PRINTING & SCANNING ----------------------------
 
 	switch (option)
 	{
@@ -217,6 +257,8 @@ int main() {
 		break;
 	}
 
+	// ---------------------------- SAVING DATA ----------------------------
+
 	// Opening a file to save the results
 	std::ofstream outfile;
 	outfile.open(std::string(outDir + "pathData.txt").c_str());
@@ -225,7 +267,7 @@ int main() {
 	for (int i = 0; i < path.size(); i += 2) {
 		// loop through all the waypoints
 		for (int j = 0; j < path[i].size(); j++) {
-			outfile << std::setw(3) << std::fixed << i << "\t";
+			outfile << std::setw(3) << std::fixed << i << "\t";// segment number
 			outfile << std::setw(7) << std::fixed << ctrlPath[i][j].x << "\t";
 			outfile << std::setw(7) << std::fixed << ctrlPath[i][j].y << "\t";
 			outfile << std::setw(6) << std::fixed << ctrlPath[i][j].f << "\t";
@@ -239,6 +281,32 @@ int main() {
 		}
 	}
 	outfile.close();
+
+	// Use the errors from the last segments to calcualte the inputs for the next layer and save them to a txt file
+	if (option == 'p')
+	{
+		outfile.open(std::string(outDir + "nextLayerInputs.txt").c_str());
+		errsMsg errMsg;
+
+		while (!q_errsMsg.empty()) {
+			q_errsMsg.wait_and_pop(errMsg);
+			if (!errMsg.errCL().empty() && !errMsg.errWD().empty()) {
+				Path nextPath;
+				std::vector<double> f, e;
+				// calculate the inputs
+				for (int i = 0; i < errMsg.errWD().size(); i++) {
+					controller.nextPath(nextPath, ctrlPath[errMsg.segmentNum()][i], errMsg.errWD()[i], errMsg.errCL()[i]);
+					f.push_back(nextPath.f);
+					e.push_back(nextPath.e);
+				}
+				// write the inputs to the txt file
+				for (auto const& v : f) outfile << v << '\t';
+				outfile << '\n';
+				for (auto const& v : e) outfile << v << '\t';
+			}
+		}
+		outfile.close();
+	}
 
 	// calculate the error norms
 	double E2d;
