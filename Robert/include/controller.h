@@ -29,20 +29,20 @@ public:
 	AugerController()
 		:_kp(1) {}
 	AugerController(MaterialModel augerModel)
-		: _augerModel(augerModel), _kp(1) {}
+		: _model(augerModel), _kp(1) {}
 	AugerController(MaterialModel augerModel, double kp)
-		: _augerModel(augerModel), _kp(kp) {}
+		: _model(augerModel), _kp(kp) {}
 	AugerController(MaterialModel augerModel, double minE, double maxE)
-		: _augerModel(augerModel), _kp(1) { Controller:setAugerLimits(minE, maxE);}
+		: _model(augerModel), _kp(1) { Controller:setAugerLimits(minE, maxE);}
 	AugerController(MaterialModel augerModel,double kp, double minE, double maxE)
-		: _augerModel(augerModel), _kp(kp) {Controller:setAugerLimits(minE, maxE);}
+		: _model(augerModel), _kp(kp) {Controller:setAugerLimits(minE, maxE);}
 
 	void nextPath(Path& nextPath, Path prevPath, double errWd, double errCl)
 	{
-		double prevWidth = _augerModel.width(prevPath.e, prevPath.f);
+		double prevWidth = _model.width(prevPath.e, prevPath.f);
 		double nextE;
 		if (!isnan(errWd)) {
-			nextE = _augerModel.output(prevWidth + _kp* errWd, prevPath.f);
+			nextE = _model.output(prevWidth + _kp* errWd, prevPath.f);
 			// check if output is saturated
 			if (nextE < _minE) { nextE = _minE; }
 			if (nextE > _maxE) { nextE = _maxE; }
@@ -56,7 +56,45 @@ public:
 	}
 
 private:
-	MaterialModel _augerModel;
+	MaterialModel _model;
+	double _kp;
+};
+
+// Velocity controller class
+class VelocityController : public Controller
+{
+public:
+	VelocityController()
+		:_kp(1) {}
+	VelocityController(MaterialModel velocityModel)
+		: _model(velocityModel), _kp(1) {}
+	VelocityController(MaterialModel velocityModel, double kp)
+		: _model(velocityModel), _kp(kp) {}
+	VelocityController(MaterialModel velocityModel, double minF, double maxF)
+		: _model(velocityModel), _kp(1) { Controller:setFeedLimits(minF, maxF); }
+	VelocityController(MaterialModel velocityModel, double kp, double minF, double maxF)
+		: _model(velocityModel), _kp(kp) { Controller:setFeedLimits(minF, maxF); }
+
+	void nextPath(Path& nextPath, Path prevPath, double errWd, double errCl)
+	{
+		double prevWidth = _model.width(prevPath.e, prevPath.f);
+		double nextF;
+		if (!isnan(errWd)) {
+			nextF = _model.output(prevWidth + _kp * errWd, prevPath.f);
+			// check if output is saturated
+			if (nextF < _minF) { nextF = _minF; }
+			if (nextF > _maxF) { nextF = _maxF; }
+			nextPath.f = nextF;
+		}
+	}
+
+	void kp(double kp)
+	{
+		_kp = kp;
+	}
+
+private:
+	MaterialModel _model;
 	double _kp;
 };
 
