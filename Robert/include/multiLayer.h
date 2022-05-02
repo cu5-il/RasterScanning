@@ -43,10 +43,13 @@ inline MultiLayerScaffold::MultiLayerScaffold(TableInput input, Raster raster_)
 	// make the scanning path 
 	if (input.layers == 1)
 	{
-		
+		TableInput input2 = input;
+		// set the scanning speed
+		input2.F = 2;
+
 		Raster rasterScan(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth(), raster.border());
 		rasterScan.offset(cv::Point2d(input.initPos.x, input.initPos.y));
-		input.initPos+=cv::Point3d(0, 0, 1); // raise path
+		input2.initPos+=cv::Point3d(0, 0, 1); // raise path
 		switch (input.startLayer)
 		{
 		default:
@@ -64,7 +67,7 @@ inline MultiLayerScaffold::MultiLayerScaffold(TableInput input, Raster raster_)
 			rasterScan.offset(cv::Point2d(raster.spacing() / 2, SCAN_OFFSET_X - raster.rodWidth()));
 			break;
 		}
-		_makePath(input, rasterScan, segmentsScan, pathScan);
+		_makePath(input2, rasterScan, segmentsScan, pathScan);
 	}
 }
 
@@ -253,14 +256,11 @@ inline bool FunGenScaf::_makeFGS(char scafType, double range[2])
 	double delta;
 	double width = range[0];
 
-	if (scafType != 'b' && scafType != 'g' && scafType != 'c') {
-		std::cout << "ERROR: unknown scaffold type" << std::endl;
-		return false;
-	}
-
 	switch (scafType)
 	{
 	default:
+		std::cout << "ERROR: unknown scaffold type" << std::endl;
+		return false;
 		break;
 	case 'b': // bowtie scaffold
 	{
@@ -332,6 +332,22 @@ inline bool FunGenScaf::_makeFGS(char scafType, double range[2])
 				if (std::distance(path.begin(), it_seg) % 2 == 0) {
 					width += delta;
 				}
+			}
+		}
+		break;
+	}
+	case 'p': // process map print
+	{
+		numPts = ceil((path.size() - 1) / 2.0);
+		delta = (range[1] - range[0]) / numPts;
+
+		for (auto it_seg = path.begin(); it_seg != path.end(); ++it_seg) {
+			for (auto it_rod = (*it_seg).begin(); it_rod != (*it_seg).end(); ++it_rod) {
+				// Modify the width
+				(*it_rod).w = width;
+			}
+			if (std::distance(path.begin(), it_seg) % 2 == 0) {
+				width += delta;
 			}
 		}
 		break;
