@@ -365,10 +365,10 @@ inline void FunGenScaf::_setInput(MaterialModel matModel)
 			// Modify the width
 			switch (matModel.type())
 			{
-			case 'f':
+			case MaterialModel::VELOCITY:
 				(*it_rod).f = matModel.output((*it_rod).w, (*it_rod).e);
 				break;
-			case 'a':
+			case MaterialModel::AUGER:
 				(*it_rod).e = matModel.output((*it_rod).w, (*it_rod).f);
 				break;
 			}

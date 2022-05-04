@@ -19,6 +19,13 @@ public:
 	const bool& empty() const { return _a.empty(); }
 	const char& type() const { return _type; }
 
+	enum types : char
+	{
+		VELOCITY = 'f', // 
+		FEED = 'f', // 
+		AUGER = 'a' // 
+	};
+
 private:
 
 	std::vector <double> _a, _b, _c, _fixedParam;
