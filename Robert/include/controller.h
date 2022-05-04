@@ -35,24 +35,25 @@ public:
 
 	void nextPath(Path& nextPath, Path prevPath, double errWd, double errCl)
 	{
-		double prevWidth = _model.width(prevPath.e, prevPath.f);
-		double nextInput;
+		double prevWidth, nextInput;
 		if (!isnan(errWd)) {
 			switch (_model.type())
 			{
 			case MaterialModel::AUGER:
+				prevWidth = _model.width(prevPath.e, prevPath.f);
 				nextInput = _model.output(prevWidth + _kp * errWd, prevPath.f);
 				// check if output is saturated
 				if (nextInput < _minE) { nextInput = _minE; }
 				if (nextInput > _maxE) { nextInput = _maxE; }
-				nextPath.e = nextInput;
+				nextPath.e = isnan(nextInput) ? prevPath.e : nextInput;
 				break;
 			case MaterialModel::VELOCITY:
+				prevWidth = _model.width(prevPath.f, prevPath.e);
 				nextInput = _model.output(prevWidth + _kp * errWd, prevPath.e);
 				// check if output is saturated
 				if (nextInput < _minF) { nextInput = _minF; }
 				if (nextInput > _maxF) { nextInput = _maxF; }
-				nextPath.f = nextInput;
+				nextPath.f = isnan(nextInput) ? prevPath.f : nextInput;
 				break;
 			}
 		}
