@@ -43,17 +43,6 @@ int main() {
 	try { fs::create_directories(outDir); }
 	catch (std::exception& e) { std::cout << e.what(); }
 
-	//=======================================
-	// Connecting to and setting up the A3200
-	std::cout << "Connecting to A3200. Initializing if necessary." << std::endl;
-	if (!A3200Connect(&handle)) { A3200Error(); }
-	// Creating a data collection handle and setting up the data collection
-	if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { A3200Error(); }
-	if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
-	// Initializing the extruder
-	extruder = Extruder(handle, TASK_PRINT);
-	//=======================================
-
 	std::thread t_scan, t_process, t_control, t_print;
 
 	// ---------------------------- LOADING INPUTS ----------------------------
@@ -63,14 +52,19 @@ int main() {
 	std::vector<std::vector<Path>> path, ctrlPath;
 
 	// defining the material models
-	MaterialModel augerModel = MaterialModel('a',
-		std::vector<double>{2, 3},
-		std::vector<double>{4.15, 3.95},
-		std::vector<double>{0.1, 0.1},
-		std::vector<double>{-2.815, -2.815});
+	MaterialModel augerModel = MaterialModel(MaterialModel::AUGER,
+		std::vector<double>{1.0, 1.5, 2.0, 2.5, 3.0},
+		std::vector<double>{1.5259, 1.1374, 0.93121, 0.7236, 0.59139},
+		std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8},
+		std::vector<double>{-0.10408, -0.073806, -0.050416, 0.017425, 0.056501});
 
-	// setting up the controller
-	AugerController controller(augerModel, 0.2, 3.5);
+	MaterialModel velocityModel = MaterialModel(MaterialModel::VELOCITY,
+		std::vector<double>{0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0},
+		std::vector<double>{0.3797, 0.52605, 0.67591, 0.81265, 0.95039, 1.0902, 1.2048, 1.3226},
+		std::vector<double>{-0.8, -0.8, -0.8, -0.8, -0.8, -0.8, -0.8, -0.8},
+		std::vector<double>{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1});
+
+	MaterialModel matModel;
 
 	// setting the print options
 	double leadin = 5;
@@ -90,6 +84,7 @@ int main() {
 	std::cout << "Test #: ";
 	std::cin >> lineNum;
 
+	// Reading the input parameters
 	TableInput input(infile, lineNum);
 	// copy the table to the output folder
 	try { fs::copy(infile, outDir, fs::copy_options::overwrite_existing); }
@@ -99,12 +94,33 @@ int main() {
 	outDir.append("/print" + std::to_string(lineNum) + "/");
 	try { fs::create_directories(outDir); }
 	catch (std::exception& e) { std::cout << e.what(); }
+
+	// Setting the control method (auger or velocity)
+	switch (input.method)
+	{
+	default:
+		std::cout << "ERROR: Unknown control type.\n";
+		system("pause");
+		return 0;
+		break;
+	case MaterialModel::AUGER:
+		matModel = augerModel;
+		break;
+	case MaterialModel::VELOCITY:
+		matModel = velocityModel;
+		break;
+	}
+	
+	// Setting up the controller
+	PController controller(matModel);
+	controller.setAugerLimits(0.2, 1.5);
+	controller.setFeedLimits(0.5, 4.0);
 	
 	// make the scaffold
 	raster = Raster(input.length, input.width, input.rodSpc, input.rodSpc - .1, rasterBorder);
 	raster.offset(cv::Point2d(input.initPos.x, input.initPos.y));
 	//MultiLayerScaffold scaffold(input, raster);
-	FunGenScaf scaffold(input, raster, augerModel);
+	FunGenScaf scaffold(input, raster, matModel);
 	// add a lead out line
 	printOpts.leadout = -SCAN_OFFSET_X + 1;
 	scaffold.leadout(-SCAN_OFFSET_X);
@@ -149,18 +165,29 @@ int main() {
 		}
 	}
 
-#ifdef DEBUG_SCANNING
-	q_scanMsg.push(true);
-	t_CollectScans(raster);
-	return 0;
-#endif // DEBUG_SCANNING
-
 	cv::Mat imseg = raster.draw(input.startLayer);
 	drawSegments(raster.draw(input.startLayer), imseg, segments, raster.origin(), input.startLayer, 3);
 	cv::Mat image = cv::Mat::zeros(raster.size(segments.back().layer()), CV_8UC3);
 	drawMaterial(image, image, scaffold.segments, scaffold.path, scaffold.segments.back().layer());
 
 	// ---------------------------- PRINTING & SCANNING ----------------------------
+
+	//=======================================
+	// Connecting to and setting up the A3200
+	std::cout << "Connecting to A3200. Initializing if necessary." << std::endl;
+	if (!A3200Connect(&handle)) { A3200Error(); }
+	// Creating a data collection handle and setting up the data collection
+	if (!A3200DataCollectionConfigCreate(handle, &DCCHandle)) { A3200Error(); }
+	if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
+	// Initializing the extruder
+	extruder = Extruder(handle, TASK_PRINT);
+	//=======================================
+
+#ifdef DEBUG_SCANNING
+	q_scanMsg.push(true);
+	t_CollectScans(raster);
+	return 0;
+#endif // DEBUG_SCANNING
 
 	switch (option)
 	{
