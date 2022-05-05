@@ -67,11 +67,11 @@ int main() {
 	MaterialModel matModel;
 
 	// setting the print options
-	double leadin = 5;
+	double leadin = 10;
 	PrintOptions printOpts(leadin);
 	printOpts.extrude = true;
 	printOpts.disposal = false;
-	printOpts.asyncTheta = 32;
+	printOpts.asyncTheta = 80;// 32;
 
 	// Getting user input
 	std::string resp, infile;
@@ -113,7 +113,7 @@ int main() {
 	
 	// Setting up the controller
 	PController controller(matModel);
-	controller.setAugerLimits(0.2, 1.5);
+	controller.setAugerLimits(0.3, 1.5);
 	controller.setFeedLimits(0.5, 4.0);
 	
 	// make the scaffold
@@ -133,6 +133,7 @@ int main() {
 	{
 		std::string filename, line;
 		std::cout << "Enter file name containg initial segment inputs or press ENTER to continue\n";
+		std::cin.ignore();
 		std::getline(std::cin, filename);
 		if (!filename.empty())
 		{
