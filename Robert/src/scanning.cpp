@@ -7,6 +7,7 @@
 #include <deque>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include "A3200_functions.h"
 
 #ifdef DEBUG_SCANNING
 #include <opencv2/highgui.hpp>
@@ -40,11 +41,11 @@ bool collectData(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle, DOU
 	if (!A3200DataCollectionStart(handle, DCCHandle)) { return false; }
 
 	// Triggering the laser scanner by sending a pulse from AnalogOutput0 
-	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, -6)) { return false; }
-	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, 0)) { return false; }
+	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, -6)) { A3200Error(); return false; }
+	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, 0)) { A3200Error(); return false; }
 
 	// Retrieving the collected data
-	if (!A3200DataCollectionDataRetrieve(handle, NUM_DATA_SIGNALS, NUM_DATA_SAMPLES, (DOUBLE*)data)) { return false; }
+	if (!A3200DataCollectionDataRetrieve(handle, NUM_DATA_SIGNALS, NUM_DATA_SAMPLES, (DOUBLE*)data)) { A3200Error(); return false; }
 
 	return true;
 }
