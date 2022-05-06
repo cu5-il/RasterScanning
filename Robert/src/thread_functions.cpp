@@ -28,7 +28,7 @@ void t_CollectScans(Raster raster) {
 	double collectedData[NUM_DATA_SIGNALS][NUM_DATA_SAMPLES];
 	Coords scanPosFbk;
 	edgeMsg msg;
-	double posErrThr = 2.5; // position error threshold for how close the current position is to the target
+	double posErrThr = 1.0;// position error threshold for how close the current position is to the target
 	cv::Point2d curPos;
 	int locXoffset = 0;
 	int layer = segments.front().layer();
