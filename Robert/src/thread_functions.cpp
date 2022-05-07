@@ -78,6 +78,7 @@ void t_CollectScans(Raster raster) {
 		raster.draw(image, image, i + segments.front().layer());
 		raster.drawBdry(image, image, i + segments.front().layer(), cv::Scalar(255, 0, 0), MM2PIX(0.05));
 		drawEdges(image, image, pastEdges[i], cv::Scalar(0, 0, 255), MM2PIX(0.1));
+		cv::flip(image, image, 0); // flip the image to have standard coordinate system with origin in lower left corner
 		cv::imwrite(outDir + "edges_" + std::to_string(i + segments.front().layer()) + ".png", image);
 		cv::imwrite(outDir + "edgedata_" + std::to_string(i + segments.front().layer()) + ".png", pastEdges[i]);
 	}
@@ -145,6 +146,7 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 			raster.draw(image, image, layer);
 			raster.drawBdry(image, image, layer, cv::Scalar(255, 0, 0), MM2PIX(0.05));
 			drawEdges(image, image, filteredEdges, cv::Scalar(0, 0, 255), MM2PIX(0.1));
+			cv::flip(image, image, 0); // flip the image to have standard coordinate system with origin in lower left corner
 			cv::imwrite(outDir + "edges_filt_" + std::to_string(layer) + ".png", image);
 			layer = (*it).layer();
 			filteredEdges = cv::Mat::zeros(raster.size(layer), CV_8UC1);
@@ -165,8 +167,16 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 		image = cv::Mat::zeros(raster.size(i), CV_8UC3);
 		raster.draw(image, image, i);
 		drawMaterial(image, image, segments, path, i);
+		cv::flip(image, image, 0); // flip the image to have standard coordinate system with origin in lower left corner
 		addScale(image, 1, cv::Point(5, 25), 2);
 		cv::imwrite(outDir + "matl_" + std::to_string(i) + ".png", image);
+
+		image = cv::Mat::zeros(raster.size(i), CV_8UC4);
+		raster.draw(image, image, i, cv::Scalar(128, 128, 128, 255));
+		drawOutlines(image, image, segments, i);
+		cv::flip(image, image, 0); // flip the image to have standard coordinate system with origin in lower left corner
+		addScale(image, 1, cv::Point(5, 25), 2);
+		cv::imwrite(outDir + "outline_" + std::to_string(i) + ".png", image);
 	}
 
 	std::cout << "All segments have been processed. Ending error processing thread." << std::endl;
