@@ -32,4 +32,6 @@ void drawSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, cv::Poin
 
 void drawMaterialSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, std::vector<std::vector<Path>> path, int layer = 0);
 
+void drawOutlines(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, int layer);
+
 #endif // !DRAW_H

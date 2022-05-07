@@ -23,8 +23,8 @@ void addScale(cv::Mat& image, double length, cv::Point offset, double fontScale)
 	cv::Point location(offset.x, image.rows - offset.y);
 	char buff[50];
 	snprintf(buff, sizeof(buff), "%gmm", length);
-	cv::putText(image, buff, location, cv::FONT_HERSHEY_SIMPLEX, fontScale, cv::Scalar(255, 255, 255), 1, cv::LINE_8);
-	cv::rectangle(image, cv::Rect(location.x + 6, location.y + 5, MM2PIX(length), MM2PIX(0.5)), cv::Scalar(255, 255, 255), -1);
+	cv::putText(image, buff, location, cv::FONT_HERSHEY_SIMPLEX, fontScale, cv::Scalar(255, 255, 255, 255), 1, cv::LINE_8);
+	cv::rectangle(image, cv::Rect(location.x + 6, location.y + 5, MM2PIX(length), MM2PIX(0.5)), cv::Scalar(255, 255, 255, 255), -1);
 }
 
 void drawEdges(cv::Mat src, cv::Mat&  dst, cv::Mat edges, const cv::Scalar& color, const int pointSz) {
@@ -327,4 +327,46 @@ void drawMaterialSegments(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, 
 	}
 
 	return;
+}
+
+void drawOutlines(cv::Mat src, cv::Mat& dst, std::vector<Segment>& seg, int layer) {
+	std::vector<cv::Point> actCenterline;
+	cv::Mat tempLines = cv::Mat::zeros(src.size(), CV_8UC4);
+	cv::Mat mask = cv::Mat(src.size(), CV_8UC4);
+
+	cv::Scalar colorEdge(255, 0, 255, 255);
+	cv::Scalar colorCLine(0, 255, 0, 255);
+
+	// getting the values from each segment
+	for (auto it = seg.begin(); it != seg.end(); ++it) {
+		if ((*it).layer() == layer)
+		{
+			// check if there are edge points
+			if (!(*it).lEdgePts().empty() && !(*it).rEdgePts().empty()) {
+				// Draw material edges
+				cv::polylines(tempLines, (*it).lEdgePts(), false, colorEdge, 1);
+				cv::polylines(tempLines, (*it).rEdgePts(), false, colorEdge, 1);
+			}
+			// check if the errors have been calculated
+			if (!(*it).errCL().empty() && !(*it).errWD().empty()) {
+				for (int i = 0; i < (*it).errCL().size(); i++) {
+					if (!isnan((*it).errCL()[i]) && !isnan((*it).errWD()[i])) {
+						actCenterline.push_back((*it).waypoints()[i] + cv::Point(0, MM2PIX((*it).errCL()[i])));
+					}
+				}
+				// Draw the actual centerline
+				cv::polylines(tempLines, actCenterline, false, colorCLine, 1);
+				actCenterline.clear();
+			}
+		}
+	}
+	// copy the source to the destination
+	src.copyTo(dst);
+	if (dst.channels() < 3) {
+		cv::cvtColor(dst, dst, cv::COLOR_GRAY2BGR);
+	}
+	// add the lines to the destination
+	cv::cvtColor(tempLines, mask, cv::COLOR_BGR2GRAY);
+	cv::threshold(mask, mask, 1, 255, cv::THRESH_BINARY);
+	tempLines.copyTo(dst, mask);
 }
