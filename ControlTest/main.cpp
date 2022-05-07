@@ -278,6 +278,17 @@ int main() {
 			ctrlPath = scaffold.path;
 			segments = scaffold.segments;
 
+			// Purge all existing edge messages
+			edgeMsg edgemsg;
+			while (!q_edgeMsg.empty()) { q_edgeMsg.wait_and_pop(edgemsg); }
+			cv::Mat edges = edgemsg.edges();
+			// Load the new edge messages
+			for (int i = 0; i < segments.size(); i++) 
+			{ 
+				edgemsg.addEdges(edges, i, (i == segments.size() - 1)); 
+				q_edgeMsg.push(edgemsg);
+			}
+
 			t_GetMatlErrors(raster, path);
 			break;
 		}

@@ -45,9 +45,10 @@ inline MultiLayerScaffold::MultiLayerScaffold(TableInput input, Raster raster_)
 	{
 		TableInput input2 = input;
 		// set the scanning speed
-		input2.F = 2;
-
-		Raster rasterScan(raster.length() + 2 * raster.rodWidth(), raster.width(), raster.spacing(), raster.rodWidth(), raster.border());
+		input2.F = 1;
+		double scanSpacing = raster.width() / ceil(raster.width() / 13.0);
+		
+		Raster rasterScan(raster.length() + 2 * raster.rodWidth(), raster.width(), scanSpacing, raster.rodWidth(), raster.border());
 		rasterScan.offset(cv::Point2d(input.initPos.x, input.initPos.y));
 		input2.initPos+=cv::Point3d(0, 0, 1); // raise path
 		switch (input.startLayer)
