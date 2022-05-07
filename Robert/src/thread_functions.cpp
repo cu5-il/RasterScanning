@@ -159,6 +159,7 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 	raster.draw(image, image, layer);
 	raster.drawBdry(image, image, layer, cv::Scalar(255, 0, 0), MM2PIX(0.05));
 	drawEdges(image, image, filteredEdges, cv::Scalar(0, 0, 255), MM2PIX(0.1));
+	cv::flip(image, image, 0); // flip the image to have standard coordinate system with origin in lower left corner
 	cv::imwrite(outDir + "edges_filt_" + std::to_string(layer) + ".png", image);
 
 	// drawing the material
