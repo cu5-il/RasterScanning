@@ -317,8 +317,15 @@ void findEdges2(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv
 			// ksize = 3 gives the inner edge, ksize = 1 gives the outer edge
 
 			// filter out any peaks near the edges of the scan
-			mask = cv::Mat::zeros(pkMask.size(), CV_8U);
-			mask(cv::Range(0, 1), cv::Range(MM2PIX(0.5), mask.cols - MM2PIX(0.5))) = 255;
+			if (pkMask.cols < MM2PIX(1.0))
+			{
+				mask = 255 * cv::Mat::ones(pkMask.size(), CV_8U);
+			}
+			else
+			{
+				mask = cv::Mat::zeros(pkMask.size(), CV_8U);
+				mask(cv::Range(0, 1), cv::Range(MM2PIX(0.5), mask.cols - MM2PIX(0.5))) = 255;
+			}
 			cv::bitwise_and(edgeMask, mask, edgeMask);
 			
 			std::vector<cv::Point> edgePts;
