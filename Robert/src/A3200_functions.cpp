@@ -5,6 +5,6 @@
 void A3200Error() {
 	CHAR data[1024];
 	A3200GetLastErrorString(data, 1024);
-	std::cout << "A3200 Error: " << data << std::endl;
+	std::cout << "\a A3200 Error: " << data << std::endl;
 	system("pause");
 }
