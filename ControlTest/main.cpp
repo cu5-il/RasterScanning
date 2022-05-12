@@ -209,7 +209,7 @@ int main() {
 
 		break;
 	case 'w': // PRINTING WITHOUT CONTROL
-		outDir.append("print_");
+		outDir.append("printNC_");
 		ctrlPath = path;
 
 		t_scan = std::thread{ t_CollectScans, raster };
