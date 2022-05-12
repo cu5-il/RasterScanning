@@ -46,7 +46,7 @@ inline MultiLayerScaffold::MultiLayerScaffold(TableInput input, Raster raster_)
 		TableInput input2 = input;
 		// set the scanning speed
 		input2.F = 1;
-		double scanSpacing = raster.width() / ceil(raster.width() / 13.0);
+		double scanSpacing = raster.width() == 0 ? raster.spacing() : raster.width() / ceil(raster.width() / 13.0);
 		
 		Raster rasterScan(raster.length() + 2 * raster.rodWidth(), raster.width(), scanSpacing, raster.rodWidth(), raster.border());
 		rasterScan.offset(cv::Point2d(input.initPos.x, input.initPos.y));
@@ -160,8 +160,10 @@ inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, std:
 				case 0: // Horizontal lines
 					roi = cv::Rect(*it - cv::Point(0, pixRodWth / 2), *std::next(it, 1) + cv::Point(0, pixRodWth / 2));
 					// shifting and stretching the roi
-					roi -= cv::Point(pixRodWth / 4, 0);
-					roi += cv::Size(pixRodWth / 2, 0);
+					//roi -= cv::Point(pixRodWth / 4, 0);
+					//roi += cv::Size(pixRodWth / 2, 0);
+					roi += cv::Point(pixRodWth / 4, 0);
+					roi -= cv::Size(pixRodWth / 2, 0);
 					// defining the point when the region has been completely scanned as the end of the next horizontal line
 					scanDonePt += (layer % 4 == 0) ? cv::Point2d(0, _raster.spacing()) : cv::Point2d(0, -_raster.spacing());
 					// if it is the final segment
@@ -209,8 +211,10 @@ inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, std:
 				case 1: // vertical lines
 					roi = cv::Rect(*it - cv::Point(pixRodWth / 2, 0), *std::next(it, 1) + cv::Point(pixRodWth / 2, 0));
 					// // shifting and stretching the roi
-					roi -= cv::Point(0, pixRodWth / 4);
-					roi += cv::Size(0, pixRodWth / 2);
+					//roi -= cv::Point(0, pixRodWth / 4);
+					//roi += cv::Size(0, pixRodWth / 2);
+					roi += cv::Point(0, pixRodWth / 4);
+					roi -= cv::Size(0, pixRodWth / 2);
 					// defining the point when the region has been completely scanned as the end of the next vertical line
 					scanDonePt += (layer % 4 == 1) ? cv::Point2d(_raster.spacing(), 0) : cv::Point2d(-_raster.spacing(), 0);
 					// if it is the final segment
