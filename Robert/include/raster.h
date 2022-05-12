@@ -100,9 +100,9 @@ inline const cv::Mat& Raster::boundaryMask(int layer){
 }
 
 inline const std::vector<cv::Point>& Raster::px(int layer){
-    cv::Point2d offset = -cv::Point2d(_sz) / 2 + cv::Point2d(size(layer)) / 2;
+    cv::Point2d offset = -cv::Point2d(_sz / 2) + cv::Point2d(size(layer)) / 2;
     cv::Mat T = (cv::Mat_<double>(2, 3) << 1, 0, offset.x, 0, 1, offset.y);
-    cv::Mat R = cv::getRotationMatrix2D(cv::Point2f(_sz)/2, static_cast<__int64>(layer) * 90, 1);
+    cv::Mat R = cv::getRotationMatrix2D(cv::Point2d(_sz / 2), static_cast<__int64>(layer) * 90, 1);
 
     cv::transform(_cornersPix, _RcornersPix, R); 
     cv::transform(_RcornersPix, _RcornersPix, T);
