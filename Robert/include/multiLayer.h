@@ -162,8 +162,8 @@ inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, std:
 					// shifting and stretching the roi
 					//roi -= cv::Point(pixRodWth / 4, 0);
 					//roi += cv::Size(pixRodWth / 2, 0);
-					roi += cv::Point(pixRodWth / 4, 0);
-					roi -= cv::Size(pixRodWth / 2, 0);
+					roi += cv::Point(pixRodWth / 2, 0);
+					roi -= cv::Size(pixRodWth, 0);
 					// defining the point when the region has been completely scanned as the end of the next horizontal line
 					scanDonePt += (layer % 4 == 0) ? cv::Point2d(0, _raster.spacing()) : cv::Point2d(0, -_raster.spacing());
 					// if it is the final segment
@@ -213,8 +213,8 @@ inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, std:
 					// // shifting and stretching the roi
 					//roi -= cv::Point(0, pixRodWth / 4);
 					//roi += cv::Size(0, pixRodWth / 2);
-					roi += cv::Point(0, pixRodWth / 4);
-					roi -= cv::Size(0, pixRodWth / 2);
+					roi += cv::Point(0, pixRodWth / 2);
+					roi -= cv::Size(0, pixRodWth);
 					// defining the point when the region has been completely scanned as the end of the next vertical line
 					scanDonePt += (layer % 4 == 1) ? cv::Point2d(_raster.spacing(), 0) : cv::Point2d(-_raster.spacing(), 0);
 					// if it is the final segment
