@@ -105,7 +105,7 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 		if (!lEdgePts.empty() && !rEdgePts.empty()) {
 			std::for_each(path[segNumError].begin(), path[segNumError].end(), [&targetWidths](Path& pth) {targetWidths.push_back(pth.w); });
 			waypoints = segments[segNumError].waypoints();
-			getErrorsAt(waypoints, targetWidths, raster.size(segments[segNumError].layer()), lEdgePts, rEdgePts, errCL, errWD);
+			getErrorsAt(waypoints, targetWidths, segments[segNumError].dir(), raster.size(segments[segNumError].layer()), lEdgePts, rEdgePts, errCL, errWD);
 		}
 
 		// Store the errors in the segment class

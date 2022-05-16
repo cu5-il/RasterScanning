@@ -114,7 +114,7 @@ void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size ra
 	}
 }
 
-void getErrorsAt(std::vector<cv::Point>& waypoints, std::vector<double>targetWidths, cv::Size rasterSize, const std::vector<cv::Point>& lEdgePts, const std::vector<cv::Point>& rEdgePts, std::vector<double>& errCL, std::vector<double>& errWD) {
+void getErrorsAt(std::vector<cv::Point>& waypoints, std::vector<double>targetWidths, const int dir, cv::Size rasterSize, const std::vector<cv::Point>& lEdgePts, const std::vector<cv::Point>& rEdgePts, std::vector<double>& errCL, std::vector<double>& errWD) {
 	cv::Mat lEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255)); // Image to draw the left edge on
 	cv::Mat rEdge = cv::Mat(rasterSize, CV_8UC1, cv::Scalar(255)); // Image to draw the right edge on
 	errCL.clear(); // clear the errors
@@ -122,18 +122,34 @@ void getErrorsAt(std::vector<cv::Point>& waypoints, std::vector<double>targetWid
 	errCL.reserve(waypoints.size());
 	errWD.reserve(waypoints.size());
 	int i = 0;
+	int minX = 0, maxX = 0, minY = 0, maxY = 0;
+	//auto Lval, Rval;
 
 	// Create rectangle containing area with material on both sides of the rater
-	int minX = (*std::min_element(lEdgePts.begin(), lEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.x < pt2.x; })).x;
-	int maxX = (*std::max_element(rEdgePts.begin(), rEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.x < pt2.x; })).x;
-	int minY = (*std::min_element(lEdgePts.begin(), lEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.y < pt2.y; })).y;
-	int maxY = (*std::max_element(rEdgePts.begin(), rEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.y < pt2.y; })).y;
+	if (printDir::X(dir))
+	{
+		// X bounds
+		const auto Lval = std::minmax_element(lEdgePts.begin(), lEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.x < pt2.x; });
+		const auto Rval = std::minmax_element(rEdgePts.begin(), rEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.x < pt2.x; });
+		minX = std::max((*Lval.first).x, (*Rval.first).x);
+		maxX = std::min((*Lval.second).x, (*Rval.second).x);
+		// Y bounds
+		minY = (*std::min_element(lEdgePts.begin(), lEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.y < pt2.y; })).y;
+		maxY = (*std::max_element(rEdgePts.begin(), rEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.y < pt2.y; })).y;
+	}
+	else if (printDir::Y(dir))
+	{
+		// X bounds
+		minX = (*std::min_element(lEdgePts.begin(), lEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.x < pt2.x; })).x;
+		maxX = (*std::max_element(rEdgePts.begin(), rEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.x < pt2.x; })).x;
+		// Y bounds
+		const auto Lval = std::minmax_element(lEdgePts.begin(), lEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.y < pt2.y; });
+		const auto Rval = std::minmax_element(rEdgePts.begin(), rEdgePts.end(), [](const cv::Point& pt1, const cv::Point& pt2) {return pt1.y < pt2.y; });
+		minY = std::max((*Lval.first).y, (*Rval.first).y);
+		maxY = std::min((*Lval.second).y, (*Rval.second).y);
+	}
+
 	cv::Rect edgeRoi = cv::Rect(minX, minY, maxX-minX, maxY-minY);
-	// create a contour from the edges //UNUSED
-	//std::vector<cv::Point> edgeContour;
-	//edgeContour.reserve(lEdgePts.size() + rEdgePts.size()); // preallocate memory
-	//edgeContour.insert(edgeContour.end(), lEdgePts.begin(), lEdgePts.end());
-	//edgeContour.insert(edgeContour.end(), rEdgePts.rbegin(), rEdgePts.rend());
 	
 	// See how far the edges are from the unmodified path
 	// Draw the smoothed edges on an image

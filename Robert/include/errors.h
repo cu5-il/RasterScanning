@@ -31,12 +31,13 @@ void getMatlErrors(std::vector<cv::Point>& centerline, double width, cv::Size ra
  * @brief Calculates the material centerline and width errors at the input waypoints.
  * @param[in] waypoints Vector of waypoints in pixel coordinates where the errors should be calculated
  * @param[in] targetWidths Vecor of desired width of the material in mm
+ * @param[in] direction of the segment
  * @param[in] rasterSize Size of the raster image
  * @param[in] lEdgePts Points making up the left edge of the rod
  * @param[in] rEdgePts Points making up the right edge of the rod
  * @param[out] errCL Material centerline error in pixels
  * @param[out] errWD Material width error in pixels
 */
-void getErrorsAt(std::vector<cv::Point>& waypoints, std::vector<double>targetWidths, cv::Size rasterSize, const std::vector<cv::Point>& lEdgePts, const std::vector<cv::Point>& rEdgePts, std::vector<double>& errCL, std::vector<double>& errWD);
+void getErrorsAt(std::vector<cv::Point>& waypoints, std::vector<double>targetWidths, const int dir, cv::Size rasterSize, const std::vector<cv::Point>& lEdgePts, const std::vector<cv::Point>& rEdgePts, std::vector<double>& errCL, std::vector<double>& errWD);
 
 #endif // !ERRORS_H
