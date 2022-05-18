@@ -65,6 +65,9 @@ inline double MaterialModel::_interpolate(std::vector<double>& xV, std::vector<d
 		std::cout << "ERROR: interpolate x.size() != y.size()\n";
 		return NAN;
 	}
+	
+	// if only one value, do not interpolate
+	if (xV.size() == 1) { return yV.front(); }
 
 	// find the first value above xQ
 	auto it = std::lower_bound(xV.begin(), xV.end(), xQ);
