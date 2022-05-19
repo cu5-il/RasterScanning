@@ -52,11 +52,21 @@ int main() {
 	std::vector<std::vector<Path>> path, ctrlPath;
 
 	// defining the material models
+	//MaterialModel augerModel = MaterialModel(MaterialModel::AUGER,
+	//	std::vector<double>{1.0, 1.5, 2.0, 2.5, 3.0},
+	//	std::vector<double>{1.5259, 1.1374, 0.93121, 0.7236, 0.59139},
+	//	std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8},
+	//	std::vector<double>{-0.10408, -0.073806, -0.050416, 0.017425, 0.056501});
 	MaterialModel augerModel = MaterialModel(MaterialModel::AUGER,
-		std::vector<double>{1.0, 1.5, 2.0, 2.5, 3.0},
-		std::vector<double>{1.5259, 1.1374, 0.93121, 0.7236, 0.59139},
-		std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8},
-		std::vector<double>{-0.10408, -0.073806, -0.050416, 0.017425, 0.056501});
+		std::vector<double>{1.5},		// velocity
+		std::vector<double>{0.59139},	// a
+		std::vector<double>{0.8},		// b
+		std::vector<double>{0.01});		// c
+	//MaterialModel augerModel = MaterialModel(MaterialModel::AUGER,
+	//	std::vector<double>{1.5},		// velocity
+	//	std::vector<double>{0.72},		// a
+	//	std::vector<double>{0.9},		// b
+	//	std::vector<double>{0.05});	// c
 
 	MaterialModel velocityModel = MaterialModel(MaterialModel::VELOCITY,
 		std::vector<double>{0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0},
@@ -114,7 +124,8 @@ int main() {
 	// Setting up the controller
 	PController controller(matModel);
 	controller.setAugerLimits(0.3, 1.5);
-	controller.setFeedLimits(0.5, 4.0);
+	controller.setFeedLimits(0.5, 8.0);
+	controller.kp(1);
 	
 	// make the scaffold
 	raster = Raster(input.length, input.width, input.rodSpc, input.rodSpc - .1, rasterBorder);
@@ -201,7 +212,7 @@ int main() {
 		t_scan = std::thread{ t_CollectScans, raster };
 		t_process = std::thread{ t_GetMatlErrors, raster, path };
 		t_print = std::thread{ t_printQueue, path[0][0], printOpts };
-		t_control = std::thread{ t_controller, std::ref(ctrlPath), std::ref(controller) };
+		t_control = std::thread{ t_controller, std::ref(ctrlPath), std::ref(controller), true };
 
 		t_scan.join();
 		t_process.join();
@@ -249,7 +260,7 @@ int main() {
 			t_scan = std::thread{ t_CollectScans, raster };
 			t_process = std::thread{ t_GetMatlErrors, raster, path };
 			t_print = std::thread{ t_printQueue, path[0][0], printOpts };
-			t_control = std::thread{ t_controller, std::ref(ctrlPath), std::ref(controller) };
+			t_control = std::thread{ t_controller, std::ref(ctrlPath), std::ref(controller), true };
 
 			t_scan.join();
 			t_process.join();
@@ -321,31 +332,53 @@ int main() {
 	}
 	outfile.close();
 
-	// Use the errors from the last segments to calcualte the inputs for the next layer and save them to a txt file
-	if (option == 'p')
-	{
-		outfile.open(std::string(outDir + "nextLayerInputs.txt").c_str());
-		errsMsg errMsg;
-
-		while (!q_errsMsg.empty()) {
-			q_errsMsg.wait_and_pop(errMsg);
-			if (!errMsg.errCL().empty() && !errMsg.errWD().empty()) {
-				Path nextPath;
-				std::vector<double> f, e;
-				// calculate the inputs
-				for (int i = 0; i < errMsg.errWD().size(); i++) {
-					controller.nextPath(nextPath, ctrlPath[errMsg.segmentNum()][i], errMsg.errWD()[i], errMsg.errCL()[i]);
-					f.push_back(nextPath.f);
-					e.push_back(nextPath.e);
-				}
-				// write the inputs to the txt file
-				for (auto const& v : f) outfile << v << '\t';
-				outfile << '\n';
-				for (auto const& v : e) outfile << v << '\t';
-			}
+	// save all the segment data
+	outfile.open(std::string(outDir + "pathDataAll.txt").c_str());
+	outfile.precision(3);
+	// loop through each long segment
+	for (int i = 0; i < path.size(); i++) {
+		// loop through all the waypoints
+		for (int j = 0; j < path[i].size(); j++) {
+			outfile << std::setw(3) << std::fixed << i << "\t";// segment number
+			outfile << std::setw(7) << std::fixed << ctrlPath[i][j].x << "\t";
+			outfile << std::setw(7) << std::fixed << ctrlPath[i][j].y << "\t";
+			outfile << std::setw(6) << std::fixed << ctrlPath[i][j].f << "\t";
+			outfile << std::setw(6) << std::fixed << ctrlPath[i][j].e << "\t";
+			outfile << std::setw(6) << std::fixed << ctrlPath[i][j].w << "\t";
+			if (!segments[i].errWD().empty()) { outfile << std::setw(9) << std::fixed << segments[i].errWD()[j] << "\t"; }
+			else { outfile << std::setw(9) << std::fixed << NAN << "\t"; }
+			if (!segments[i].errCL().empty()) { outfile << std::setw(9) << std::fixed << segments[i].errCL()[j]; }
+			else { outfile << std::setw(9) << std::fixed << NAN; }
+			outfile << "\n";
 		}
-		outfile.close();
 	}
+	outfile.close();
+
+	// Use the errors from the last segments to calcualte the inputs for the next layer and save them to a txt file
+	//if (option == 'p')
+	//{
+	//	outfile.open(std::string(outDir + "nextLayerInputs.txt").c_str());
+	//	errsMsg errMsg;
+
+	//	while (!q_errsMsg.empty()) {
+	//		q_errsMsg.wait_and_pop(errMsg);
+	//		if (!errMsg.errCL().empty() && !errMsg.errWD().empty()) {
+	//			Path nextPath;
+	//			std::vector<double> f, e;
+	//			// calculate the inputs
+	//			for (int i = 0; i < errMsg.errWD().size(); i++) {
+	//				controller.nextPath(nextPath, ctrlPath[errMsg.segmentNum()][i], errMsg.errWD()[i], errMsg.errCL()[i]);
+	//				f.push_back(nextPath.f);
+	//				e.push_back(nextPath.e);
+	//			}
+	//			// write the inputs to the txt file
+	//			for (auto const& v : f) outfile << v << '\t';
+	//			outfile << '\n';
+	//			for (auto const& v : e) outfile << v << '\t';
+	//		}
+	//	}
+	//	outfile.close();
+	//}
 
 	// calculate the error norms
 	double E2d;
