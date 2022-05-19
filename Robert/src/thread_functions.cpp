@@ -197,23 +197,34 @@ void t_noController(std::vector<std::vector<Path>> path) {
 	std::cout << "Ending controller thread" << std::endl;
 }
 
-void t_controller(std::vector<std::vector<Path>>& path, Controller& controller) {
+void t_controller(std::vector<std::vector<Path>>& path, Controller& controller, bool interpNoErr) {
 	errsMsg inMsg;
 	pathMsg outMsg;
 	int nextSeg = 0;
 	int segStartCtrl = 4;
+	double prevEw = 0, prevEc = 0;
 
 	while (nextSeg < path.size()) {
 		// do not modify the initial segment inputs
 		if (nextSeg >= segStartCtrl) {
 			q_errsMsg.wait_and_pop(inMsg);
 			// Use the errors from the previous segment to calculate the control next segment 
-			nextSeg = inMsg.segmentNum() + segStartCtrl;
+			nextSeg = inMsg.segmentNum() + 4;
 			// If errors were calculated, modify the path
 			if (!inMsg.errCL().empty() && !inMsg.errWD().empty()) {
 				for (int i = 0; i < inMsg.errWD().size(); i++) {
 					controller.nextPath(path[nextSeg][i], path[inMsg.segmentNum()][i], inMsg.errWD()[i], inMsg.errCL()[i]);
 				}
+				prevEw = inMsg.errWD().back();
+				prevEc = inMsg.errCL().back();
+			}
+			// If no error were calculated, use the last error to correct the path
+			else if (interpNoErr) {
+				for (int i = 0; i < path[inMsg.segmentNum()].size(); i++) {
+					controller.nextPath(path[nextSeg][i], path[inMsg.segmentNum()][i], 0.8* prevEw, prevEc);
+				}
+				prevEw = 0;
+				prevEc = 0;
 			}
 		}
 		// Send path coords to queue
