@@ -131,6 +131,18 @@ inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, std:
 		{
 			// Generate the pixel waypoints
 			_interpPathPoints(std::vector<cv::Point2i> {*it, * std::next(it)}, input.wayptSpc, wp_px);
+			//// if long rods
+			//if (std::distance(_raster.px(layer).begin(), it) % 2 == 0)
+			//{
+			//	_interpPathPoints(std::vector<cv::Point2i> {*it, * std::next(it)}, input.wayptSpc, wp_px);
+			//}
+			//else
+			//{
+			//	std::vector<cv::Point2i> wp_px_temp;
+			//	_interpPathPoints(std::vector<cv::Point2i> {*it, * std::next(it)}, input.wayptSpc, wp_px_temp);
+			//	wp_px.push_back(wp_px_temp.front());
+			//	wp_px.push_back(wp_px_temp.back());
+			//}
 
 			// add the final point of the pattern
 			if (std::next(it) == std::prev(_raster.px(layer).end())) {
