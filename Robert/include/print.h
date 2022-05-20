@@ -6,7 +6,7 @@
 
 #define DISPOSAL_X 00
 #define DISPOSAL_Y 153
-#define SAFE_Z 5
+#define SAFE_Z 10
 
 void prePrint(Path firstWpt, PrintOptions printOpts);
 
