@@ -52,20 +52,20 @@ int main() {
 	std::vector<std::vector<Path>> path, ctrlPath;
 
 	// defining the material models
-	//MaterialModel augerModel = MaterialModel(MaterialModel::AUGER,
-	//	std::vector<double>{1.0, 1.5, 2.0, 2.5, 3.0},
-	//	std::vector<double>{1.5259, 1.1374, 0.93121, 0.7236, 0.59139},
-	//	std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8},
-	//	std::vector<double>{-0.10408, -0.073806, -0.050416, 0.017425, 0.056501});
 	MaterialModel augerModel = MaterialModel(MaterialModel::AUGER,
-		std::vector<double>{1.5},		// velocity
-		std::vector<double>{0.59139},	// a
-		std::vector<double>{0.8},		// b
-		std::vector<double>{0.01});		// c
+		std::vector<double>{1.0, 1.5, 2.0, 2.5, 3.0},
+		std::vector<double>{1.5259, 1.1374, 0.93121, 0.7236, 0.59139},
+		std::vector<double>{0.8, 0.8, 0.8, 0.8, 0.8},
+		std::vector<double>{-0.10408, -0.073806, -0.050416, 0.017425, 0.056501});
 	//MaterialModel augerModel = MaterialModel(MaterialModel::AUGER,
 	//	std::vector<double>{1.5},		// velocity
-	//	std::vector<double>{0.72},		// a
-	//	std::vector<double>{0.9},		// b
+	//	std::vector<double>{0.59139},	// a
+	//	std::vector<double>{0.8},		// b
+	//	std::vector<double>{0.01});		// c
+	//MaterialModel augerModel = MaterialModel(MaterialModel::AUGER,
+	//	std::vector<double>{1.5},		// velocity
+	//	std::vector<double>{0.75},		// a
+	//	std::vector<double>{0.8},		// b
 	//	std::vector<double>{0.05});	// c
 
 	MaterialModel velocityModel = MaterialModel(MaterialModel::VELOCITY,
