@@ -12,6 +12,8 @@
 #ifdef DEBUG_SCANNING
 #include <opencv2/highgui.hpp>
 #include <CvPlot/cvplot.h>
+#include <fstream>
+#include <string>
 #endif // DEBUG_SCANNING
 
 bool setupDataCollection(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle) {
@@ -340,6 +342,39 @@ void findEdges2(cv::Mat edgeBoundary, cv::Point scanStart, cv::Point scanEnd, cv
 			ax1.create<CvPlot::Series>(profile, "-m");
 			ax1.create<CvPlot::Series>(edgePlot, "ro");
 			cv::Mat ax_1 = ax1.render();
+
+			// saving the profile data
+			int filenum = 0;
+			std::string filename = "profile" + std::to_string(filenum); // add breakpoint here to save profile data
+			if (filenum != 0)
+			{
+				std::ofstream outfile;
+				// single file
+				outfile.open(std::string(outDir + filename + ".m").c_str(), std::ofstream::out | std::ofstream::app);
+				outfile << "\n%% " + filename + "\n";
+				outfile << "baseline = " << stddev.val[0] << ";" << std::endl;
+				outfile << "scanROI = " << scanROI << ";" << std::endl;
+				outfile << "ROIblur = " << ROIblur << ";" << std::endl;
+				outfile << "profile = " << profile << ";" << std::endl;
+				outfile << "pkMask = " << pkMask << ";" << std::endl;
+				outfile << "edgeMask = " << edgeMask << ";" << std::endl;
+				outfile << "threshMask = " << threshMask << ";" << std::endl;
+				outfile << "mask = " << mask << ";" << std::endl;
+				outfile.close();
+				// master file
+				outfile.open(std::string(outDir + "profiles.m").c_str(), std::ofstream::out | std::ofstream::app);
+				outfile << "\n%% " + filename + "\n";
+				outfile << "p" + std::to_string(filenum) + "_baseline = " << stddev.val[0] << ";" << std::endl;
+				outfile << "p" +std::to_string(filenum) + "_scanROI = " << scanROI << ";" << std::endl;
+				outfile << "p" +std::to_string(filenum) + "_ROIblur = " << ROIblur << ";" << std::endl;
+				outfile << "p" +std::to_string(filenum) + "_profile = " << profile << ";" << std::endl;
+				outfile << "p" +std::to_string(filenum) + "_pkMask = " << pkMask << ";" << std::endl;
+				outfile << "p" +std::to_string(filenum) + "_edgeMask = " << edgeMask << ";" << std::endl;
+				outfile << "p" +std::to_string(filenum) + "_threshMask = " << threshMask << ";" << std::endl;
+				outfile << "p" + std::to_string(filenum) + "_mask = " << mask << ";" << std::endl;
+				outfile.close();
+				cv::imwrite(outDir + filename + "_plot.png", ax_1);
+			}
 #endif // DEBUG_SCANNING
 
 			// mark edges on global ROI
