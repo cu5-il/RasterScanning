@@ -29,4 +29,6 @@ extern int segNumError;
 
 extern std::string outDir;
 
+extern std::mutex mut_cmd;
+
 #endif // MY_GLOBALS_H

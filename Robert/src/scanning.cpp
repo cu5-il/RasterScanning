@@ -39,17 +39,35 @@ bool setupDataCollection(A3200Handle handle, A3200DataCollectConfigHandle DCCHan
 }
 
 bool collectData(A3200Handle handle, A3200DataCollectConfigHandle DCCHandle, DOUBLE* data) {
+	WORD itemIndexArray[] = { AXISINDEX_00, AXISINDEX_01, AXISINDEX_02, AXISINDEX_03 };
+	STATUSITEM itemCodeArray[] = { STATUSITEM_AxisStatus, STATUSITEM_AxisStatus, STATUSITEM_AxisStatus, STATUSITEM_AxisStatus };
+	DWORD itemExtrasArray[] = { AXISSTATUS_Profiling, AXISSTATUS_Profiling, AXISSTATUS_Profiling, AXISSTATUS_Profiling };
+	double profiling[4];
+	bool ret = true;
+	
 	// Start the data collection
-	if (!A3200DataCollectionStart(handle, DCCHandle)) { return false; }
+	if (!A3200DataCollectionStart(handle, DCCHandle)) { A3200Error(); return false; }
 
-	// Triggering the laser scanner by sending a pulse from AnalogOutput0 
-	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, -6)) { A3200Error(); return false; }
-	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, 0)) { A3200Error(); return false; }
+	// make sure the other axes are not profiling
+	//if (!A3200StatusGetItems(handle, 4, itemIndexArray, itemCodeArray, itemExtrasArray, profiling)) { A3200Error(); ret = false; }
+	//if ((profiling[0] + profiling[1] + profiling[2] + profiling[3]) != 0.0)
+	//{
+	//	// Triggering the laser scanner by sending a pulse from AnalogOutput0 
+	//	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, -6)) { A3200Error(); }
+	//	if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, 0)) { A3200Error(); }
+	//}
+	//else { ret = false; }
+
+	{
+		std::lock_guard<std::mutex> lock(mut_cmd);
+		if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, -6)) { A3200Error(); }
+		if (!A3200IOAnalogOutput(handle, TASK_SCAN, 0, AXISINDEX_00, 0)) { A3200Error(); }
+	}
 
 	// Retrieving the collected data
 	if (!A3200DataCollectionDataRetrieve(handle, NUM_DATA_SIGNALS, NUM_DATA_SAMPLES, (DOUBLE*)data)) { A3200Error(); return false; }
 
-	return true;
+	return ret;
 }
 
 bool getScan(double data[][NUM_DATA_SAMPLES], Coords* fbk, cv::Mat& scan, int &locXoffset) {

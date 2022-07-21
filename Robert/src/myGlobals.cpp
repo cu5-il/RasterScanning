@@ -14,3 +14,5 @@ extern int segNumScan = 0; // segment being scanned
 extern int segNumError = 0; // segment that errors are being calculated for
 
 extern std::string outDir = "./Output/";
+
+std::mutex mut_cmd;

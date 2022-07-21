@@ -67,7 +67,6 @@ void t_CollectScans(Raster raster) {
 				segNumScan++;
 			}
 		}
-		else { A3200Error(); }
 	}
 	// Save the data
 	pastEdges.push_back(edges);
@@ -282,30 +281,44 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 			layer = segments[segNum].layer();
 			layerCt++;
 			asyncThetaPos = 90.0 * (double)segments[static_cast<__int64>(segNum)].dir();
+			std::unique_lock<std::mutex> lock(mut_cmd);
 			while (!A3200MotionMoveAbs(handle, TASK_PRINT, (AXISINDEX)(AXISINDEX_03), asyncThetaPos, printOpts.asyncTheta)) {
-				if (A3200GetLastError().Code == ErrorCode_QueueBufferFull) { Sleep(10); }
+				if (A3200GetLastError().Code == ErrorCode_QueueBufferFull) { 
+					lock.unlock();
+					std::this_thread::sleep_for(std::chrono::milliseconds(10));
+				}
 				else { A3200Error(); break; }
+				lock.lock();
 			}
+			lock.unlock();
 			//TODO: add rotation for layer change
 		}
 		// if printing with asynchronous theta movement, check if it's an odd segment 
 		if (printOpts.asyncTheta > 0 && ((segNum + layerCt) % 2 == 1)) {
 			// Set the new angle based on the direction of the segment before
 			asyncThetaPos = 90.0 * (double)((segments[static_cast<__int64>(segNum) - 1].dir() + 2) % 4);
+			std::unique_lock<std::mutex> lock(mut_cmd);
 			while (!A3200MotionMoveAbs(handle, TASK_PRINT, (AXISINDEX)(AXISINDEX_03), asyncThetaPos, printOpts.asyncTheta)) {
-				if (A3200GetLastError().Code == ErrorCode_QueueBufferFull) { Sleep(10); }
+				if (A3200GetLastError().Code == ErrorCode_QueueBufferFull) { 
+					lock.unlock();
+					std::this_thread::sleep_for(std::chrono::milliseconds(10));
+				}
 				else { A3200Error(); break; }
+				lock.lock();
 			}
+			lock.unlock();
 			queueLineCount += 1;
 		}
 
 		for (auto it = inMsg.path().begin(); it != inMsg.path().end(); ++it) {
 			auto path = *(it);
+			std::unique_lock<std::mutex> lock(mut_cmd);
 			while (!A3200CommandExecute(handle, TASK_PRINT, path.cmd(printOpts.asyncTheta < 0), NULL)) {
 				// If the command failed to load into the queue
 				if (A3200GetLastError().Code == ErrorCode_QueueBufferFull) {
 					// Wait if the Queue is full.
-					Sleep(10);
+					lock.unlock();
+					std::this_thread::sleep_for(std::chrono::milliseconds(10));
 				}
 				else {
 					A3200Error();
@@ -313,7 +326,9 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 					system("pause");
 					break;
 				}
+				lock.lock();
 			}
+			lock.unlock();
 			queueLineCount += 2;
 			// if the queue is almost full, start the program
 			if ((queueLineCount > (queueSize - 10)) && !programStarted) {
