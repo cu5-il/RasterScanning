@@ -83,7 +83,7 @@ int main() {
 	printOpts.disposal = false;
 	double omegaMax = 100;
 	double omega = 80;
-	//printOpts.asyncTheta = 80;// 32;
+	printOpts.asyncTheta = omega;
 
 	// Getting user input
 	std::string resp, infile;
@@ -91,7 +91,7 @@ int main() {
 	int lineNum;
 	infile = "./Input/printTable.md";
 
-	std::cout << "Select option: (p)rint, (s)can, or print (w)ithout control? ";
+	std::cout << "Select option: (p)rint, (s)can, print (w)ithout control, or print wiht (n)o scanning? ";
 	std::cin >> option;
 	std::cout << "Test #: ";
 	std::cin >> lineNum;
@@ -235,6 +235,18 @@ int main() {
 
 		t_scan.join();
 		t_process.join();
+		t_control.join();
+
+		break;
+
+	case 'n': // PRINTING WITHOUT SCANNING OR CONTROL
+		outDir.append("printNS_");
+		ctrlPath = path;
+		printOpts.asyncTheta = omega;
+
+		t_print = std::thread{ t_printQueue, path[0][0], printOpts };
+		t_control = std::thread{ t_noController, ctrlPath };
+
 		t_control.join();
 
 		break;
