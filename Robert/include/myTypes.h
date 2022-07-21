@@ -184,16 +184,16 @@ public:
 	double asyncTheta; // if set greater than 0, moves the theta axis asynchronously at the start of each corner at the set rate
 
 	PrintOptions();
-	PrintOptions(double _leadin, double _leadout = -1, bool _extrude = true, bool _disposal = true);
+	PrintOptions(double _leadin, double _leadout = -1, bool _extrude = true, bool _disposal = true, double _asyncTheta = -1);
 
 private:
 	
 };
 inline PrintOptions::PrintOptions()
-	: leadin(-1), leadout(-1), extrude(true), disposal(true), asyncTheta(0){}
+	: leadin(-1), leadout(-1), extrude(true), disposal(true), asyncTheta(-1){}
 
-inline PrintOptions::PrintOptions(double _leadin, double _leadout, bool _extrude, bool _disposal)
-	: leadin(_leadin), leadout(_leadout), extrude(_extrude), disposal(_disposal) {}
+inline PrintOptions::PrintOptions(double _leadin, double _leadout, bool _extrude, bool _disposal, double _asyncTheta)
+	: leadin(_leadin), leadout(_leadout), extrude(_extrude), disposal(_disposal), asyncTheta(_asyncTheta) {}
 
 
 ///////////////////////////////////////  PrintDir  ///////////////////////////////////////

@@ -81,7 +81,9 @@ int main() {
 	PrintOptions printOpts(leadin);
 	printOpts.extrude = true;
 	printOpts.disposal = false;
-	printOpts.asyncTheta = 80;// 32;
+	double omegaMax = 100;
+	double omega = 80;
+	//printOpts.asyncTheta = 80;// 32;
 
 	// Getting user input
 	std::string resp, infile;
@@ -128,10 +130,11 @@ int main() {
 	controller.kp(1);
 	
 	// make the scaffold
+	
 	raster = Raster(input.length, input.width, input.rodSpc, input.rodSpc - .1, rasterBorder);
 	raster.offset(cv::Point2d(input.initPos.x, input.initPos.y));
 	//MultiLayerScaffold scaffold(input, raster);
-	FunGenScaf scaffold(input, raster, matModel);
+	FunGenScaf scaffold(input, raster, omega, matModel);
 	// add a lead out line
 	printOpts.leadout = -SCAN_OFFSET_X + 1;
 	scaffold.leadout(-SCAN_OFFSET_X);
@@ -193,6 +196,8 @@ int main() {
 	if (!setupDataCollection(handle, DCCHandle)) { A3200Error(); }
 	// Initializing the extruder
 	extruder = Extruder(handle, TASK_PRINT);
+	// setting the max speed of the theta axis
+	if (!A3200ParameterSetValue(handle,(PARAMETERID)PARAMETERID_MaxSpeedClamp, (AXISINDEX)(AXISINDEX_03), omegaMax)) { A3200Error(); }
 	//=======================================
 
 #ifdef DEBUG_SCANNING
@@ -251,7 +256,7 @@ int main() {
 			if (input.startLayer % 2 == 0) { rasterScan.offset(cv::Point2d(0, 1.5)); } // offset path in y direction
 			else { rasterScan.offset(cv::Point2d(1.5, 0)); } // offset path in x direction
 			input.initPos += cv::Point3d(0, 0, 1); // raise path
-			scaffold = FunGenScaf (input, rasterScan, augerModel);
+			scaffold = FunGenScaf (input, rasterScan, omega, augerModel);
 			scaffold.leadout(-SCAN_OFFSET_X);
 			segments = scaffold.segments;
 			path = scaffold.path;
@@ -270,7 +275,7 @@ int main() {
 			outDir.append("scanF_");
 			printOpts.leadin = 0;
 			printOpts.leadout = 0;
-			printOpts.asyncTheta = 0;
+			printOpts.asyncTheta = -1;
 			
 			segments = scaffold.segmentsScan;
 			path = scaffold.pathScan;

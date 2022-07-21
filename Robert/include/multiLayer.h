@@ -18,7 +18,7 @@ class MultiLayerScaffold
 public:
 	// default constructor
 	MultiLayerScaffold() {}
-	MultiLayerScaffold(TableInput input, Raster raster_);
+	MultiLayerScaffold(TableInput input, Raster _raster, double _omega);
 
 	std::vector<std::vector<Path>> path, pathScan;
 	Raster raster;
@@ -32,14 +32,14 @@ public:
 
 private:
 	void _interpPathPoints(std::vector<cv::Point2i> inPts, double wayptSpc, std::vector<cv::Point2i>& outPts);
-	void _makePath(TableInput input, Raster _raster, std::vector<Segment>& _segments, std::vector<std::vector<Path>>& _path);
+	void _makePath(TableInput input, Raster _raster, double _omega, std::vector<Segment>& _segments, std::vector<std::vector<Path>>& _path);
 	
 };
 
-inline MultiLayerScaffold::MultiLayerScaffold(TableInput input, Raster raster_)
+inline MultiLayerScaffold::MultiLayerScaffold(TableInput input, Raster _raster, double _omega)
 {
-	raster = raster_;
-	_makePath(input, raster, segments, path);
+	raster = _raster;
+	_makePath(input, raster, _omega, segments, path);
 	// make the scanning path 
 	if (input.layers == 1)
 	{
@@ -68,7 +68,14 @@ inline MultiLayerScaffold::MultiLayerScaffold(TableInput input, Raster raster_)
 			rasterScan.offset(cv::Point2d(raster.spacing() / 2, SCAN_OFFSET_X - raster.rodWidth()));
 			break;
 		}
-		_makePath(input2, rasterScan, segmentsScan, pathScan);
+		_makePath(input2, rasterScan, _omega, segmentsScan, pathScan);
+		// Set the theta position to be constant
+		for (int i = 0; i < pathScan.size(); i++) {
+			for (int j = 0; j < pathScan[i].size(); j++) {
+				pathScan[i][j].T = 90.0 * input.startLayer;
+			}
+		}
+
 	}
 }
 
@@ -107,7 +114,7 @@ inline void MultiLayerScaffold::_interpPathPoints(std::vector<cv::Point2i> inPts
 	}
 }
 
-inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, std::vector<Segment>& _segments, std::vector<std::vector<Path>>& _path)
+inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, double _omega, std::vector<Segment>& _segments, std::vector<std::vector<Path>>& _path)
 {
 	cv::Rect roi;
 	std::vector<cv::Point2i> wp_px;
@@ -119,10 +126,15 @@ inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, std:
 	std::vector<Path> tmp;
 
 	double z = input.initPos.z;
-	double T = 90.0 * input.startLayer;
+	double T = 90.0 * ((4 - input.startLayer) % 4);
 	double e = input.E;
 	double f = input.F;
 	double w = 0;
+
+	double desThetaPos = T;
+	double omega = _omega;
+	double dTheta = input.wayptSpc / f * omega;
+	cv::Point2d prevPt;
 
 	// Rods
 	for (int layer = input.startLayer; layer < input.layers + input.startLayer; layer++)
@@ -149,11 +161,28 @@ inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, std:
 				wp_px.push_back(*std::next(it));
 			}
 
+			// Determining the theta positions
+			if (std::distance(_raster.px(layer).begin(), it) % 2 == 1 )
+			{
+				desThetaPos = 90.0 * (double)((_segments.back().dir() + 2) % 4);
+			}
+
 			// making the path
 			wp_mm.resize(wp_px.size());
 			std::transform(wp_px.begin(), wp_px.end(), wp_mm.begin(), [&origin](cv::Point& pt) {return (PIX2MM(cv::Point2d(pt)) + origin); });
-			for (auto it2 = wp_mm.begin(); it2 != wp_mm.end(); ++it2) {
+			for (auto it2 = wp_mm.begin(); it2 != wp_mm.end(); ++it2) 
+			{
+				//if ((std::distance(wp_mm.begin(), it2) > 0) || (std::distance(_raster.px(layer).begin(), it) % 2 == 0)){
+				//	if (fabs(desThetaPos - T) > dTheta){ T += copysign(dTheta, desThetaPos - T); }
+				//	else { T = desThetaPos; }
+				//}
+				if (std::distance(_raster.px(layer).begin(), it) > 0 ) {
+					dTheta = cv::norm(prevPt - (*it2)) / f * omega;
+					if (fabs(desThetaPos - T) > dTheta) { T += copysign(dTheta, desThetaPos - T); }
+					else { T = desThetaPos; }
+				}
 				tmp.push_back(Path(*it2, z, T, f, e, w));
+				prevPt = *it2;
 			}
 			_path.push_back(tmp);
 
@@ -252,7 +281,7 @@ class FunGenScaf : public MultiLayerScaffold
 {
 public:
 	FunGenScaf() {};
-	FunGenScaf(TableInput input, Raster raster_, MaterialModel matModel);
+	FunGenScaf(TableInput input, Raster _raster, double _omega, MaterialModel matModel);
 
 private:
 	bool _makeFGS(char scafType, double range[2]);
@@ -261,8 +290,8 @@ private:
 
 };
 
-FunGenScaf::FunGenScaf(TableInput input, Raster raster_, MaterialModel matModel)
-	: MultiLayerScaffold(input, raster_)
+FunGenScaf::FunGenScaf(TableInput input, Raster _raster, double _omega, MaterialModel matModel)
+	: MultiLayerScaffold(input, _raster, _omega)
 {
 	if (_makeFGS(input.type, input.range)) { _setInput(matModel); }
 }

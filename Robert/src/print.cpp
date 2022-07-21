@@ -41,7 +41,7 @@ void prePrint(Path firstWpt, PrintOptions printOpts) {
 	cmd = "G1 Z " + std::to_string(SAFE_Z) + " F5";
 	if (!A3200CommandExecute(handle, TASK_PRINT, cmd.c_str(), NULL)) { A3200Error(); }
 	// Move X, Y, and TH axes to their starting positions
-	cmd = "G0 X " + std::to_string(firstWpt.x) + " Y " + std::to_string(firstWpt.y) + " TH " + std::to_string(firstWpt.T) + " XF 20 YF 20 THF 20" ;
+	cmd = "G0 X " + std::to_string(firstWpt.x) + " Y " + std::to_string(firstWpt.y) + " TH " + std::to_string(firstWpt.T) + " XF 20 YF 20 THF 40" ;
 	if (!A3200CommandExecute(handle, TASK_PRINT, cmd.c_str(), NULL)) { A3200Error(); }
 	if (!A3200MotionWaitForMotionDone(handle, AXES_ALL, WAITOPTION_MoveDone, -1, NULL)) { A3200Error(); } 
 

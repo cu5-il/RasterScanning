@@ -301,7 +301,7 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 
 		for (auto it = inMsg.path().begin(); it != inMsg.path().end(); ++it) {
 			auto path = *(it);
-			while (!A3200CommandExecute(handle, TASK_PRINT, path.cmd(printOpts.asyncTheta == 0), NULL)) {
+			while (!A3200CommandExecute(handle, TASK_PRINT, path.cmd(printOpts.asyncTheta < 0), NULL)) {
 				// If the command failed to load into the queue
 				if (A3200GetLastError().Code == ErrorCode_QueueBufferFull) {
 					// Wait if the Queue is full.
@@ -309,6 +309,8 @@ void t_printQueue(Path firstWpt, PrintOptions printOpts) {
 				}
 				else {
 					A3200Error();
+					std::cout << "Failed Command: " << path.cmd(printOpts.asyncTheta < 0);
+					system("pause");
 					break;
 				}
 			}
