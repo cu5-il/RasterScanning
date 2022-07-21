@@ -136,6 +136,8 @@ inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, doub
 	double dTheta = input.wayptSpc / f * omega;
 	cv::Point2d prevPt;
 
+	double rodDoneOffset = std::min(_raster.length(), 2 * fabs(SCAN_OFFSET_X) + 1) - _raster.length();
+
 	// Rods
 	for (int layer = input.startLayer; layer < input.layers + input.startLayer; layer++)
 	{
@@ -206,7 +208,11 @@ inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, doub
 					roi += cv::Point(pixRodWth / 2, 0);
 					roi -= cv::Size(pixRodWth, 0);
 					// defining the point when the region has been completely scanned as the end of the next horizontal line
-					scanDonePt += (layer % 4 == 0) ? cv::Point2d(0, _raster.spacing()) : cv::Point2d(0, -_raster.spacing());
+					scanDonePt += (layer % 4 == 0) ? cv::Point2d(rodDoneOffset, _raster.spacing()) : cv::Point2d(rodDoneOffset, -_raster.spacing());
+					if (!_raster.roi(layer).contains(scanDonePt)) {
+						scanDonePt -= cv::Point2d(rodDoneOffset * 2, 0);
+					}
+
 					// if it is the final segment
 					if (std::next(it) == std::prev(_raster.px(layer).end())) {
 						scanDonePt = wp_mm.back();
@@ -257,7 +263,10 @@ inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, doub
 					roi += cv::Point(0, pixRodWth / 2);
 					roi -= cv::Size(0, pixRodWth);
 					// defining the point when the region has been completely scanned as the end of the next vertical line
-					scanDonePt += (layer % 4 == 1) ? cv::Point2d(_raster.spacing(), 0) : cv::Point2d(-_raster.spacing(), 0);
+					scanDonePt += (layer % 4 == 1) ? cv::Point2d(_raster.spacing(), rodDoneOffset) : cv::Point2d(-_raster.spacing(), rodDoneOffset);
+					if (!_raster.roi(layer).contains(scanDonePt)) {
+						scanDonePt -= cv::Point2d(0, rodDoneOffset * 2);
+					}
 					// if it is the final segment
 					if (std::next(it) == std::prev(_raster.px(layer).end())) {
 						scanDonePt = wp_mm.back();
