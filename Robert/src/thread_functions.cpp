@@ -34,6 +34,7 @@ void t_CollectScans(Raster raster) {
 	int layer = segments.front().layer();
 	cv::Mat edges = cv::Mat::zeros(raster.size(layer), CV_8UC1);
 	std::vector<cv::Mat> pastEdges;
+	int segNumScan = 0; // segment being scanned
 
 	// wait for pre-print to complete before starting the scanner
 	q_scanMsg.wait_and_pop();
@@ -91,6 +92,10 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 	std::vector<cv::Point> lEdgePts, rEdgePts;
 	std::vector<double> errCL, errWD, targetWidths;
 	bool doneScanning = false;
+	int layer = segments.front().layer();
+	cv::Mat unfiltEdges = cv::Mat::zeros(raster.size(layer), CV_8UC1);
+	std::vector<cv::Mat> pastEdges;
+	int segNumError = 0; // segment that errors are being calculated for
 
 	while (!doneScanning){
 		// wait for the message to be pushed from the scanning thread
@@ -132,13 +137,37 @@ void t_GetMatlErrors(Raster raster, std::vector<std::vector<Path>> path) {
 		errCL.clear(); 
 		errWD.clear();
 		targetWidths.clear();
+
+		// if there was a layer change, clear all the edges
+		if (segments[segNumError].layer() != layer) {
+			layer = segments[segNumError].layer();
+			pastEdges.push_back(unfiltEdges);
+			unfiltEdges = cv::Mat::zeros(raster.size(layer), CV_8UC1);
+		}
+		// copy the unfiltered points
+		inMsg.edges()(segments[segNumError].ROI()).copyTo(unfiltEdges(segments[segNumError].ROI()));
 	}
+	pastEdges.push_back(unfiltEdges);
 	// Save the data
 
-	// drawing the filtered edges
-	int layer = segments.front().layer();
-	cv::Mat filteredEdges = cv::Mat::zeros(raster.size(layer), CV_8UC1);
+	// drawing the unfiltered edges
 	cv::Mat image = cv::Mat::zeros(raster.size(layer), CV_8UC3);
+	layer = segments.front().layer();
+	for (int i = 0; i < pastEdges.size(); i++)
+	{
+		image = cv::Mat::zeros(raster.size(i + segments.front().layer()), CV_8UC3);
+		raster.draw(image, image, i + segments.front().layer());
+		raster.drawBdry(image, image, i + segments.front().layer(), cv::Scalar(255, 0, 0), MM2PIX(0.05));
+		drawEdges(image, image, pastEdges[i], cv::Scalar(0, 0, 255), MM2PIX(0.1));
+		cv::flip(image, image, 0); // flip the image to have standard coordinate system with origin in lower left corner
+		cv::imwrite(outDir + "edges_unfilt_" + std::to_string(i + segments.front().layer()) + ".png", image);
+		cv::imwrite(outDir + "edgedata_unfilt_" + std::to_string(i + segments.front().layer()) + ".png", pastEdges[i]);
+	}
+
+	// drawing the filtered edges
+	layer = segments.front().layer();
+	cv::Mat filteredEdges = cv::Mat::zeros(raster.size(layer), CV_8UC1);
+	image = cv::Mat::zeros(raster.size(layer), CV_8UC3);
 	for (auto it = segments.begin(); it != segments.end(); ++it) {
 		if ((*it).layer() != layer) {
 			cv::imwrite(outDir + "edgedata_filt_" + std::to_string(layer) + ".png", filteredEdges);

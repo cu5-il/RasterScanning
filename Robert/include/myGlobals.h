@@ -24,9 +24,6 @@ extern threadsafe_queue<edgeMsg> q_edgeMsg;
 extern threadsafe_queue<errsMsg> q_errsMsg;
 extern threadsafe_queue<pathMsg> q_pathMsg;
 
-extern int segNumScan;
-extern int segNumError;
-
 extern std::string outDir;
 
 extern std::mutex mut_cmd;
