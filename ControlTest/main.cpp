@@ -91,7 +91,7 @@ int main() {
 	int lineNum;
 	infile = "./Input/printTable.md";
 
-	std::cout << "Select option: (p)rint, (s)can, print (w)ithout control, or print wiht (n)o scanning? ";
+	std::cout << "Select option: (p)rint, (s)can, print (w)ithout control, or print with (n)o scanning? ";
 	std::cin >> option;
 	std::cout << "Test #: ";
 	std::cin >> lineNum;
@@ -182,8 +182,15 @@ int main() {
 
 	cv::Mat imseg = raster.draw(input.startLayer);
 	drawSegments(raster.draw(input.startLayer), imseg, segments, raster.origin(), input.startLayer, 3);
-	cv::Mat image = cv::Mat::zeros(raster.size(segments.back().layer()), CV_8UC3);
-	drawMaterial(image, image, scaffold.segments, scaffold.path, scaffold.segments.back().layer());
+	// saving the reference pattern
+	cv::Mat ref = cv::Mat::zeros(raster.size(segments.back().layer()), CV_8UC1);
+	drawMaterial(ref, ref, scaffold.segments, scaffold.path, scaffold.segments.back().layer());
+	cv::cvtColor(ref, ref, cv::COLOR_BGR2GRAY);
+	cv::threshold(ref, ref, 1, 255, cv::THRESH_BINARY);
+	cv::flip(ref, ref, 0);
+	cv::cvtColor(ref, ref, cv::COLOR_GRAY2BGR);
+	addScale(ref, 1, cv::Point(5, 25), 2);
+	if (option == 'p') { cv::imwrite(outDir + "reference.png", ref); }
 
 	// ---------------------------- PRINTING & SCANNING ----------------------------
 
