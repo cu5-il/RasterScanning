@@ -166,7 +166,7 @@ void getErrorsAt(std::vector<cv::Point>& waypoints, std::vector<double>targetWid
 		// Check if the waypoint is within the countour created by the edges
 		//if (cv::pointPolygonTest(edgeContour, *it, false) >= 0) { // UNUSED
 		if (edgeRoi.contains(*it)) {
-			errCL.push_back((PIX2MM(static_cast<__int64>(rEdge.at<float>(*it)) - static_cast<__int64>(lEdge.at<float>(*it)))) / 2);
+			errCL.push_back((PIX2MM(static_cast<__int64>(rEdge.at<float>(*it)) - static_cast<__int64>(lEdge.at<float>(*it)))) );
 			errWD.push_back(targetWidths[i] - PIX2MM(static_cast<__int64>(lEdge.at<float>(*it)) + static_cast<__int64>(rEdge.at<float>(*it))));
 		}
 		else {
