@@ -103,10 +103,24 @@ int main() {
 	cv::Mat image = cv::Mat::zeros(raster.size(segments.back().layer()), CV_8UC3);
 	drawMaterialSegments(image, image, scaffold.segments, scaffold.path, scaffold.segments.back().layer());
 
+	// drawing the referene
+	cv::Mat ref = cv::Mat::zeros(raster.size(segments.back().layer()), CV_8UC1);
+	drawMaterial(ref, ref, scaffold.segments, scaffold.path, scaffold.segments.back().layer());
+	cv::cvtColor(ref, ref, cv::COLOR_BGR2GRAY);
+	cv::threshold(ref, ref, 1, 255, cv::THRESH_BINARY);
+	cv::flip(ref, ref, 0);
+	cv::cvtColor(ref, ref, cv::COLOR_GRAY2BGR);
+	cv::Mat refM;
+	cv::Mat mkern = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(9,9));
+	cv::morphologyEx(ref, refM, cv::MORPH_CLOSE, mkern, cv::Point(-1, -1), 2);
+	addScale(refM, 1, cv::Point(5, 25), 2);
+	cv::imwrite(outDir + "reference.png", refM);
+
 	// Making the images
 	int ptSize = MM2PIX(0.18);
 	int lnSize = ptSize;// MM2PIX(0.1);
 	cv::Mat ptKern = cv::Mat::ones(ptSize, ptSize, CV_8UC1);
+	cv::Mat wpMaskpx = cv::Mat::zeros(raster.size(), CV_8UC1);
 	cv::Mat wpMask = cv::Mat::zeros(raster.size(), CV_8UC1);
 	cv::Mat edgesBin = cv::Mat::zeros(raster.size(), CV_8UC1);
 	cv::Mat outEdgesBin = cv::Mat::zeros(raster.size(), CV_8UC1);
@@ -120,10 +134,12 @@ int main() {
 	// Make a mask for the waypoints
 	for (auto it = segments.begin(); it != segments.end(); ++it) {
 		for (auto it2 = (*it).waypoints().begin(); it2 != (*it).waypoints().end(); ++it2) {
-			wpMask.at<uchar>(cv::Point2i(*it2)) = 255;
+			wpMaskpx.at<uchar>(cv::Point2i(*it2)) = 255;
 		}
 	}
-	cv::morphologyEx(wpMask, wpMask, cv::MORPH_DILATE, ptKern, cv::Point(-1, -1), 1);
+	cv::morphologyEx(wpMaskpx, wpMask, cv::MORPH_DILATE, ptKern, cv::Point(-1, -1), 1);
+
+	cv::morphologyEx(wpMaskpx, wpMask, cv::MORPH_DILATE, cv::Mat::ones(3, 3, CV_8UC1), cv::Point(-1, -1), 1);
 
 	std::cout << "Enter file to load ";
 	//std::cin >> datafile;
@@ -262,12 +278,14 @@ int main() {
 	// Make the Figures
 	cv::imwrite(outDir + "matlMask" + ".png", matlFill);
 
+	// Binary edge points with a path centerline
 	image = cv::Mat::zeros(raster.size(), CV_8UC3);
 	cv::imwrite(outDir + "edgePtsBin" + ".png", edgesBin);
 	cv::cvtColor(edgesBin, image, cv::COLOR_GRAY2BGR);
 	raster.draw(image, image, 0, cv::Scalar(0, 255, 0), lnSize/4);
 	cv::imwrite(outDir + "edgePtsBin_cl" + ".png", image);
 
+	// Separated edge points with a path centerline
 	image = cv::Mat::zeros(raster.size(), CV_8UC3);
 	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(255, 0, 255)).copyTo(image, outEdgesBin);
 	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(255, 255, 0)).copyTo(image, inEdgesBin);
@@ -275,6 +293,7 @@ int main() {
 	raster.draw(image, image, 0, cv::Scalar(0, 255, 0), lnSize/4);
 	cv::imwrite(outDir + "edgePtsSep_cl" + ".png", image);
 
+	// Separated connected edges with a SOLID path centerline
 	image = cv::Mat::zeros(raster.size(), CV_8UC3);
 	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(255, 0, 255)).copyTo(image, outEdgesMask);
 	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(255, 255, 0)).copyTo(image, inEdgesMask);
@@ -282,6 +301,7 @@ int main() {
 	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(0, 255, 0)).copyTo(image, wpMask);
 	cv::imwrite(outDir + "edgesSep_cl" + ".png", image);
 
+	// Separated connected edges with a FILL
 	cv::cvtColor(matlFill, image, cv::COLOR_GRAY2BGR);
 	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(255, 0, 255)).copyTo(image, outEdgesMask);
 	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(255, 255, 0)).copyTo(image, inEdgesMask);
@@ -290,6 +310,28 @@ int main() {
 	cv::imwrite(outDir + "edgesSepFill_cl" + ".png", image);
 	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(0, 0, 0)).copyTo(image, wpMask);
 	cv::imwrite(outDir + "edgesSepFill_cl2" + ".png", image);
+	// Very thin versions
+	cv::Mat thinMask = cv::Mat::zeros(raster.size(), CV_8UC1);
+	cv::cvtColor(matlFill, image, cv::COLOR_GRAY2BGR);
+	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(0, 0, 0)).copyTo(image, wpMaskpx);
+	cv::polylines(thinMask, outEdge, false, cv::Scalar(255), 1);
+	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(255, 0, 255)).copyTo(image, thinMask);
+	thinMask = cv::Mat::zeros(raster.size(), CV_8UC1);
+	cv::polylines(thinMask, inEdge, false, cv::Scalar(255), 1);
+	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(255, 255, 0)).copyTo(image, thinMask);
+	cv::imwrite(outDir + "edgesSepFill_thin1" + ".png", image);
+	// Less thin versions
+	cv::cvtColor(matlFill, image, cv::COLOR_GRAY2BGR);
+	thinMask = cv::Mat::zeros(raster.size(), CV_8UC1);
+	cv::morphologyEx(wpMaskpx, thinMask, cv::MORPH_DILATE, cv::Mat::ones(3, 3, CV_8UC1), cv::Point(-1, -1), 1);
+	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(0, 0, 0)).copyTo(image, thinMask);
+	thinMask = cv::Mat::zeros(raster.size(), CV_8UC1);
+	cv::polylines(thinMask, outEdge, false, cv::Scalar(255), 3);
+	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(255, 0, 255)).copyTo(image, thinMask);
+	thinMask = cv::Mat::zeros(raster.size(), CV_8UC1);
+	cv::polylines(thinMask, inEdge, false, cv::Scalar(255), 3);
+	cv::Mat(raster.size(), CV_8UC3, cv::Scalar(255, 255, 0)).copyTo(image, thinMask);
+	cv::imwrite(outDir + "edgesSepFill_thin3" + ".png", image);
 
 	// Distance transforms
 	cv::Mat Din = cv::Mat::zeros(raster.size(), CV_32FC1);
@@ -311,7 +353,16 @@ int main() {
 	image = cv::Mat::zeros(raster.size(), CV_8UC3);
 	Dout.copyTo(Dimage, matlFill);
 	cv::normalize(Dimage, image, 0, 255, cv::NORM_MINMAX, CV_8U, matlFill);
-	cv::imwrite(outDir + "D_out" + ".png", image);
+	cv::imwrite(outDir + "D_outG" + ".png", image); // grayscale
+	image2 = cv::Mat::zeros(raster.size(), CV_8UC3);
+	cv::cvtColor(image, image, cv::COLOR_GRAY2BGR);
+	cv::bitwise_and(cv::Scalar(255, 0, 255), image, image2, matlFill);
+	cv::imwrite(outDir + "D_outGC" + ".png", image2); // "magenta"scale
+	//cv::Mat(raster.size(), CV_8UC3, cv::Scalar(255, 0, 255)).copyTo(image, outEdgesMask);
+	cv::polylines(image, outEdge, false, cv::Scalar(255, 0, 255), lnSize);
+	cv::imwrite(outDir + "D_outE1" + ".png", image); // grayscale with ONE colored material line
+	cv::polylines(image, inEdge, false, cv::Scalar(255, 255, 0), lnSize);
+	cv::imwrite(outDir + "D_outE2" + ".png", image); // grayscale with TWO colored material line
 
 	cimage = cv::Mat::zeros(raster.size(), CV_8UC3);
 	cv::applyColorMap(image, cimage, cv::COLORMAP_VIRIDIS);
@@ -328,7 +379,17 @@ int main() {
 	image = cv::Mat::zeros(raster.size(), CV_8UC3);
 	Din.copyTo(Dimage, matlFill);
 	cv::normalize(Dimage, image, 0, 255, cv::NORM_MINMAX, CV_8U, matlFill);
-	cv::imwrite(outDir + "D_in" + ".png", image);
+	cv::imwrite(outDir + "D_inG" + ".png", image);// grayscale
+	image2 = cv::Mat::zeros(raster.size(), CV_8UC3);
+	cv::cvtColor(image, image, cv::COLOR_GRAY2BGR);
+	cv::bitwise_and(cv::Scalar(255, 255, 0), image, image2, matlFill);
+	cv::imwrite(outDir + "D_inGC" + ".png", image2); // "cyan"scale
+	//cv::Mat(raster.size(), CV_8UC3, cv::Scalar(255, 255, 0)).copyTo(image, inEdgesMask);
+	cv::polylines(image, inEdge, false, cv::Scalar(255, 255, 0), lnSize);
+	cv::imwrite(outDir + "D_inE1" + ".png", image); // grayscale with ONE colored material line
+	cv::polylines(image, outEdge, false, cv::Scalar(255, 0, 255), lnSize);
+	cv::imwrite(outDir + "D_inE2" + ".png", image); // grayscale with TWO colored material line
+	
 
 	cimage = cv::Mat::zeros(raster.size(), CV_8UC3);
 	cv::applyColorMap(image, cimage, cv::COLORMAP_VIRIDIS);
@@ -355,7 +416,6 @@ int main() {
 	//Dsum = Dout + Din;
 	//cv::normalize(Dcl, Dcl, 0, 1, cv::NORM_MINMAX, -1);
 	//cv::imwrite(outDir + "D_cl" + ".tiff", Dcl);
-
 
 	// Opening a file to save the results
 	std::ofstream outfile;
