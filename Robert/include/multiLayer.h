@@ -203,10 +203,12 @@ inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, doub
 				case 0: // Horizontal lines
 					roi = cv::Rect(*it - cv::Point(0, pixRodWth / 2), *std::next(it, 1) + cv::Point(0, pixRodWth / 2));
 					// shifting and stretching the roi
-					//roi -= cv::Point(pixRodWth / 4, 0);
-					//roi += cv::Size(pixRodWth / 2, 0);
-					roi += cv::Point(pixRodWth / 2, 0);
-					roi -= cv::Size(pixRodWth, 0);
+					//roi -= cv::Point(pixRodWth / 2, 0);
+					//roi += cv::Size(pixRodWth / 1, 0);
+					roi -= cv::Point(pixRodWth / 4, 0);
+					roi += cv::Size(pixRodWth / 2, 0);
+					//roi += cv::Point(pixRodWth / 2, 0);
+					//roi -= cv::Size(pixRodWth, 0);
 					// defining the point when the region has been completely scanned as the end of the next horizontal line
 					scanDonePt += (layer % 4 == 0) ? cv::Point2d(rodDoneOffset, _raster.spacing()) : cv::Point2d(rodDoneOffset, -_raster.spacing());
 					if (!_raster.roi(layer).contains(scanDonePt)) {
@@ -220,7 +222,12 @@ inline void MultiLayerScaffold::_makePath(TableInput input, Raster _raster, doub
 					break;
 				case 1: // vertical lines
 					roi = cv::Rect(0, 0, 1, 1);
+					//roi = cv::Rect(*it - cv::Point(pixRodWth / 4, 0), *std::next(it, 1) + cv::Point(pixRodWth / 2, 0));
+					//roi -= cv::Point(0, pixRodWth / 4);
+					//roi += cv::Size(0, pixRodWth /2);
 					//roi = cv::Rect(*it - cv::Point(pixRodWth / 2, 0), *std::next(it, 1) + cv::Point(pixRodWth / 2, 0));
+					//roi -= cv::Point(0, pixRodWth / 2);
+					//roi += cv::Size(0, pixRodWth);
 					// defining the point when the region has been completely scanned as the midpoint of the next vertical line
 
 					// if it's not the last vertical rod
