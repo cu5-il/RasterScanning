@@ -49,7 +49,10 @@ void getMatlEdges(const cv::Rect& segmentROI, const int dir, const cv::Mat& gblE
 		std::sort(unfiltLeft.begin(), unfiltLeft.end(), sortX());
 		std::sort(unfiltRight.begin(), unfiltRight.end(), sortX());
 	}
-
+	if (!unfiltLeft.empty())
+		std::sort(unfiltLeft.begin(), unfiltLeft.end(), sortDist(*unfiltLeft.begin()));
+	if (!unfiltRight.empty())
+		std::sort(unfiltRight.begin(), unfiltRight.end(), sortDist(*unfiltRight.begin()));
 	// Smoothing the edges
 	
 	// Left edge
